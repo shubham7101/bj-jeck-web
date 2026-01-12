@@ -5,8 +5,8 @@ export const recordItemSchema = z.object({
   id: z.number().min(1),
   part: z.enum(["full", "inner", "outer"]),
   size: z.number().min(0.1),
-  broken: z.boolean(),
-  item_amount: z.number().min(1),
+  broken_amount: z.number().min(0),
+  item_amount: z.number().min(0),
   service_charge: z.number().min(0),
 });
 export type RecordItem = z.infer<typeof recordItemSchema>;

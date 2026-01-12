@@ -355,13 +355,16 @@ function RecordItemsTable({ items }: { items: RecordItem[] }) {
                   Size
                 </TableHead>
                 <TableHead className="h-10 text-zinc-500 uppercase text-xs font-bold text-center">
-                  Status
+                  Quantity
+                </TableHead>
+                <TableHead className="h-10 text-zinc-500 uppercase text-xs font-bold text-center">
+                  Broken
+                </TableHead>
+                <TableHead className="h-10 text-zinc-500 uppercase text-xs font-bold text-center">
+                  Total
                 </TableHead>
                 <TableHead className="h-10 text-zinc-500 uppercase text-xs font-bold text-center">
                   Service Charge
-                </TableHead>
-                <TableHead className="h-10 text-zinc-500 uppercase text-xs font-bold text-center">
-                  Quantity
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -388,34 +391,31 @@ function RecordItemsTable({ items }: { items: RecordItem[] }) {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center">
-                    {item.broken ? (
-                      <Badge
-                        variant="outline"
-                        className="bg-rose-950/20 border-rose-900/50 text-rose-500 text-[10px] uppercase mx-auto"
-                      >
-                        Damaged
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="bg-emerald-950/10 border-emerald-900/20 text-emerald-500 text-[10px] uppercase mx-auto"
-                      >
-                        OK
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className={`font-bold text-lg text-emerald-400`}>
-                      ₹{item.item_amount.toLocaleString()}
+                    <span className="font-bold text-lg text-zinc-100">
+                      {item.item_amount.toLocaleString()}
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
                     <span
                       className={`font-bold text-lg ${
-                        item.broken ? "text-rose-500" : "text-zinc-100"
+                        item.broken_amount === 0
+                          ? "text-zinc-100"
+                          : "text-rose-500"
                       }`}
                     >
-                      {item.item_amount.toLocaleString()}
+                      {item.broken_amount === 0
+                        ? "-"
+                        : item.broken_amount.toLocaleString()}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="font-bold text-lg text-zinc-100">
+                      {(item.item_amount + item.broken_amount).toLocaleString()}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className={`font-bold text-lg text-emerald-400`}>
+                      ₹{item.service_charge.toLocaleString()}
                     </span>
                   </TableCell>
                 </TableRow>

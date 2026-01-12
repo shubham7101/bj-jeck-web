@@ -356,12 +356,12 @@ function RecordPaginationControls({
   );
 }
 
-type RecordTableProps = {
+export type RecordTableProps = {
   data: Record[];
   isLoading: boolean;
 } & RecordTableActions;
 
-function RecordTable({
+export function RecordTable({
   data,
   isLoading,
   processingIds = new Set(),

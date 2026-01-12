@@ -36,7 +36,6 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -125,7 +124,7 @@ const DEFAULT_FORM_VALUES: Partial<CreateRecord> = {
       part: "full",
       size: 2,
       item_amount: 0,
-      broken: false,
+      broken_amount: 0,
       service_charge: 0,
     },
   ],
@@ -634,7 +633,7 @@ function RecordEntryForm({
                       part: "full",
                       size: 2.0,
                       item_amount: 0,
-                      broken: false,
+                      broken_amount: 0,
                       service_charge: 0,
                     })
                   }
@@ -651,10 +650,8 @@ function RecordEntryForm({
                       <TableHead className="w-[20%] pl-6">Part Type</TableHead>
                       <TableHead className="w-[20%]">Size</TableHead>
                       <TableHead className="w-[20%]">Quantity</TableHead>
+                      <TableHead className="w-[15%]">Broken?</TableHead>
                       <TableHead className="w-[20%]">Service Charge</TableHead>
-                      <TableHead className="w-[15%] text-center">
-                        Broken?
-                      </TableHead>
                       <TableHead className="w-[10%]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -750,6 +747,33 @@ function RecordEntryForm({
                         </TableCell>
 
                         <TableCell className="py-3 align-middle text-center">
+                          <form.Field name={`items[${index}].broken_amount`}>
+                            {(subField) => (
+                              <FormBase field={subField}>
+                                <div className="flex justify-center">
+                                  <Input
+                                    type="number"
+                                    className="border-zinc-800 bg-transparent"
+                                    placeholder="0"
+                                    value={
+                                      subField.state.value === 0
+                                        ? ""
+                                        : subField.state.value
+                                    }
+                                    onChange={(e) =>
+                                      subField.handleChange(
+                                        Number(e.target.value)
+                                      )
+                                    }
+                                    onWheel={(e) => e.currentTarget.blur()}
+                                  />
+                                </div>
+                              </FormBase>
+                            )}
+                          </form.Field>
+                        </TableCell>
+
+                        <TableCell className="py-3 align-middle text-center">
                           <form.Field name={`items[${index}].service_charge`}>
                             {(subField) => (
                               <FormBase field={subField}>
@@ -772,24 +796,6 @@ function RecordEntryForm({
                                       )
                                     }
                                     onWheel={(e) => e.currentTarget.blur()}
-                                  />
-                                </div>
-                              </FormBase>
-                            )}
-                          </form.Field>
-                        </TableCell>
-
-                        <TableCell className="py-3 align-middle text-center">
-                          <form.Field name={`items[${index}].broken`}>
-                            {(subField) => (
-                              <FormBase field={subField}>
-                                <div className="flex justify-center">
-                                  <Checkbox
-                                    checked={subField.state.value}
-                                    onCheckedChange={(c) =>
-                                      subField.handleChange(!!c)
-                                    }
-                                    className="border-zinc-600 data-[state=checked]:bg-rose-600 data-[state=checked]:border-rose-600 cursor-pointer"
                                   />
                                 </div>
                               </FormBase>
