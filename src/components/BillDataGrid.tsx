@@ -1,24 +1,22 @@
-import type { Record, RecordSearchReq } from "@/schemas/recordSchema";
+import type { Bill, BillSearchReq } from "@/schemas/billSchema"; // Assuming you export the schema type here
 import { Link, type useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { Input } from "./ui/input";
 import {
-  ArrowDownLeft,
-  ArrowUpRight,
   CalendarIcon,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Eye,
   Hash,
+  IndianRupee,
   Loader2,
   MoreHorizontal,
-  Package,
   RotateCcw,
   Search,
-  Smartphone,
   Trash,
-  Truck,
+  CalendarRange,
+  FileText,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -44,24 +42,21 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { formatDate } from "@/utils";
 import { Badge } from "./ui/badge";
 import { Skeleton } from "./ui/skeleton";
 
-type RecordFilterDisableFlags = {
-  [K in keyof RecordSearchReq]?: boolean;
+type BillFilterDisableFlags = {
+  [K in keyof BillSearchReq]?: boolean;
 };
 
-// We use string for values here because HTML inputs work with strings.
-// The parent handles parsing before sending to API.
-type RecordFiltersProps = {
-  filters: { [K in keyof RecordSearchReq]: string };
-  disabledFields?: RecordFilterDisableFlags;
-  onChange: (key: keyof RecordSearchReq, value: string) => void;
+type BillFiltersProps = {
+  filters: { [K in keyof BillSearchReq]: string };
+  disabledFields?: BillFilterDisableFlags;
+  onChange: (key: keyof BillSearchReq, value: string) => void;
   onReset: () => void;
 };
 
-type RecordPaginationProps = {
+type BillPaginationProps = {
   currentPage: number;
   totalPages: number;
   perPage: number;
@@ -70,36 +65,34 @@ type RecordPaginationProps = {
   onPerPageChange: (perPage: number) => void;
 };
 
-type RecordTableActions = {
+type BillTableActions = {
   processingIds?: Set<number>;
-  isRecordDisabled?: (r: Record) => boolean;
-  onDelete?: (r: Record) => void;
+  onDelete?: (b: Bill) => void;
   navigate: ReturnType<typeof useNavigate>;
 };
 
-type RecordDataGridProps = {
-  data: Record[];
+type BillDataGridProps = {
+  data: Bill[];
   isLoading: boolean;
   isPlaceholderData: boolean;
-  filterProps: RecordFiltersProps;
-  paginationProps: RecordPaginationProps;
-} & Partial<RecordTableActions>;
+  filterProps: BillFiltersProps;
+  paginationProps: BillPaginationProps;
+} & Partial<BillTableActions>;
 
 const DATE_FORMAT = "dd-MM-yyyy";
 
 // --- Main Component ---
 
-export const RecordDataGrid = ({
+export const BillDataGrid = ({
   data,
   isLoading,
   isPlaceholderData,
   filterProps,
   paginationProps,
   processingIds,
-  isRecordDisabled,
   onDelete,
   navigate,
-}: RecordDataGridProps) => {
+}: BillDataGridProps) => {
   return (
     <div
       className={cn(
@@ -107,34 +100,35 @@ export const RecordDataGrid = ({
         isPlaceholderData && "opacity-70 transition-opacity"
       )}
     >
-      <RecordFilters {...filterProps} />
+      <BillFilters {...filterProps} />
 
       <div className="flex flex-col rounded-xl border border-zinc-800 bg-zinc-950/50 shadow-2xl shadow-black/40 overflow-hidden">
-        <RecordTable
+        <BillTable
           data={data}
           isLoading={isLoading}
           navigate={navigate!}
           processingIds={processingIds}
-          isRecordDisabled={isRecordDisabled}
           onDelete={onDelete}
         />
-        <RecordPaginationControls {...paginationProps} />
+        <BillPaginationControls {...paginationProps} />
       </div>
     </div>
   );
 };
 
-function RecordFilters({
+// --- Filters Component ---
+
+function BillFilters({
   filters,
   disabledFields,
   onChange,
   onReset,
-}: RecordFiltersProps) {
+}: BillFiltersProps) {
   const hasActiveFilters = Object.values(filters).some((v) => v !== "");
 
   return (
     <div className="bg-zinc-900/50 p-4 rounded-lg border border-zinc-800 shadow-sm">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+      <div className="flex flex-col md:flex-row gap-4">
         {/* Customer ID */}
         <FilterInput
           label="Customer ID"
@@ -146,71 +140,34 @@ function RecordFilters({
           type="number"
         />
 
-        {/* Vehicle No */}
+        {/* Khata No */}
         <FilterInput
-          label="Vehicle No"
-          icon={Truck}
-          placeholder="e.g. GJ-05..."
-          value={filters.vehicle_no}
-          onChange={(e) => onChange("vehicle_no", e.target.value)}
-          disabled={disabledFields?.vehicle_no}
+          label="Khata No"
+          icon={FileText}
+          placeholder="e.g. 3 12"
+          value={filters.khata_no}
+          onChange={(e) => onChange("khata_no", e.target.value)}
+          disabled={disabledFields?.khata_no}
         />
 
-        {/* Mobile */}
-        <FilterInput
-          label="Driver Mobile"
-          icon={Smartphone}
-          placeholder="e.g. 98765..."
-          value={filters.vehicle_mobile_no}
-          onChange={(e) => onChange("vehicle_mobile_no", e.target.value)}
-          disabled={disabledFields?.vehicle_mobile_no}
-        />
-
-        {/* Exact Date */}
-        <FilterDatePicker
-          label="Exact Date"
-          value={filters.date}
-          onChange={(val) => onChange("date", val)}
-          disabled={disabledFields?.date}
-        />
-
-        {/* From Date */}
-        <FilterDatePicker
-          label="From Date"
-          value={filters.from_date}
-          onChange={(val) => onChange("from_date", val)}
-          placeholder="Start date"
-          disabled={disabledFields?.from_date}
-        />
-
-        {/* To Date */}
-        <FilterDatePicker
-          label="To Date"
-          value={filters.to_date}
-          onChange={(val) => onChange("to_date", val)}
-          placeholder="End date"
-          disabled={disabledFields?.to_date}
-        />
-
-        {/* Bill ID */}
-        <FilterInput
-          label="Bill ID"
-          icon={Hash}
-          placeholder="e.g. 1024"
-          value={filters.bill_id}
-          onChange={(e) => onChange("bill_id", e.target.value)}
-          disabled={disabledFields?.bill_id}
-          type="number"
-        />
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2 lg:col-span-1 justify-end">
+        {/* Date */}
+        <div className="flex flex-1 gap-2 items-end">
+          <div className="flex-1">
+            <FilterDatePicker
+              label="To Date"
+              value={filters.date}
+              onChange={(val) => onChange("date", val)}
+              placeholder="Date"
+              disabled={disabledFields?.date}
+            />
+          </div>
+          {/* Action Buttons */}
           <Button
             variant="ghost"
             size="icon"
             onClick={onReset}
             disabled={!hasActiveFilters}
-            className="text-zinc-500 hover:text-rose-500 cursor-pointer shrink-0"
+            className="text-zinc-500 hover:text-rose-500 cursor-pointer shrink-0 mb-0.5"
             title="Clear filters"
           >
             <RotateCcw className="h-4 w-4" />
@@ -221,17 +178,18 @@ function RecordFilters({
   );
 }
 
-function RecordPaginationControls({
+// --- Pagination Component ---
+
+function BillPaginationControls({
   currentPage,
   totalPages,
   perPage,
   totalCount,
   onPageChange,
   onPerPageChange,
-}: RecordPaginationProps) {
+}: BillPaginationProps) {
   const [pageInput, setPageInput] = useState(currentPage.toString());
 
-  // Fix: Sync local input state if currentPage changes externally (e.g. deletion causing page drop)
   useEffect(() => {
     setPageInput(currentPage.toString());
   }, [currentPage]);
@@ -242,9 +200,7 @@ function RecordPaginationControls({
       setPageInput(currentPage.toString());
       return;
     }
-    // Clamp between 1 and totalPages
     p = Math.max(1, Math.min(p, totalPages || 1));
-
     if (p !== currentPage) {
       onPageChange(p);
     } else {
@@ -312,7 +268,6 @@ function RecordPaginationControls({
 
       {/* Right Side: Navigation */}
       <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-center sm:justify-end">
-        {/* Page Input */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-zinc-500">Page</span>
           <Input
@@ -356,18 +311,20 @@ function RecordPaginationControls({
   );
 }
 
-export type RecordTableProps = {
-  data: Record[];
-  isLoading: boolean;
-} & RecordTableActions;
+// --- Table Component ---
 
-export function RecordTable({
+export type BillTableProps = {
+  data: Bill[];
+  isLoading: boolean;
+} & BillTableActions;
+
+export function BillTable({
   data,
   isLoading,
   processingIds = new Set(),
   onDelete,
   navigate,
-}: RecordTableProps) {
+}: BillTableProps) {
   if (isLoading) {
     return (
       <TableWrapper>
@@ -380,13 +337,13 @@ export function RecordTable({
     return (
       <TableWrapper>
         <TableRow>
-          <TableCell colSpan={7} className="h-96 text-center">
-            <div className="flex flex-col items-center justify-center text-zinc-500">
-              <div className="bg-zinc-900/50 p-4 rounded-full mb-4">
+          <TableCell colSpan={6} className="h-96 text-center">
+            <div className="flex flex-col items-center justify-center text-zinc-500 animate-in fade-in zoom-in-95 duration-300">
+              <div className="bg-zinc-900/50 p-4 rounded-full mb-4 ring-1 ring-zinc-800">
                 <Search className="h-8 w-8 opacity-50" />
               </div>
               <p className="text-lg font-medium text-zinc-300">
-                No Records found
+                No Bills found
               </p>
               <p className="text-sm">
                 Try adjusting your filters or search query.
@@ -400,11 +357,11 @@ export function RecordTable({
 
   return (
     <TableWrapper>
-      {data.map((record) => (
-        <RecordRow
-          key={record.id}
-          record={record}
-          isProcessing={processingIds.has(record.id)}
+      {data.map((bill) => (
+        <BillRow
+          key={bill.id}
+          bill={bill}
+          isProcessing={processingIds.has(bill.id)}
           onDelete={onDelete}
           navigate={navigate}
         />
@@ -417,27 +374,24 @@ function TableWrapper({ children }: { children: React.ReactNode }) {
   return (
     <div className="w-full overflow-auto">
       <Table>
-        <TableHeader className="bg-zinc-900/50 sticky top-0 z-10">
+        <TableHeader className="bg-zinc-900/50 sticky top-0 z-10 backdrop-blur-sm">
           <TableRow className="border-zinc-800 hover:bg-transparent">
-            <TableHead className="w-20 pl-6 h-12 text-zinc-500 uppercase text-xs font-bold text-left">
-              ID
+            <TableHead className="w-24 pl-6 h-12 text-zinc-500 uppercase text-xs font-bold text-left">
+              Bill ID
             </TableHead>
-            <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-center">
-              Date
+            <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-center w-32">
+              Customer ID
             </TableHead>
-            <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-center">
-              Type
+            <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-left pl-6 min-w-[180px]">
+              Billing Period
             </TableHead>
-            <TableHead className="hidden md:table-cell h-12 text-zinc-500 uppercase text-xs font-bold text-left pl-4">
-              Vehicle
+            <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-center w-32">
+              Khata No
             </TableHead>
-            <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-center">
-              Items
+            <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-right pr-6 w-32">
+              Total Amount
             </TableHead>
-            <TableHead className="hidden md:table-cell h-12 text-zinc-500 uppercase text-xs font-bold text-center">
-              Bill Status
-            </TableHead>
-            <TableHead className="text-right pr-6 h-12 text-zinc-500 uppercase text-xs font-bold">
+            <TableHead className="text-right pr-6 h-12 text-zinc-500 uppercase text-xs font-bold w-16">
               Actions
             </TableHead>
           </TableRow>
@@ -448,113 +402,78 @@ function TableWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-function RecordRow({
-  record,
+// --- Row Component ---
+
+function BillRow({
+  bill,
   isProcessing,
   onDelete,
   navigate,
 }: {
-  record: Record;
+  bill: Bill;
   isProcessing: boolean;
-  onDelete?: (r: Record) => void;
+  onDelete?: (b: Bill) => void;
   navigate: ReturnType<typeof useNavigate>;
 }) {
-  const isTypeIn = record.transaction_type === "IN";
-
-  // check if record is billed
-  const isBilled = !!record.bill_id;
-
   return (
     <TableRow
       className={`
         group border-zinc-800 transition-all duration-200 hover:bg-zinc-900/60 
         ${isProcessing ? "opacity-50 pointer-events-none bg-zinc-900/40" : ""}
       `}
-      onDoubleClick={() => navigate({ to: `/records/${record.id}` })}
+      onDoubleClick={() => navigate({ to: `/bills/${bill.id}` })}
     >
-      {/* ... (Previous cells remain exactly the same: ID, Date, Type, Vehicle, Items, Bill Status) ... */}
-
-      <TableCell className="pl-6 font-mono text-xs text-left text-zinc-400 group-hover:text-zinc-200">
-        #{record.id.toString().padStart(4, "0")}
+      {/* Bill ID */}
+      <TableCell className="pl-6 font-mono text-xs text-left text-zinc-400 group-hover:text-zinc-200 font-medium">
+        #{bill.id.toString()}
       </TableCell>
 
-      <TableCell>
-        <div className="flex justify-center items-center gap-2 text-xs text-zinc-300">
-          {formatDate(record.date)}
+      {/* Customer Link */}
+      <TableCell className="text-center">
+        <Link
+          to={`/customers/$customerId`}
+          params={{ customerId: bill.customer_id.toString() }}
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-zinc-900 text-zinc-400 border border-zinc-800 text-[10px] font-medium hover:bg-zinc-800 hover:text-white transition-colors"
+        >
+          <Hash className="h-3 w-3" />
+          {bill.customer_id}
+        </Link>
+      </TableCell>
+
+      {/* Billing Period */}
+      <TableCell className="pl-6">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2 text-xs text-zinc-300">
+            <CalendarRange className="h-3 w-3 text-zinc-500" />
+            <span>
+              {format(new Date(bill.from_date), "dd MMM")} -{" "}
+              {format(new Date(bill.to_date), "dd MMM yyyy")}
+            </span>
+          </div>
         </div>
       </TableCell>
 
+      {/* Khata No */}
       <TableCell className="text-center">
-        <Badge
-          variant="outline"
-          className={`pl-2 pr-2.5 py-0.5 rounded-full border text-[10px] inline-flex items-center ${
-            isTypeIn
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-              : "bg-orange-500/10 text-orange-400 border-orange-500/20"
-          }`}
-        >
-          {isTypeIn ? (
-            <ArrowDownLeft className="h-3 w-3 mr-1" />
-          ) : (
-            <ArrowUpRight className="h-3 w-3 mr-1" />
-          )}
-          {record.transaction_type}
-        </Badge>
-      </TableCell>
-
-      <TableCell className="hidden md:table-cell pl-4">
-        {record.vehicle_no || record.vehicle_mobile_no ? (
-          <div className="flex flex-col items-start">
-            {record.vehicle_no && (
-              <span className="text-xs font-medium flex items-center gap-1 text-zinc-400">
-                <Truck className="h-3 w-3" />
-                {record.vehicle_no}
-              </span>
-            )}
-            {record.vehicle_mobile_no && (
-              <span className="text-[10px] text-zinc-600 font-mono flex items-center gap-1 mt-0.5">
-                <Smartphone className="h-2.5 w-2.5" />
-                {record.vehicle_mobile_no}
-              </span>
-            )}
-          </div>
+        {bill.khata_no ? (
+          <span className="font-mono text-xs text-zinc-400">
+            {bill.khata_no}
+          </span>
         ) : (
           <span className="text-zinc-700 text-xs">-</span>
         )}
       </TableCell>
 
-      <TableCell className="text-center">
-        <div className="flex flex-col items-center">
-          <span className="text-sm font-semibold flex items-center gap-1 text-zinc-200">
-            {record.total.toLocaleString()}
-            <Package className="h-3 w-3 text-zinc-500" />
-          </span>
-          {record.labour_charge > 0 && (
-            <span className="text-[10px] text-zinc-500">
-              + ₹{record.labour_charge} Labour
-            </span>
-          )}
-        </div>
+      {/* Total Amount */}
+      <TableCell className="text-right pr-6">
+        <span className="text-sm font-bold text-emerald-400 flex items-center justify-end gap-0.5">
+          <IndianRupee className="h-3 w-3" />
+          {bill.total.toLocaleString()}
+        </span>
       </TableCell>
 
-      <TableCell className="hidden md:table-cell text-center">
-        {record.bill_id ? (
-          <Link
-            to={`/bills/$billId`}
-            params={{ billId: record.bill_id.toString() }}
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-medium hover:bg-blue-500/20 transition-colors"
-          >
-            <Hash className="h-3 w-3" />#{record.bill_id}
-          </Link>
-        ) : (
-          <span className="text-[10px] text-zinc-700 font-medium uppercase tracking-wider">
-            Unbilled
-          </span>
-        )}
-      </TableCell>
-
-      {/* --- Updated Actions Cell --- */}
+      {/* Actions */}
       <TableCell className="text-right pr-6">
         {isProcessing ? (
           <div className="flex justify-end pr-2">
@@ -576,11 +495,11 @@ function RecordRow({
             >
               <DropdownMenuItem asChild>
                 <Link
-                  to="/records/$recordId"
-                  params={{ recordId: record.id.toString() }}
+                  to="/bills/$billId"
+                  params={{ billId: bill.id.toString() }}
                   className="cursor-pointer focus:bg-zinc-900 focus:text-zinc-200"
                 >
-                  <Eye className="mr-2 h-4 w-4" /> View Details
+                  <Eye className="mr-2 h-4 w-4" /> View Invoice
                 </Link>
               </DropdownMenuItem>
 
@@ -588,21 +507,14 @@ function RecordRow({
                 <>
                   <DropdownMenuSeparator className="bg-zinc-800" />
                   <DropdownMenuItem
-                    disabled={isBilled} // Disable interaction
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (!isBilled) onDelete(record);
+                      onDelete(bill);
                     }}
-                    // Conditionally style the button
-                    className={cn(
-                      "cursor-pointer",
-                      isBilled
-                        ? "text-zinc-600 opacity-50 cursor-not-allowed pointer-events-none"
-                        : "text-rose-500 focus:bg-rose-950/20 focus:text-rose-400"
-                    )}
+                    className="cursor-pointer text-rose-500 focus:bg-rose-950/20 focus:text-rose-400"
                   >
                     <Trash className="mr-2 h-4 w-4" />
-                    {isBilled ? "Billed (Locked)" : "Delete"}
+                    Delete
                   </DropdownMenuItem>
                 </>
               )}
@@ -613,6 +525,8 @@ function RecordRow({
     </TableRow>
   );
 }
+
+// --- Utils (Reused from reference) ---
 
 interface FilterInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
@@ -626,7 +540,7 @@ function FilterInput({
   ...props
 }: FilterInputProps) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 relative flex-1">
       <label className="text-xs text-zinc-500 font-medium ml-1">{label}</label>
       <div className="relative">
         {Icon && (
@@ -713,37 +627,49 @@ function SkeletonRows({ count }: { count: number }) {
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
-        <TableRow key={i} className="border-zinc-800">
+        <TableRow key={i} className="border-zinc-800 hover:bg-transparent">
+          {/* Bill ID - Matches Font Mono width */}
           <TableCell className="pl-6">
-            <Skeleton className="h-4 w-12 bg-zinc-800" />
+            <Skeleton className="h-4 w-10 bg-zinc-800/60 rounded-sm" />
           </TableCell>
+
+          {/* Customer ID - Matches the "Badge" look */}
           <TableCell className="flex justify-center">
-            <Skeleton className="h-4 w-24 bg-zinc-800" />
+            <div className="h-6 w-12 rounded-md bg-zinc-800/60" />
           </TableCell>
+
+          {/* Billing Period - Matches the "Icon + Text" layout */}
+          <TableCell className="pl-6">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                {/* Icon placeholder */}
+                <Skeleton className="h-3 w-3 rounded-full bg-zinc-800" />
+                {/* Date range text placeholder */}
+                <Skeleton className="h-3 w-32 bg-zinc-800/60 rounded-sm" />
+              </div>
+            </div>
+          </TableCell>
+
+          {/* Khata No - Centered text */}
           <TableCell>
             <div className="flex justify-center">
-              <Skeleton className="h-5 w-16 rounded-full bg-zinc-800" />
+              <Skeleton className="h-4 w-16 bg-zinc-800/40 rounded-sm" />
             </div>
           </TableCell>
-          <TableCell className="hidden md:table-cell">
-            <div className="space-y-1">
-              <Skeleton className="h-3 w-20 bg-zinc-800" />
-              <Skeleton className="h-3 w-16 bg-zinc-800" />
+
+          {/* Total Amount - Right aligned, slightly bolder height */}
+          <TableCell className="pr-6">
+            <div className="flex justify-end items-center gap-1">
+              <Skeleton className="h-3 w-3 bg-zinc-800/40 rounded-full" />
+              <Skeleton className="h-5 w-20 bg-zinc-800/60 rounded-sm" />
             </div>
           </TableCell>
-          <TableCell>
-            <div className="flex flex-col items-center gap-1">
-              <Skeleton className="h-4 w-8 bg-zinc-800" />
-              <Skeleton className="h-3 w-12 bg-zinc-800" />
+
+          {/* Actions - Right aligned button */}
+          <TableCell className="pr-6">
+            <div className="flex justify-end">
+              <Skeleton className="h-8 w-8 bg-zinc-800/40 rounded-md" />
             </div>
-          </TableCell>
-          <TableCell className="hidden md:table-cell">
-            <div className="flex justify-center">
-              <Skeleton className="h-5 w-16 bg-zinc-800" />
-            </div>
-          </TableCell>
-          <TableCell className="pr-6 flex justify-end">
-            <Skeleton className="h-8 w-8 bg-zinc-800" />
           </TableCell>
         </TableRow>
       ))}

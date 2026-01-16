@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { z } from "zod";
 import {
   format,
@@ -22,6 +22,11 @@ import {
   Package,
   ChevronLeft,
   ChevronRight,
+  CheckCircle2,
+  X,
+  Plus,
+  Receipt,
+  IndianRupee,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -37,6 +42,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +61,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useStore } from "@tanstack/react-form"; // Import this
+import { useStore } from "@tanstack/react-form";
 import { CustomerDataGrid } from "@/components/CustomerDataGrid";
 import { RecordTable } from "@/components/RecordDataGrid";
 import { getInitials } from "@/utils";
@@ -264,6 +270,8 @@ function BillEntryForm({ customer }: { customer: Customer }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [maxToDate, setMaxToDate] = useState<Date | null>(null);
+  const [successBill, setSuccessBill] = useState<any | null>(null);
+  const successRef = useRef<HTMLDivElement>(null);
 
   // Bill Params Mutation (Fetch initial dates)
   const billParamsMutation = useMutation({
@@ -277,10 +285,8 @@ function BillEntryForm({ customer }: { customer: Customer }) {
         safeFromDate ? format(safeFromDate, DATE_FORMAT) : ""
       );
 
-      // Store absolute max date limit
       setMaxToDate(safeToDate);
 
-      // Default To Date to the max available
       form.setFieldValue(
         "to_date",
         safeToDate ? format(safeToDate, DATE_FORMAT) : ""
@@ -291,22 +297,35 @@ function BillEntryForm({ customer }: { customer: Customer }) {
   // Create Bill Mutation
   const createBillMutation = useMutation({
     mutationFn: (payload: any) => billService.create(payload),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
       queryClient.invalidateQueries({ queryKey: ["records"] });
       queryClient.invalidateQueries({
         queryKey: ["records", customer.id],
       });
-      navigate({ to: "/bills" });
+      setSuccessBill(data);
     },
   });
 
   // Load params on mount
   useEffect(() => {
-    if (customer.id) {
+    if (customer.id && !successBill) {
       billParamsMutation.mutate(customer.id);
     }
-  }, [customer.id]);
+  }, [customer.id, successBill]);
+
+  // Scroll to success message
+  useEffect(() => {
+    if (successBill && successRef.current) {
+      const timer = setTimeout(() => {
+        successRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [successBill]);
 
   // Form Setup
   const form = useAppForm({
@@ -328,17 +347,25 @@ function BillEntryForm({ customer }: { customer: Customer }) {
     },
   });
 
+  // Handle "Create Another"
+  const handleReset = () => {
+    setSuccessBill(null);
+    form.reset();
+    form.setFieldValue("customer_id", customer.id);
+    // Fetch fresh params for the next bill
+    billParamsMutation.mutate(customer.id);
+  };
+
   // Logic for Record Preview Table
   const [page, setPage] = useState(1);
   const [perPage] = useState(25);
 
-  // FIXED: Use the standalone useStore hook passing form.store
   const fromDateVal = useStore(form.store, (state) => state.values.from_date);
   const toDateVal = useStore(form.store, (state) => state.values.to_date);
 
   const parsedFrom = parseDateSafe(fromDateVal);
   const parsedTo = parseDateSafe(toDateVal);
-  const enableRecordQuery = !!parsedFrom && !!parsedTo;
+  const enableRecordQuery = !!parsedFrom && !!parsedTo && !successBill;
 
   const { data: recordsData, isLoading: isRecordsLoading } = useQuery({
     queryKey: [
@@ -360,6 +387,10 @@ function BillEntryForm({ customer }: { customer: Customer }) {
       }),
     enabled: enableRecordQuery,
   });
+
+  // Manual Filter
+  const filteredRecords =
+    recordsData?.data.filter((record) => !record.bill_id) || [];
 
   // Derived Constraints
   const minToDate = parsedFrom ? addDays(parsedFrom, 1) : new Date();
@@ -463,6 +494,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                           )
                         }
                         autoFocus
+                        disabled={!!successBill}
                       />
                     </div>
                   </FormBase>
@@ -518,7 +550,11 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          disabled={!parsedFrom || billParamsMutation.isPending}
+                          disabled={
+                            !parsedFrom ||
+                            billParamsMutation.isPending ||
+                            !!successBill
+                          }
                           className={cn(
                             "w-full pl-3 text-left font-normal bg-zinc-950/50 border-zinc-700 hover:bg-zinc-900",
                             !field.state.value && "text-muted-foreground",
@@ -573,6 +609,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                       className="bg-zinc-950/50 border-zinc-700"
                       value={field.state.value || ""}
                       onChange={(e) => field.handleChange(e.target.value)}
+                      disabled={!!successBill}
                     />
                   </FormBase>
                 )}
@@ -585,20 +622,18 @@ function BillEntryForm({ customer }: { customer: Customer }) {
         <div className="space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Package className="h-5 w-5 text-zinc-400" />
-            Records Included
-            {recordsData?.pagination.total_count !== undefined && (
-              <Badge
-                variant="secondary"
-                className="bg-zinc-800 text-zinc-400 ml-2"
-              >
-                {recordsData.pagination.total_count}
-              </Badge>
-            )}
+            Included Unbilled Records
+            <Badge
+              variant="secondary"
+              className="bg-zinc-800 text-zinc-400 ml-2"
+            >
+              {filteredRecords.length} visible
+            </Badge>
           </h3>
 
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 shadow-xl overflow-hidden">
             <RecordTable
-              data={recordsData?.data || []}
+              data={filteredRecords}
               isLoading={isRecordsLoading}
               navigate={navigate}
               onDelete={undefined}
@@ -636,9 +671,16 @@ function BillEntryForm({ customer }: { customer: Customer }) {
               </div>
             )}
           </div>
+          {filteredRecords.length === 0 &&
+            recordsData &&
+            recordsData.data.length > 0 && (
+              <div className="text-xs text-amber-500 text-center">
+                All records on this page are already billed. Check other pages.
+              </div>
+            )}
         </div>
 
-        {/* Footer */}
+        {/* Footer / Submit Section */}
         <div className="flex justify-end gap-4 pt-4 border-t border-zinc-800/50">
           <form.Subscribe
             selector={(state) => [state.canSubmit, state.isSubmitting]}
@@ -652,14 +694,24 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                   createBillMutation.isPending ||
                   isSubmittingForm ||
                   !toDateVal ||
-                  !parsedFrom
+                  !parsedFrom ||
+                  !!successBill // Disable button if bill is already created
                 }
-                className="min-w-40 bg-emerald-600 hover:bg-emerald-500 text-white border-none shadow-lg shadow-emerald-900/20"
+                className={cn(
+                  "min-w-40 border-none shadow-lg transition-all duration-300",
+                  successBill
+                    ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                    : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20"
+                )}
               >
                 {createBillMutation.isPending || isSubmittingForm ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />{" "}
                     Creating...
+                  </>
+                ) : successBill ? (
+                  <>
+                    <CheckCircle2 className="mr-2 h-5 w-5" /> Bill Created
                   </>
                 ) : (
                   <>
@@ -671,6 +723,112 @@ function BillEntryForm({ customer }: { customer: Customer }) {
           </form.Subscribe>
         </div>
       </form>
+
+      {/* Success Feedback Appended at Bottom */}
+      {successBill && (
+        <div ref={successRef}>
+          <BillSuccessFeedback
+            bill={successBill}
+            onDismiss={() => navigate({ to: "/bills" })}
+            onReset={handleReset}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BillSuccessFeedback({
+  bill,
+  onDismiss,
+  onReset,
+}: {
+  bill: any;
+  onDismiss: () => void;
+  onReset: () => void;
+}) {
+  return (
+    <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+      <Card className="border-emerald-500/30 bg-emerald-950/10 relative overflow-hidden shadow-lg shadow-emerald-900/10">
+        <div className="absolute top-4 right-4 z-10">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-emerald-600 hover:text-emerald-400 hover:bg-emerald-900/30 cursor-pointer"
+            onClick={onDismiss}
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close notification</span>
+          </Button>
+        </div>
+
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+            <CardTitle className="text-xl text-emerald-500">
+              Bill Generated Successfully
+            </CardTitle>
+          </div>
+          <CardDescription className="text-emerald-400/80">
+            Invoice{" "}
+            <span className="font-mono font-medium text-emerald-300 ml-1">
+              #{bill.id}
+            </span>{" "}
+            has been created and saved.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm bg-black/20 p-4 rounded-md border border-emerald-500/10">
+            <div className="flex flex-col gap-1">
+              <span className="text-emerald-500/70 text-xs uppercase font-semibold">
+                Billing Period
+              </span>
+              <span className="font-medium text-emerald-100 flex items-center gap-1">
+                {format(new Date(bill.from_date), "dd MMM")} -{" "}
+                {format(new Date(bill.to_date), "dd MMM yyyy")}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-emerald-500/70 text-xs uppercase font-semibold">
+                Khata No
+              </span>
+              <span className="font-medium text-emerald-100 font-mono">
+                {bill.khata_no || "N/A"}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-emerald-500/70 text-xs uppercase font-semibold">
+                Total Amount
+              </span>
+              <span className="font-bold text-emerald-100 flex items-center">
+                <IndianRupee className="h-3 w-3 mr-0.5" />
+                {bill.total.toLocaleString()}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+
+        <CardFooter className="bg-emerald-950/30 py-4 flex gap-3">
+          <Button
+            asChild
+            className="bg-emerald-600 hover:bg-emerald-500 text-white border-none cursor-pointer"
+          >
+            <Link to="/bills/$billId" params={{ billId: bill.id.toString() }}>
+              <Receipt className="mr-2 h-4 w-4" />
+              View Bill Details
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-950/50 hover:text-emerald-300 cursor-pointer"
+            onClick={onReset}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Another Bill
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

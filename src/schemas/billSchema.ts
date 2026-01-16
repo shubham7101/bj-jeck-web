@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { paginationSchema } from "./common";
 
 export const billSchema = z.object({
   id: z.number().gt(0),
@@ -31,3 +32,66 @@ export const billParamsSchema = z.object({
   record_ids: z.array(z.number()),
 });
 export type BillParams = z.infer<typeof billParamsSchema>;
+
+export const billLineSchema = z.object({
+  record_id: z.number(),
+  record_item_id: z.number(),
+  date: z.string(),
+  transaction_type: z.enum(["IN", "OUT"]),
+  previous_item_amount: z.number(),
+  item_amount: z.number(),
+  total_item_amount: z.number(),
+  negative_item_amount: z.number(),
+  days: z.number(),
+  service_charge: z.number(),
+  total: z.number(),
+});
+export type BillLine = z.infer<typeof billLineSchema>;
+
+// 2. Size Category Schema
+export const sizeCategorySchema = z.object({
+  initial_line: z.object({
+    date: z.string().datetime(),
+    item_amount: z.number(),
+    days: z.number(),
+    total: z.number(),
+  }),
+  lines: z.array(billLineSchema),
+});
+export type SizeCategory = z.infer<typeof sizeCategorySchema>;
+
+// 3. Bill Details Schema
+export const billDetailsSchema = z.object({
+  id: z.number(),
+  customer_id: z.number(),
+  from_date: z.string().datetime(),
+  to_date: z.string().datetime(),
+  khata_no: z.string(),
+  total: z.number(),
+  items_by_size: z.record(z.string(), sizeCategorySchema),
+  labour_charges: z.record(z.string(), z.number()),
+});
+export type BillDetails = z.infer<typeof billDetailsSchema>;
+
+export const billSearchReqSchema = z.object({
+  page: z.number().optional(),
+  per_page: z.number().optional(),
+  customer_id: z.number().optional(),
+  khata_no: z.string().optional(),
+  date: z.string().optional(),
+});
+
+export type BillSearchReq = z.infer<typeof billSearchReqSchema>;
+
+export const billSearchResSchema = z.object({
+  pagination: paginationSchema,
+  data: z.array(billSchema),
+});
+export type BillSearchRes = z.infer<typeof billSearchResSchema>;
+
+export const billStatsSchema = z.object({
+  month_total: z.number(),
+  month_bills: z.number(),
+  total_bills: z.number(),
+});
+export type BillStats = z.infer<typeof billStatsSchema>;
