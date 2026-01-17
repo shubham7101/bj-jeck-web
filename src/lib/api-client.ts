@@ -4,7 +4,7 @@ export const apiClient = async <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  // await new Promise((resolve) => setTimeout(resolve, 1500));
+  await new Promise((resolve) => setTimeout(resolve, 1500));
   const response = await fetch(BASE_URL + endpoint, {
     ...options,
     headers: {

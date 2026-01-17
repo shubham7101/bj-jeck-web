@@ -251,7 +251,6 @@ function CustomerSelectionStep({
 
   const debouncedFilters = useDebounce(filters, 500);
 
-  // Fetch Logic
   const { data, isLoading, isPlaceholderData } = useQuery({
     queryKey: ["customers", "select", { page, perPage, ...debouncedFilters }],
     queryFn: () =>
@@ -265,11 +264,10 @@ function CustomerSelectionStep({
     placeholderData: keepPreviousData,
   });
 
-  // Handle local filter changes
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
-    setPage(1); // Reset to page 1 on filter change
+    setPage(1);
   };
 
   const handleReset = () => {
@@ -291,7 +289,7 @@ function CustomerSelectionStep({
       <CardHeader>
         <CardTitle>Find Customer</CardTitle>
         <CardDescription>
-          Search for an existing customer to associate with this record.
+          Search for an existing customer to generate a bill for.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -300,7 +298,7 @@ function CustomerSelectionStep({
           isLoading={isLoading}
           isPlaceholderData={isPlaceholderData}
           navigate={mockNavigate as any}
-          processingIds={new Set()} // No processing needed for selection
+          processingIds={new Set()}
           filterProps={{
             filters: filters,
             onChange: handleFilterChange,
@@ -334,15 +332,6 @@ function RecordEntryForm({
 }) {
   const queryClient = useQueryClient();
 
-  const mutation = useMutation({
-    mutationFn: (data: CreateRecord) => recordService.create(data),
-    onSuccess: (data) => {
-      onSuccess(data);
-      queryClient.invalidateQueries({ queryKey: ["records"] });
-      queryClient.invalidateQueries({ queryKey: ["customers", customer.id] });
-    },
-  });
-
   const form = useAppForm({
     defaultValues: {
       ...DEFAULT_FORM_VALUES,
@@ -356,6 +345,25 @@ function RecordEntryForm({
     },
   });
 
+  const mutation = useMutation({
+    mutationFn: (data: CreateRecord) => recordService.create(data),
+    onSuccess: (data) => {
+      // 1. Notify parent to show success message
+      onSuccess(data);
+
+      // 2. Reset the form immediately to default values
+      form.reset({
+        ...DEFAULT_FORM_VALUES,
+        customer_id: customer.id,
+      } as CreateRecord);
+
+      // 3. Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ["records"] });
+      queryClient.invalidateQueries({ queryKey: ["customers", customer.id] });
+    },
+  });
+
+  // Manual reset handler (used by the Reset Button)
   const handleResetForm = () => {
     form.reset({
       ...DEFAULT_FORM_VALUES,
@@ -911,6 +919,9 @@ function SuccessFeedback({
   onDismiss: () => void;
   onReset: () => void;
 }) {
+  // If record is null (reset happened), don't render
+  if (!record) return null;
+
   return (
     <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       <Card className="border-emerald-500/30 bg-emerald-950/10 relative overflow-hidden shadow-lg shadow-emerald-900/10">

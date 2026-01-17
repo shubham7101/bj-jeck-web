@@ -16,15 +16,11 @@ import {
   CalendarDays,
   Building2,
   Info,
+  Box,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -56,7 +52,6 @@ const formatCurrency = (amount: number) =>
   }).format(amount);
 
 // --- Header Component ---
-
 function BillHeader({ bill }: { bill: BillDetails }) {
   const router = useRouter();
   const navigate = Route.useNavigate();
@@ -129,7 +124,6 @@ function BillHeader({ bill }: { bill: BillDetails }) {
 }
 
 // --- Customer Info Card ---
-
 function CustomerSection({ bill }: { bill: BillDetails }) {
   const { data: customer, isLoading } = useQuery({
     queryKey: ["customers", bill.customer_id],
@@ -200,7 +194,6 @@ function CustomerSection({ bill }: { bill: BillDetails }) {
 }
 
 // --- Financial Summary Card ---
-
 function FinancialSection({ bill }: { bill: BillDetails }) {
   const totalLabour = Object.values(bill.labour_charges).reduce(
     (a, b) => a + b,
@@ -210,7 +203,6 @@ function FinancialSection({ bill }: { bill: BillDetails }) {
 
   return (
     <Card className="bg-zinc-950 border-zinc-800 shadow-sm h-full overflow-hidden flex flex-col">
-      {/* High Impact Header */}
       <div className="bg-gradient-to-br from-emerald-950/40 via-zinc-900 to-zinc-950 p-6 border-b border-emerald-900/20">
         <div className="flex justify-between items-start">
           <div>
@@ -229,7 +221,6 @@ function FinancialSection({ bill }: { bill: BillDetails }) {
 
       <CardContent className="p-0 flex-1">
         <div className="p-6 space-y-4">
-          {/* Breakdown */}
           <div className="space-y-3">
             <div className="flex justify-between items-center text-sm">
               <span className="text-zinc-400 flex items-center gap-2">
@@ -251,7 +242,6 @@ function FinancialSection({ bill }: { bill: BillDetails }) {
 
           <Separator className="bg-zinc-800 border-zinc-800 border-dashed" />
 
-          {/* Footer Note */}
           <div className="flex items-start gap-2 text-xs text-zinc-500 bg-zinc-900/30 p-3 rounded-md">
             <Info className="h-4 w-4 shrink-0 text-zinc-600" />
             <p>
@@ -265,7 +255,73 @@ function FinancialSection({ bill }: { bill: BillDetails }) {
   );
 }
 
-// --- Ledger Table Logic ---
+function ClosingStockPanel({
+  inventory,
+}: {
+  inventory: BillDetails["after_inventory"];
+}) {
+  // Safe guard: don't render if null or empty
+  if (!inventory || inventory.length === 0) return null;
+
+  return (
+    <div className="space-y-4 mb-8 break-inside-avoid">
+      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+        <Box className="h-5 w-5 text-zinc-400" />
+        Closing Stock
+        <Badge variant="secondary" className="bg-zinc-800 text-zinc-400 ml-2">
+          {inventory.length}
+        </Badge>
+      </h3>
+
+      <Card className="bg-zinc-950 border-zinc-800 shadow-xl shadow-black/20 overflow-hidden">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-zinc-900/50 sticky top-0 z-10">
+              <TableRow className="border-zinc-800 hover:bg-transparent">
+                <TableHead className="w-1/3 pl-6 h-10 text-zinc-500 uppercase text-xs font-bold">
+                  Part Type
+                </TableHead>
+                <TableHead className="w-1/3 h-10 text-zinc-500 uppercase text-xs font-bold">
+                  Size
+                </TableHead>
+                <TableHead className="w-1/3 text-right pr-6 h-10 text-zinc-500 uppercase text-xs font-bold">
+                  Qty
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {inventory.map((item, idx) => (
+                <TableRow
+                  key={`${item.size}-${idx}`}
+                  className="border-zinc-800 hover:bg-zinc-900/40 transition-colors"
+                >
+                  <TableCell className="pl-6 font-medium text-zinc-200 capitalize">
+                    {item.part}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className="bg-zinc-900 border-zinc-700 text-zinc-400 font-normal"
+                    >
+                      {Number(item.size).toFixed(1)} ft
+                    </Badge>
+                  </TableCell>
+                  <TableCell
+                    className={`text-right pr-6 font-mono font-bold ${
+                      item.item_amount < 0 ? "text-rose-500" : "text-zinc-100"
+                    }`}
+                  >
+                    {item.item_amount}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 function LedgerTable({
   size,
@@ -274,12 +330,12 @@ function LedgerTable({
   size: string;
   data: BillDetails["items_by_size"][string];
 }) {
-  // Calculate subtotal for this specific size
-  const sizeSubtotal = data.lines.reduce((acc, line) => acc + line.total, 0);
+  const sizeSubtotal =
+    data.lines.reduce((acc, line) => acc + line.total, 0) +
+    data.initial_line.total;
 
   return (
     <div className="space-y-2 mb-8 break-inside-avoid">
-      {/* Table Label */}
       <div className="flex items-center gap-2 px-1">
         <Badge
           variant="outline"
@@ -295,7 +351,11 @@ function LedgerTable({
           <Table>
             <TableHeader className="bg-zinc-900/50">
               <TableRow className="border-zinc-800 hover:bg-transparent h-9">
-                <TableHead className="w-[100px] pl-4 text-[10px] font-bold uppercase text-zinc-500 tracking-wider">
+                {/* NEW: Record ID Column Header */}
+                <TableHead className="w-[70px] pl-4 text-[10px] font-bold uppercase text-zinc-500 tracking-wider text-left">
+                  Ref #
+                </TableHead>
+                <TableHead className="w-[100px] text-[10px] font-bold uppercase text-zinc-500 tracking-wider">
                   Date
                 </TableHead>
                 <TableHead className="text-[10px] font-bold uppercase text-zinc-500 text-center tracking-wider">
@@ -321,7 +381,11 @@ function LedgerTable({
             <TableBody>
               {/* 1. Initial Line (Opening Balance) */}
               <TableRow className="bg-zinc-900/20 border-zinc-800/50 hover:bg-zinc-900/30 h-9">
-                <TableCell className="font-mono text-zinc-500 text-xs pl-4">
+                {/* NEW: Placeholder for ID */}
+                <TableCell className="pl-4 font-mono text-zinc-600 text-xs">
+                  -
+                </TableCell>
+                <TableCell className="font-mono text-zinc-500 text-xs">
                   {format(new Date(data.initial_line.date), "dd/MM/yy")}
                 </TableCell>
                 <TableCell className="text-center">
@@ -335,14 +399,16 @@ function LedgerTable({
                 <TableCell className="text-right font-bold text-zinc-400 font-mono text-xs tabular-nums">
                   {data.initial_line.item_amount}
                 </TableCell>
-                <TableCell className="text-right text-zinc-600 font-mono text-xs">
-                  -
+                <TableCell className="text-right text-zinc-400 font-mono text-xs tabular-nums">
+                  {data.initial_line.days > 0 ? data.initial_line.days : "-"}
                 </TableCell>
                 <TableCell className="text-right text-zinc-600 font-mono text-xs">
                   -
                 </TableCell>
-                <TableCell className="text-right text-zinc-600 font-mono text-xs pr-4">
-                  -
+                <TableCell className="text-right font-medium text-emerald-400 font-mono text-xs pr-4 tabular-nums">
+                  {data.initial_line.total > 0
+                    ? data.initial_line.total.toLocaleString()
+                    : "-"}
                 </TableCell>
               </TableRow>
 
@@ -352,7 +418,17 @@ function LedgerTable({
                   key={`${line.record_id}-${idx}`}
                   className="border-zinc-800/50 hover:bg-zinc-900/40 h-10 transition-colors"
                 >
-                  <TableCell className="font-mono text-zinc-300 text-xs pl-4">
+                  {/* NEW: Record ID with Link */}
+                  <TableCell className="pl-4 font-mono text-xs">
+                    <Link
+                      to="/records/$recordId"
+                      params={{ recordId: line.record_id.toString() }}
+                      className="text-zinc-500 hover:text-blue-400 hover:underline transition-colors"
+                    >
+                      #{line.record_id}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="font-mono text-zinc-300 text-xs">
                     {format(new Date(line.date), "dd/MM/yy")}
                   </TableCell>
                   <TableCell className="text-center">
@@ -398,8 +474,9 @@ function LedgerTable({
             </TableBody>
             <TableFooter className="bg-zinc-900/80 border-t border-zinc-800">
               <TableRow className="hover:bg-transparent">
+                {/* Updated ColSpan to 7 because we added 1 new column */}
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="text-right text-xs font-bold text-zinc-400 uppercase tracking-wider h-10"
                 >
                   Subtotal (Size {size})
@@ -475,6 +552,8 @@ function BillDetailsPage() {
         {Object.entries(bill.items_by_size).map(([size, data]) => (
           <LedgerTable key={size} size={size} data={data} />
         ))}
+
+        <ClosingStockPanel inventory={bill.after_inventory} />
       </div>
 
       {/* Print Footer */}

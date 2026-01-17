@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { paginationSchema } from "./common";
+import { inventorySchema, paginationSchema } from "./common";
 
 export const billSchema = z.object({
   id: z.number().gt(0),
@@ -60,6 +60,13 @@ export const sizeCategorySchema = z.object({
 });
 export type SizeCategory = z.infer<typeof sizeCategorySchema>;
 
+export const billInventorySchema = inventorySchema.pick({
+  size: true,
+  part: true,
+  item_amount: true,
+});
+export type BillInventory = z.infer<typeof billInventorySchema>;
+
 // 3. Bill Details Schema
 export const billDetailsSchema = z.object({
   id: z.number(),
@@ -70,6 +77,7 @@ export const billDetailsSchema = z.object({
   total: z.number(),
   items_by_size: z.record(z.string(), sizeCategorySchema),
   labour_charges: z.record(z.string(), z.number()),
+  after_inventory: z.array(billInventorySchema).nullish(),
 });
 export type BillDetails = z.infer<typeof billDetailsSchema>;
 
