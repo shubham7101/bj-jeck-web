@@ -368,7 +368,7 @@ function LedgerEntryForm({
             </AvatarFallback>
           </Avatar>
           <div>
-            <h4 className="text-sm font-semibold text-zinc-100">
+            <h4 className="text-sm font-semibold text-zinc-100 hover:underline">
               <Link
                 to="/customers/$customerId"
                 params={{ customerId: customer.id.toString() }}
@@ -387,7 +387,7 @@ function LedgerEntryForm({
             "pl-2 pr-2.5 py-1 rounded-full border",
             customer.active
               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-              : "bg-zinc-800 text-zinc-400 border-zinc-700"
+              : "bg-zinc-800 text-zinc-400 border-zinc-700",
           )}
         >
           {customer.active ? "Active" : "Inactive"}
@@ -434,7 +434,7 @@ function LedgerEntryForm({
                       onBlur={field.handleBlur}
                       onChange={(e) =>
                         field.handleChange(
-                          e.target.value ? parseFloat(e.target.value) : 0
+                          e.target.value ? parseFloat(e.target.value) : 0,
                         )
                       }
                       onWheel={(e) => e.currentTarget.blur()}
@@ -465,7 +465,7 @@ function LedgerEntryForm({
                           variant="outline"
                           className={cn(
                             "w-full h-14 pl-4 text-left font-normal bg-zinc-950/50 border-zinc-700 hover:bg-zinc-900 hover:text-zinc-200",
-                            !dateValue && "text-muted-foreground"
+                            !dateValue && "text-muted-foreground",
                           )}
                         >
                           <div className="flex flex-col gap-0.5">

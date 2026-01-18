@@ -282,14 +282,14 @@ function BillEntryForm({ customer }: { customer: Customer }) {
 
       form.setFieldValue(
         "from_date",
-        safeFromDate ? format(safeFromDate, DATE_FORMAT) : ""
+        safeFromDate ? format(safeFromDate, DATE_FORMAT) : "",
       );
 
       setMaxToDate(safeToDate);
 
       form.setFieldValue(
         "to_date",
-        safeToDate ? format(safeToDate, DATE_FORMAT) : ""
+        safeToDate ? format(safeToDate, DATE_FORMAT) : "",
       );
     },
   });
@@ -411,8 +411,13 @@ function BillEntryForm({ customer }: { customer: Customer }) {
             </AvatarFallback>
           </Avatar>
           <div>
-            <h4 className="text-sm font-semibold text-zinc-100">
-              {customer.name}
+            <h4 className="text-sm font-semibold text-zinc-100 hover:underline">
+              <Link
+                to="/customers/$customerId"
+                params={{ customerId: customer.id.toString() }}
+              >
+                {customer.name}
+              </Link>
             </h4>
             <p className="text-xs text-zinc-400">
               ID: #{customer.id} • {customer.mobile_no}
@@ -425,7 +430,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
             "pl-2 pr-2.5 py-1 rounded-full border",
             customer.active
               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-              : "bg-zinc-800 text-zinc-400 border-zinc-700"
+              : "bg-zinc-800 text-zinc-400 border-zinc-700",
           )}
         >
           {customer.active ? "Active" : "Inactive"}
@@ -490,7 +495,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                         onBlur={field.handleBlur}
                         onChange={(e) =>
                           field.handleChange(
-                            e.target.value ? Number(e.target.value) : ""
+                            e.target.value ? Number(e.target.value) : "",
                           )
                         }
                         autoFocus
@@ -559,7 +564,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                             "w-full pl-3 text-left font-normal bg-zinc-950/50 border-zinc-700 hover:bg-zinc-900",
                             !field.state.value && "text-muted-foreground",
                             field.state.meta.errors.length > 0 &&
-                              "border-rose-500 text-rose-500"
+                              "border-rose-500 text-rose-500",
                           )}
                         >
                           {field.state.value ? (
@@ -660,7 +665,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                   type="button"
                   onClick={() =>
                     setPage((p) =>
-                      Math.min(recordsData.pagination.total_pages, p + 1)
+                      Math.min(recordsData.pagination.total_pages, p + 1),
                     )
                   }
                   disabled={page >= recordsData.pagination.total_pages}
@@ -701,7 +706,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                   "min-w-40 border-none shadow-lg transition-all duration-300",
                   successBill
                     ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                    : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20"
+                    : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20",
                 )}
               >
                 {createBillMutation.isPending || isSubmittingForm ? (

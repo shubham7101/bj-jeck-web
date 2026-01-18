@@ -61,7 +61,7 @@ function RecordHeader({ record }: { record: RecordDetails }) {
   const handleDelete = () => {
     if (
       !window.confirm(
-        `Are you sure you want to delete Record #${record.id}? Inventory will be reverted.`
+        `Are you sure you want to delete Record #${record.id}? Inventory will be reverted.`,
       )
     ) {
       return;
@@ -176,16 +176,18 @@ function GeneralInfoCard({
             </span>
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
-                <Link
-                  to="/customers/$customerId"
-                  params={{ customerId: record.customer_id.toString() }}
-                  className="text-lg font-semibold text-primary hover:underline transition-colors"
-                >
+                <p className="text-lg font-semibold text-primary">
                   {customer
                     ? `#${customer.id}  ${customer.name}`
                     : `Customer #${record.customer_id}`}
+                </p>
+                <Link
+                  to="/customers/$customerId"
+                  params={{ customerId: record.customer_id.toString() }}
+                  className="p-2 hover:bg-zinc-800/40 rounded-full transition-colors"
+                >
+                  <ArrowUpRight className="h-4 w-4 text-zinc-600" />
                 </Link>
-                <ArrowUpRight className="h-3 w-3 text-zinc-600" />
               </div>
 
               {/* Added Customer Details */}

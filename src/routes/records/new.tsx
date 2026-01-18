@@ -401,7 +401,7 @@ function RecordEntryForm({
             </AvatarFallback>
           </Avatar>
           <div>
-            <h4 className="text-sm font-semibold text-zinc-100">
+            <h4 className="text-sm font-semibold text-zinc-100 hover:underline">
               <Link
                 to="/customers/$customerId"
                 params={{ customerId: customer.id.toString() }}
@@ -420,13 +420,13 @@ function RecordEntryForm({
             "pl-2 pr-2.5 py-1 rounded-full border",
             customer.active
               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-              : "bg-zinc-800 text-zinc-400 border-zinc-700"
+              : "bg-zinc-800 text-zinc-400 border-zinc-700",
           )}
         >
           <span
             className={cn(
               "mr-1.5 h-1.5 w-1.5 rounded-full",
-              customer.active ? "bg-emerald-500 animate-pulse" : "bg-zinc-500"
+              customer.active ? "bg-emerald-500 animate-pulse" : "bg-zinc-500",
             )}
           />
           {customer.active ? "Active" : "Inactive"}
@@ -493,7 +493,7 @@ function RecordEntryForm({
                           variant="outline"
                           className={cn(
                             "w-full pl-3 text-left font-normal bg-zinc-950/50 border-zinc-700 hover:bg-zinc-900 hover:text-zinc-200",
-                            !dateValue && "text-muted-foreground"
+                            !dateValue && "text-muted-foreground",
                           )}
                         >
                           {dateValue ? (
@@ -547,7 +547,7 @@ function RecordEntryForm({
                           "flex items-center justify-center space-x-2 border border-zinc-800 rounded-md py-2 bg-zinc-950/30 hover:bg-zinc-900 transition-colors",
                           type === "OUT"
                             ? "has-data-[state=checked]:border-rose-500/50 has-data-[state=checked]:bg-rose-500/10"
-                            : "has-data-[state=checked]:border-emerald-500/50 has-data-[state=checked]:bg-emerald-500/10"
+                            : "has-data-[state=checked]:border-emerald-500/50 has-data-[state=checked]:bg-emerald-500/10",
                         )}
                       >
                         <RadioGroupItem
@@ -557,7 +557,7 @@ function RecordEntryForm({
                             "border-zinc-600 cursor-pointer",
                             type === "OUT"
                               ? "text-rose-500"
-                              : "text-emerald-500"
+                              : "text-emerald-500",
                           )}
                         />
                         <Label
@@ -566,7 +566,7 @@ function RecordEntryForm({
                             "cursor-pointer font-normal",
                             type === "OUT"
                               ? "text-rose-200"
-                              : "text-emerald-200"
+                              : "text-emerald-200",
                           )}
                         >
                           {type}
@@ -744,7 +744,7 @@ function RecordEntryForm({
                                   }
                                   onChange={(e) =>
                                     subField.handleChange(
-                                      Number(e.target.value)
+                                      Number(e.target.value),
                                     )
                                   }
                                   onWheel={(e) => e.currentTarget.blur()}
@@ -770,7 +770,7 @@ function RecordEntryForm({
                                     }
                                     onChange={(e) =>
                                       subField.handleChange(
-                                        Number(e.target.value)
+                                        Number(e.target.value),
                                       )
                                     }
                                     onWheel={(e) => e.currentTarget.blur()}
@@ -800,7 +800,7 @@ function RecordEntryForm({
                                     }
                                     onChange={(e) =>
                                       subField.handleChange(
-                                        Number(e.target.value)
+                                        Number(e.target.value),
                                       )
                                     }
                                     onWheel={(e) => e.currentTarget.blur()}
@@ -972,7 +972,7 @@ function SuccessFeedback({
                   "font-medium font-mono inline-flex w-fit",
                   record.transaction_type === "OUT"
                     ? "text-rose-300"
-                    : "text-emerald-300"
+                    : "text-emerald-300",
                 )}
               >
                 {record.transaction_type}
