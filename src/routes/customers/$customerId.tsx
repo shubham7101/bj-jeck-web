@@ -388,7 +388,7 @@ function CustomerStatsSection({ id }: { id: number }) {
         subText={
           recordsCount > 0 && isValidDate(stats.records?.latest_date)
             ? `Latest: #${stats.records?.latest_id} • ${formatDate(
-                stats.records?.latest_date || ""
+                stats.records?.latest_date || "",
               )}`
             : "No activity recorded"
         }
@@ -402,7 +402,7 @@ function CustomerStatsSection({ id }: { id: number }) {
         subText={
           billsCount > 0 && isValidDate(stats.bills?.latest_from_date)
             ? `Latest: #${stats.bills?.latest_id} (${formatDate(
-                stats.bills?.latest_from_date || ""
+                stats.bills?.latest_from_date || "",
               )} - ${formatDate(stats.bills?.latest_to_date || "")})`
             : "No bills generated"
         }
@@ -520,7 +520,7 @@ function CustomerInventorySection({ id }: { id: number }) {
                         variant="outline"
                         className="bg-zinc-900 border-zinc-700 text-zinc-400 font-normal"
                       >
-                        {item.size.toFixed(1)} ft
+                        {item.size.toFixed(1)}
                       </Badge>
                     </TableCell>
                     <TableCell

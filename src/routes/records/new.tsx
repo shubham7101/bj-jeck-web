@@ -676,7 +676,9 @@ function RecordEntryForm({
                                 <Select
                                   value={subField.state.value}
                                   onValueChange={(val) =>
-                                    val as "full" | "inner" | "outer"
+                                    subField.handleChange(
+                                      val as "full" | "inner" | "outer",
+                                    )
                                   }
                                 >
                                   <SelectTrigger className="border-zinc-800 bg-transparent focus:ring-offset-0 cursor-pointer">
@@ -768,11 +770,19 @@ function RecordEntryForm({
                                         ? ""
                                         : subField.state.value
                                     }
-                                    onChange={(e) =>
-                                      subField.handleChange(
-                                        Number(e.target.value),
-                                      )
-                                    }
+                                    onChange={(e) => {
+                                      const val = Number(e.target.value);
+
+                                      // 1. Update the broken amount (this field)
+                                      subField.handleChange(val);
+
+                                      // 2. Auto-calculate service_charge (sibling field)
+                                      // Logic: service_charge = broken * 100
+                                      form.setFieldValue(
+                                        `items[${index}].service_charge`,
+                                        val * 100,
+                                      );
+                                    }}
                                     onWheel={(e) => e.currentTarget.blur()}
                                   />
                                 </div>
