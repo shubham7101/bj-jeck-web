@@ -171,7 +171,7 @@ function NewCustomerPage() {
                       field={field}
                       label={rateItem.label}
                       type="number"
-                      step="0.25"
+                      step="0.05"
                       min="0"
                       onFocus={(e) => e.target.select()}
                     />

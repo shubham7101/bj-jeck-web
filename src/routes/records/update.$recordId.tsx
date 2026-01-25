@@ -1,14 +1,10 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
-import { z } from "zod";
 import { format, parse, isValid } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft,
-  Plus,
   Trash2,
-  Truck,
-  User,
   Save,
   Loader2,
   CheckCircle2,
@@ -17,6 +13,9 @@ import {
   Calendar as CalendarIcon,
   Hash,
   FileText,
+  History,
+  Plus,
+  Truck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDate, getInitials } from "@/utils";
@@ -67,40 +66,9 @@ import {
   type CreateRecord,
   type Record,
 } from "@/schemas/recordSchema";
-import { useDebounce } from "@/hooks/use-debounce";
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { CustomerDataGrid } from "@/components/CustomerDataGrid";
-
-// --- Route Definition ---
-
-const recordSearchSchema = z.object({
-  customer_id: z.number().optional(),
-});
-
-export const Route = createFileRoute("/records/new")({
-  component: NewRecordPage,
-  validateSearch: (search) => recordSearchSchema.parse(search),
-  loaderDeps: ({ search }) => ({ customer_id: search.customer_id }),
-  loader: async ({ deps: { customer_id } }) => {
-    if (!customer_id) return { customer: null };
-    try {
-      const customer = await customerService.get(customer_id);
-      return { customer };
-    } catch (e) {
-      // If ID is invalid, return null so we can show selection screen
-      return { customer: null };
-    }
-  },
-  pendingComponent: RecordLoadingSkeleton,
-});
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 // --- Constants ---
-
 const PART_OPTIONS = [
   { label: "Full", value: "full" },
   { label: "Inner", value: "inner" },
@@ -108,38 +76,29 @@ const PART_OPTIONS = [
 ] as const;
 
 const SIZE_OPTIONS = [1.5, 2.0, 2.5, 3.0] as const;
-
 const DATE_FORMAT = "dd-MM-yyyy";
 
-const DEFAULT_FORM_VALUES: Partial<CreateRecord> = {
-  customer_id: 0,
-  date: format(new Date(), DATE_FORMAT),
-  transaction_type: "OUT",
-  labour_charge: 0,
-  total: 0,
-  vehicle_no: "",
-  vehicle_mobile_no: "",
-  items: [
-    {
-      part: "full",
-      size: 2,
-      item_amount: 0,
-      broken_amount: 0,
-      service_charge: 0,
-    },
-  ],
-};
+// --- Route Definition ---
+export const Route = createFileRoute("/records/update/$recordId")({
+  component: UpdateRecordPage,
+  loader: async ({ params: { recordId } }) => {
+    const record = await recordService.get(Number(recordId));
+    const customer = await customerService.get(record.customer_id);
+    return { record, customer };
+  },
+  pendingComponent: RecordLoadingSkeleton,
+});
 
-// --- Main Component ---
-
-export default function NewRecordPage() {
-  const navigate = useNavigate();
-  const { customer } = Route.useLoaderData();
-  const [createdRecord, setCreatedRecord] = useState<Record | null>(null);
+export default function UpdateRecordPage() {
+  const { record, customer } = Route.useLoaderData() as {
+    record: Record;
+    customer: Customer;
+  };
+  const [updatedRecord, setUpdatedRecord] = useState<Record | null>(null);
   const successRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (createdRecord && successRef.current) {
+    if (updatedRecord && successRef.current) {
       setTimeout(() => {
         successRef.current?.scrollIntoView({
           behavior: "smooth",
@@ -147,47 +106,44 @@ export default function NewRecordPage() {
         });
       }, 100);
     }
-  }, [createdRecord]);
-
-  const handleCustomerSelect = (selected: Customer) => {
-    navigate({
-      to: "/records/new",
-      search: { customer_id: selected.id },
-    });
-  };
-
-  const handleChangeCustomer = () => {
-    setCreatedRecord(null);
-    navigate({
-      to: "/records/new",
-      search: { customer_id: undefined },
-    });
-  };
+  }, [updatedRecord]);
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6 max-w-6xl mx-auto pb-20">
-      <Header
-        step={customer ? 2 : 1}
-        hasCustomer={!!customer}
-        onChangeCustomer={handleChangeCustomer}
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-100">
+            Update Record
+          </h2>
+          <p className="text-muted-foreground flex items-center gap-2">
+            <History className="h-4 w-4" /> Step 2: Modify Details for
+            Transaction #{record.id}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            asChild
+            className="hidden sm:flex cursor-pointer"
+          >
+            <Link to="/records">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      <RecordUpdateForm
+        record={record}
+        customer={customer}
+        onSuccess={setUpdatedRecord}
       />
 
-      {!customer ? (
-        <CustomerSelectionStep onSelect={handleCustomerSelect} />
-      ) : (
-        <RecordEntryForm
-          customer={customer}
-          onSuccess={setCreatedRecord}
-          onReset={() => setCreatedRecord(null)}
-        />
-      )}
-
-      {createdRecord && (
+      {updatedRecord && (
         <div ref={successRef}>
           <SuccessFeedback
-            record={createdRecord}
-            onDismiss={() => setCreatedRecord(null)}
-            onReset={() => setCreatedRecord(null)}
+            record={updatedRecord}
+            onDismiss={() => setUpdatedRecord(null)}
           />
         </div>
       )}
@@ -195,181 +151,47 @@ export default function NewRecordPage() {
   );
 }
 
-function Header({
-  step,
-  hasCustomer,
-  onChangeCustomer,
-}: {
-  step: number;
-  hasCustomer: boolean;
-  onChangeCustomer: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <div className="space-y-1">
-        <h2 className="text-3xl font-bold tracking-tight">New Record</h2>
-        <p className="text-muted-foreground">
-          {step === 1 ? "Step 1: Select a Customer" : "Step 2: Enter Details"}
-        </p>
-      </div>
-      <div className="flex items-center gap-2">
-        {hasCustomer && (
-          <Button
-            variant="outline"
-            onClick={onChangeCustomer}
-            className="hidden sm:flex cursor-pointer"
-          >
-            <User className="mr-2 h-4 w-4" /> Change Customer
-          </Button>
-        )}
-        <Button
-          variant="outline"
-          asChild
-          className="hidden sm:flex cursor-pointer"
-        >
-          <Link to="/records">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
-          </Link>
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function CustomerSelectionStep({
-  onSelect,
-}: {
-  onSelect: (c: Customer) => void;
-}) {
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
-  const [filters, setFilters] = useState({
-    name: "",
-    mobile_no: "",
-    address: "",
-  });
-
-  const debouncedFilters = useDebounce(filters, 500);
-
-  const { data, isLoading, isPlaceholderData } = useQuery({
-    queryKey: ["customers", "select", { page, perPage, ...debouncedFilters }],
-    queryFn: () =>
-      customerService.search({
-        page,
-        per_page: perPage,
-        name: debouncedFilters.name || undefined,
-        mobile_no: debouncedFilters.mobile_no || undefined,
-        address: debouncedFilters.address || undefined,
-      }),
-    placeholderData: keepPreviousData,
-  });
-
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
-    setPage(1);
-  };
-
-  const handleReset = () => {
-    setFilters({ name: "", mobile_no: "", address: "" });
-    setPage(1);
-  };
-
-  const mockNavigate = (options: any) => {
-    if (typeof options.search === "function") {
-      const currentParams = { page, per_page: perPage };
-      const newParams = options.search(currentParams);
-      if (newParams.page !== undefined) setPage(newParams.page);
-      if (newParams.per_page !== undefined) setPerPage(newParams.per_page);
-    }
-  };
-
-  return (
-    <Card className="bg-zinc-900/50 border-zinc-800 animate-in fade-in duration-500">
-      <CardHeader>
-        <CardTitle>Find Customer</CardTitle>
-        <CardDescription>
-          Search for an existing customer to generate a bill for.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <CustomerDataGrid
-          data={data?.data || []}
-          isLoading={isLoading}
-          isPlaceholderData={isPlaceholderData}
-          navigate={mockNavigate as any}
-          processingIds={new Set()}
-          filterProps={{
-            filters: filters,
-            onChange: handleFilterChange,
-            onReset: handleReset,
-          }}
-          paginationProps={{
-            currentPage: page,
-            totalPages: data?.pagination.total_pages || 0,
-            perPage: perPage,
-            totalCount: data?.pagination.total_count || 0,
-            onPageChange: setPage,
-            onPerPageChange: setPerPage,
-          }}
-          onSelect={onSelect}
-          onDelete={undefined}
-          onToggleStatus={undefined}
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
-function RecordEntryForm({
+function RecordUpdateForm({
+  record,
   customer,
   onSuccess,
-  onReset,
 }: {
+  record: Record;
   customer: Customer;
   onSuccess: (data: Record) => void;
-  onReset: () => void;
 }) {
   const queryClient = useQueryClient();
 
   const form = useAppForm({
     defaultValues: {
-      ...DEFAULT_FORM_VALUES,
-      customer_id: customer.id,
+      ...record,
+      date: record.date ? format(new Date(record.date), DATE_FORMAT) : "",
     } as CreateRecord,
     validators: {
       onSubmit: createRecordSchema,
     },
     onSubmit: async ({ value }) => {
-      mutation.mutate(value);
+      const { bill_id, ...restOfRecord } = value as any;
+
+      const cleanedData = {
+        ...restOfRecord,
+        items: value.items.map(({ id, ...itemRest }: any) => itemRest),
+      };
+      mutation.mutate(cleanedData);
     },
   });
 
   const mutation = useMutation({
-    mutationFn: (data: CreateRecord) => recordService.create(data),
+    mutationFn: (data: CreateRecord) => recordService.update(record.id, data),
     onSuccess: (data) => {
-      // 1. Notify parent to show success message
-      onSuccess(data);
-
-      // 2. Reset the form immediately to default values
-      form.reset({
-        ...DEFAULT_FORM_VALUES,
-        customer_id: customer.id,
-      } as CreateRecord);
-
-      // 3. Invalidate queries
+      onSuccess(data as Record);
       queryClient.invalidateQueries({ queryKey: ["records"] });
-      queryClient.invalidateQueries({ queryKey: ["customers", customer.id] });
+      queryClient.invalidateQueries({ queryKey: ["records", record.id] });
     },
   });
 
-  // Manual reset handler (used by the Reset Button)
   const handleResetForm = () => {
-    form.reset({
-      ...DEFAULT_FORM_VALUES,
-      customer_id: customer.id,
-    } as CreateRecord);
-    onReset();
+    form.reset(record as CreateRecord);
     mutation.reset();
   };
 
@@ -382,12 +204,6 @@ function RecordEntryForm({
       }}
       className="space-y-6 animate-in slide-in-from-right-4 duration-300"
     >
-      <form.Field name="customer_id">
-        {(field) => (
-          <input type="hidden" name={field.name} value={field.state.value} />
-        )}
-      </form.Field>
-
       {/* Customer Header Info */}
       <div className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 p-4 rounded-lg shadow-sm">
         <div className="flex items-center gap-4">
@@ -416,30 +232,18 @@ function RecordEntryForm({
         </div>
         <Badge
           variant="outline"
-          className={cn(
-            "pl-2 pr-2.5 py-1 rounded-full border",
-            customer.active
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-              : "bg-zinc-800 text-zinc-400 border-zinc-700",
-          )}
+          className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 px-2.5 py-1 rounded-full"
         >
-          <span
-            className={cn(
-              "mr-1.5 h-1.5 w-1.5 rounded-full",
-              customer.active ? "bg-emerald-500 animate-pulse" : "bg-zinc-500",
-            )}
-          />
-          {customer.active ? "Active" : "Inactive"}
+          <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          Updating Record
         </Badge>
       </div>
 
       {mutation.isError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            {mutation.error.message || "Failed to create record."}
-          </AlertDescription>
+          <AlertTitle>Update Failed</AlertTitle>
+          <AlertDescription>{mutation.error.message}</AlertDescription>
         </Alert>
       )}
 
@@ -462,15 +266,9 @@ function RecordEntryForm({
                     <Input
                       id={field.name}
                       type="number"
-                      placeholder="Chalan No."
-                      className="pl-9 bg-zinc-950/50 border-zinc-700"
+                      disabled
+                      className="pl-9 bg-zinc-950/50 border-zinc-700 opacity-70"
                       value={field.state.value || ""}
-                      onBlur={field.handleBlur}
-                      onChange={(e) =>
-                        field.handleChange(Number(e.target.value))
-                      }
-                      onWheel={(e) => e.currentTarget.blur()}
-                      autoFocus
                     />
                   </div>
                 </FormBase>
@@ -479,11 +277,22 @@ function RecordEntryForm({
 
             <form.Field name="date">
               {(field) => {
-                const dateValue =
-                  field.state.value &&
-                  isValid(parse(field.state.value, DATE_FORMAT, new Date()))
-                    ? parse(field.state.value, DATE_FORMAT, new Date())
-                    : undefined;
+                const rawValue = field.state.value;
+                let dateValue: Date | undefined;
+
+                if (rawValue) {
+                  const parsedISO = new Date(rawValue);
+                  if (isValid(parsedISO)) {
+                    dateValue = parsedISO;
+                  } else {
+                    const parsedCustom = parse(
+                      rawValue,
+                      DATE_FORMAT,
+                      new Date(),
+                    );
+                    if (isValid(parsedCustom)) dateValue = parsedCustom;
+                  }
+                }
 
                 return (
                   <FormBase field={field} label="Date">
@@ -520,7 +329,6 @@ function RecordEntryForm({
                           disabled={(date) =>
                             date > new Date() || date < new Date("1900-01-01")
                           }
-                          autoFocus
                           className="text-zinc-100"
                         />
                       </PopoverContent>
@@ -545,9 +353,10 @@ function RecordEntryForm({
                         key={type}
                         className={cn(
                           "flex items-center justify-center space-x-2 border border-zinc-800 rounded-md py-2 bg-zinc-950/30 hover:bg-zinc-900 transition-colors",
-                          type === "OUT"
-                            ? "has-data-[state=checked]:border-rose-500/50 has-data-[state=checked]:bg-rose-500/10"
-                            : "has-data-[state=checked]:border-emerald-500/50 has-data-[state=checked]:bg-emerald-500/10",
+                          field.state.value === type &&
+                            (type === "OUT"
+                              ? "border-rose-500/50 bg-rose-500/10"
+                              : "border-emerald-500/50 bg-emerald-500/10"),
                         )}
                       >
                         <RadioGroupItem
@@ -581,7 +390,7 @@ function RecordEntryForm({
 
           <div className="pt-2 border-t border-zinc-800/50">
             <Label className="text-zinc-500 text-xs uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Truck className="h-3 w-3" /> Transport Details (Optional)
+              <Truck className="h-3 w-3" /> Transport Details
             </Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <form.Field name="vehicle_no">
@@ -626,11 +435,6 @@ function RecordEntryForm({
                   <CardDescription>
                     Details of inventory movement.
                   </CardDescription>
-                  {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm font-medium text-rose-500 mt-1">
-                      {field.state.meta.errors.join(", ")}
-                    </p>
-                  )}
                 </div>
                 <Button
                   type="button"
@@ -674,15 +478,13 @@ function RecordEntryForm({
                             {(subField) => (
                               <FormBase field={subField}>
                                 <Select
-                                  value={subField.state.value}
+                                  value={subField.state.value as string}
                                   onValueChange={(val) =>
-                                    subField.handleChange(
-                                      val as "full" | "inner" | "outer",
-                                    )
+                                    subField.handleChange(val as any)
                                   }
                                 >
                                   <SelectTrigger className="border-zinc-800 bg-transparent focus:ring-offset-0 cursor-pointer">
-                                    <SelectValue placeholder="Select Part" />
+                                    <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {PART_OPTIONS.map((opt) => (
@@ -706,13 +508,13 @@ function RecordEntryForm({
                             {(subField) => (
                               <FormBase field={subField}>
                                 <Select
-                                  value={String(subField.state.value || "2")}
+                                  value={String(subField.state.value)}
                                   onValueChange={(val) =>
                                     subField.handleChange(Number(val))
                                   }
                                 >
                                   <SelectTrigger className="border-zinc-800 bg-transparent focus:ring-offset-0 cursor-pointer">
-                                    <SelectValue placeholder="Size" />
+                                    <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {SIZE_OPTIONS.map((size) => (
@@ -737,19 +539,14 @@ function RecordEntryForm({
                               <FormBase field={subField}>
                                 <Input
                                   type="number"
-                                  className="border-zinc-800 bg-transparent"
                                   placeholder="0"
-                                  value={
-                                    subField.state.value === 0
-                                      ? ""
-                                      : subField.state.value
-                                  }
+                                  className="border-zinc-800 bg-transparent"
+                                  value={subField.state.value || ""}
                                   onChange={(e) =>
                                     subField.handleChange(
                                       Number(e.target.value),
                                     )
                                   }
-                                  onWheel={(e) => e.currentTarget.blur()}
                                 />
                               </FormBase>
                             )}
@@ -760,32 +557,20 @@ function RecordEntryForm({
                           <form.Field name={`items[${index}].broken_amount`}>
                             {(subField) => (
                               <FormBase field={subField}>
-                                <div className="flex justify-center">
-                                  <Input
-                                    type="number"
-                                    className="border-zinc-800 bg-transparent"
-                                    placeholder="0"
-                                    value={
-                                      subField.state.value === 0
-                                        ? ""
-                                        : subField.state.value
-                                    }
-                                    onChange={(e) => {
-                                      const val = Number(e.target.value);
-
-                                      // 1. Update the broken amount (this field)
-                                      subField.handleChange(val);
-
-                                      // 2. Auto-calculate service_charge (sibling field)
-                                      // Logic: service_charge = broken * 100
-                                      form.setFieldValue(
-                                        `items[${index}].service_charge`,
-                                        val * 100,
-                                      );
-                                    }}
-                                    onWheel={(e) => e.currentTarget.blur()}
-                                  />
-                                </div>
+                                <Input
+                                  type="number"
+                                  placeholder="0"
+                                  className="border-zinc-800 bg-transparent"
+                                  value={subField.state.value || ""}
+                                  onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    subField.handleChange(val);
+                                    form.setFieldValue(
+                                      `items[${index}].service_charge`,
+                                      val * 100,
+                                    );
+                                  }}
+                                />
                               </FormBase>
                             )}
                           </form.Field>
@@ -803,17 +588,12 @@ function RecordEntryForm({
                                     type="number"
                                     className="pl-5 bg-zinc-900/50 border-emerald-500/30 text-emerald-400"
                                     placeholder="0"
-                                    value={
-                                      subField.state.value === 0
-                                        ? ""
-                                        : subField.state.value
-                                    }
+                                    value={subField.state.value || ""}
                                     onChange={(e) =>
                                       subField.handleChange(
                                         Number(e.target.value),
                                       )
                                     }
-                                    onWheel={(e) => e.currentTarget.blur()}
                                   />
                                 </div>
                               </FormBase>
@@ -853,13 +633,10 @@ function RecordEntryForm({
                               type="number"
                               placeholder="0"
                               className="pl-7 bg-zinc-900 border-emerald-500/50 text-emerald-400 font-bold text-lg h-10 shadow-[0_0_10px_-3px_rgba(16,185,129,0.2)]"
-                              value={
-                                field.state.value === 0 ? "" : field.state.value
-                              }
+                              value={field.state.value || ""}
                               onChange={(e) =>
                                 field.handleChange(Number(e.target.value))
                               }
-                              onWheel={(e) => e.currentTarget.blur()}
                             />
                           </div>
                         </FormBase>
@@ -874,18 +651,12 @@ function RecordEntryForm({
                             type="number"
                             placeholder="0"
                             className="bg-zinc-900 border-zinc-700 font-bold text-lg h-10"
-                            value={
-                              field.state.value === 0 ? "" : field.state.value
-                            }
+                            value={field.state.value || ""}
                             onChange={(e) => {
-                            
-                                      const val = Number(e.target.value);
+                              const val = Number(e.target.value);
                               field.handleChange(val);
-                              form.setFieldValue(
-                                        `labour_charge`,
-                                        val * 3);
+                              form.setFieldValue(`labour_charge`, val * 3);
                             }}
-                            onWheel={(e) => e.currentTarget.blur()}
                           />
                         </FormBase>
                       )}
@@ -906,7 +677,7 @@ function RecordEntryForm({
           disabled={mutation.isPending}
           className="hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 cursor-pointer"
         >
-          Reset Form
+          Reset Changes
         </Button>
         <Button
           type="submit"
@@ -918,7 +689,7 @@ function RecordEntryForm({
           ) : (
             <Save className="h-4 w-4 mr-2" />
           )}
-          {mutation.isPending ? "Saving..." : "Save Record"}
+          {mutation.isPending ? "Updating..." : "Update Record"}
         </Button>
       </div>
     </form>
@@ -928,17 +699,12 @@ function RecordEntryForm({
 function SuccessFeedback({
   record,
   onDismiss,
-  onReset,
 }: {
   record: Record;
   onDismiss: () => void;
-  onReset: () => void;
 }) {
-  // If record is null (reset happened), don't render
-  if (!record) return null;
-
   return (
-    <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+    <div className="mt-8 animate-in zoom-in-95 duration-300 pb-10">
       <Card className="border-emerald-500/30 bg-emerald-950/10 relative overflow-hidden shadow-lg shadow-emerald-900/10">
         <div className="absolute top-4 right-4 z-10">
           <Button
@@ -948,7 +714,6 @@ function SuccessFeedback({
             onClick={onDismiss}
           >
             <X className="h-4 w-4" />
-            <span className="sr-only">Close notification</span>
           </Button>
         </div>
 
@@ -956,7 +721,7 @@ function SuccessFeedback({
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-6 w-6 text-emerald-500" />
             <CardTitle className="text-xl text-emerald-500">
-              Record Saved Successfully
+              Record Updated Successfully
             </CardTitle>
           </div>
           <CardDescription className="text-emerald-400/80">
@@ -964,7 +729,7 @@ function SuccessFeedback({
             <span className="font-mono font-medium text-emerald-300 ml-1">
               #{record.id}
             </span>{" "}
-            has been recorded.
+            has been modified.
           </CardDescription>
         </CardHeader>
 
@@ -984,7 +749,7 @@ function SuccessFeedback({
               </span>
               <span
                 className={cn(
-                  "font-medium font-mono inline-flex w-fit",
+                  "font-medium font-mono",
                   record.transaction_type === "OUT"
                     ? "text-rose-300"
                     : "text-emerald-300",
@@ -1011,17 +776,17 @@ function SuccessFeedback({
               to="/records/$recordId"
               params={{ recordId: record.id.toString() }}
             >
-              <FileText className="mr-2 h-4 w-4" />
-              View Record
+              <FileText className="mr-2 h-4 w-4" /> View Details
             </Link>
           </Button>
           <Button
             variant="outline"
+            asChild
             className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-950/50 hover:text-emerald-300 cursor-pointer"
-            onClick={onReset}
           >
-            <Plus className="mr-2 h-4 w-4" />
-            Create Another
+            <Link to="/records">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
+            </Link>
           </Button>
         </CardFooter>
       </Card>
@@ -1037,45 +802,14 @@ function RecordLoadingSkeleton() {
           <Skeleton className="h-8 w-48 bg-zinc-800" />
           <Skeleton className="h-4 w-32 bg-zinc-800/60" />
         </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-10 w-32 bg-zinc-800 hidden sm:block" />
-          <Skeleton className="h-10 w-28 bg-zinc-800 hidden sm:block" />
-        </div>
+        <Skeleton className="h-10 w-28 bg-zinc-800" />
       </div>
-      <div className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 p-4 rounded-lg shadow-sm">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-9 w-9 rounded-full bg-zinc-800" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-32 bg-zinc-800" />
-            <Skeleton className="h-3 w-48 bg-zinc-800/60" />
-          </div>
-        </div>
-        <Skeleton className="h-6 w-20 rounded-full bg-zinc-800" />
+      <div className="bg-zinc-900/80 border border-zinc-800 p-4 rounded-lg">
+        <Skeleton className="h-10 w-full bg-zinc-800" />
       </div>
       <Card className="bg-zinc-900/50 border-zinc-800">
-        <CardHeader className="pb-4">
-          <Skeleton className="h-5 w-40 bg-zinc-800" />
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="h-4 w-16 bg-zinc-800/60" />
-                <Skeleton className="h-10 w-full bg-zinc-800" />
-              </div>
-            ))}
-          </div>
-          <div className="pt-2 border-t border-zinc-800/50">
-            <Skeleton className="h-3 w-48 bg-zinc-800/60 mb-3" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2].map((i) => (
-                <div key={i} className="space-y-2">
-                  <Skeleton className="h-4 w-24 bg-zinc-800/60" />
-                  <Skeleton className="h-10 w-full bg-zinc-800" />
-                </div>
-              ))}
-            </div>
-          </div>
+        <CardContent className="p-10">
+          <Skeleton className="h-64 w-full bg-zinc-800" />
         </CardContent>
       </Card>
     </div>

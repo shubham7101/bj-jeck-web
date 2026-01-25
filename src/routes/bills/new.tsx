@@ -185,7 +185,7 @@ function CustomerSelectionStep({
   onSelect: (c: Customer) => void;
 }) {
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(5);
+  const [perPage, setPerPage] = useState(10);
   const [filters, setFilters] = useState({
     name: "",
     mobile_no: "",

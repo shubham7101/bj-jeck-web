@@ -46,6 +46,18 @@ export const recordService = {
     return recordDetailsSchema.parse(data);
   },
 
+  update: async (id: number, payload: CreateRecord) => {
+    const data = await apiClient(`/api/records/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    return recordSchema.parse(data);
+  },
+
   delete: async (id: number) => {
     return apiClient<void>(`/api/records/${id}`, { method: "DELETE" });
   },

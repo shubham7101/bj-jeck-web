@@ -21,6 +21,7 @@ import { Route as CustomersNewRouteImport } from './routes/customers/new'
 import { Route as CustomersCustomerIdRouteImport } from './routes/customers/$customerId'
 import { Route as BillsNewRouteImport } from './routes/bills/new'
 import { Route as BillsBillIdRouteImport } from './routes/bills/$billId'
+import { Route as RecordsUpdateRecordIdRouteImport } from './routes/records/update.$recordId'
 import { Route as CustomersUpdateCustomerIdRouteImport } from './routes/customers/update.$customerId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -83,6 +84,11 @@ const BillsBillIdRoute = BillsBillIdRouteImport.update({
   path: '/bills/$billId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecordsUpdateRecordIdRoute = RecordsUpdateRecordIdRouteImport.update({
+  id: '/records/update/$recordId',
+  path: '/records/update/$recordId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CustomersUpdateCustomerIdRoute =
   CustomersUpdateCustomerIdRouteImport.update({
     id: '/customers/update/$customerId',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/ledger': typeof LedgerIndexRoute
   '/records': typeof RecordsIndexRoute
   '/customers/update/$customerId': typeof CustomersUpdateCustomerIdRoute
+  '/records/update/$recordId': typeof RecordsUpdateRecordIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/ledger': typeof LedgerIndexRoute
   '/records': typeof RecordsIndexRoute
   '/customers/update/$customerId': typeof CustomersUpdateCustomerIdRoute
+  '/records/update/$recordId': typeof RecordsUpdateRecordIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/ledger/': typeof LedgerIndexRoute
   '/records/': typeof RecordsIndexRoute
   '/customers/update/$customerId': typeof CustomersUpdateCustomerIdRoute
+  '/records/update/$recordId': typeof RecordsUpdateRecordIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/ledger'
     | '/records'
     | '/customers/update/$customerId'
+    | '/records/update/$recordId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/ledger'
     | '/records'
     | '/customers/update/$customerId'
+    | '/records/update/$recordId'
   id:
     | '__root__'
     | '/'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '/ledger/'
     | '/records/'
     | '/customers/update/$customerId'
+    | '/records/update/$recordId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -198,6 +210,7 @@ export interface RootRouteChildren {
   LedgerIndexRoute: typeof LedgerIndexRoute
   RecordsIndexRoute: typeof RecordsIndexRoute
   CustomersUpdateCustomerIdRoute: typeof CustomersUpdateCustomerIdRoute
+  RecordsUpdateRecordIdRoute: typeof RecordsUpdateRecordIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -286,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BillsBillIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/records/update/$recordId': {
+      id: '/records/update/$recordId'
+      path: '/records/update/$recordId'
+      fullPath: '/records/update/$recordId'
+      preLoaderRoute: typeof RecordsUpdateRecordIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/customers/update/$customerId': {
       id: '/customers/update/$customerId'
       path: '/customers/update/$customerId'
@@ -310,6 +330,7 @@ const rootRouteChildren: RootRouteChildren = {
   LedgerIndexRoute: LedgerIndexRoute,
   RecordsIndexRoute: RecordsIndexRoute,
   CustomersUpdateCustomerIdRoute: CustomersUpdateCustomerIdRoute,
+  RecordsUpdateRecordIdRoute: RecordsUpdateRecordIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

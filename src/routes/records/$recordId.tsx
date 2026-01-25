@@ -17,6 +17,7 @@ import {
   Layers,
   MapPin,
   FileText,
+  Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -114,6 +115,23 @@ function RecordHeader({ record }: { record: RecordDetails }) {
       </div>
 
       <div className="flex items-center gap-3">
+        <Link
+          to="/records/update/$recordId"
+          params={{ recordId: record.id.toString() }}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors cursor-pointer"
+            title={
+              isBilled
+                ? "Cannot update: Record is included in a bill"
+                : "Update Record"
+            }
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+        </Link>
         <Button
           variant="outline"
           size="icon"
@@ -130,7 +148,7 @@ function RecordHeader({ record }: { record: RecordDetails }) {
             ${
               isBilled
                 ? "opacity-50 cursor-not-allowed border-zinc-800 bg-zinc-900 text-zinc-500" // Disabled Style
-                : "cursor-pointer border-rose-900/30 bg-rose-950/10 text-rose-500 hover:bg-rose-950/30 hover:text-rose-400 hover:border-rose-900/50" // Active Style
+                : "text-zinc-500 hover:text-rose-500 hover:bg-rose-950/20 transition-colors cursor-pointer" // Active Style
             }
           `}
         >

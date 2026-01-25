@@ -70,10 +70,10 @@ export const Route = createFileRoute("/customers/update/$customerId")({
 
 // --- Constants ---
 const RATE_FIELDS = [
-  { name: "size_1_5", label: "Size 1.5", step: "0.25" },
-  { name: "size_2", label: "Size 2.0", step: "0.25" },
-  { name: "size_2_5", label: "Size 2.5", step: "0.25" },
-  { name: "size_3", label: "Size 3.0", step: "0.25" },
+  { name: "size_1_5", label: "Size 1.5", step: "0.05" },
+  { name: "size_2", label: "Size 2.0", step: "0.05" },
+  { name: "size_2_5", label: "Size 2.5", step: "0.05" },
+  { name: "size_3", label: "Size 3.0", step: "0.05" },
 ] as const;
 
 function CustomerUpdateForms({
