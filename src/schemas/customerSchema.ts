@@ -1,6 +1,23 @@
 import z from "zod";
 import { inventorySchema, paginationSchema } from "@/schemas/common";
 
+export const PART_OPTIONS = [
+  { label: "Full Jack", value: "full" },
+  { label: "Inner", value: "inner" },
+  { label: "Outer", value: "outer" },
+  { label: "Plate", value: "plate" },
+] as const;
+
+export const SIZE_OPTIONS = ["1.5", "2.0", "2.5", "3.0", "2x3"] as const;
+
+export const STANDARD_RATES_SETUP: CustomerRate[] = [
+  { part: "full", size: "1.5", rate: 1.5 },
+  { part: "full", size: "2.0", rate: 1.5 },
+  { part: "full", size: "2.5", rate: 1.5 },
+  { part: "full", size: "3.0", rate: 1.5 },
+  { part: "plate", size: "2x3", rate: 1.0 },
+];
+
 export const customerSchema = z.object({
   id: z.number().gt(0),
   name: z.string().min(2).max(100),
@@ -12,16 +29,15 @@ export const customerSchema = z.object({
 });
 export type Customer = z.infer<typeof customerSchema>;
 
-export const customerRatesSchema = z.object({
-  size_1_5: z.number().gt(0),
-  size_2: z.number().gt(0),
-  size_2_5: z.number().gt(0),
-  size_3: z.number().gt(0),
+export const customerRateSchema = z.object({
+  part: z.string().min(1).toLowerCase(),
+  size: z.string().min(1),
+  rate: z.number().gt(0),
 });
-export type CustomerRates = z.infer<typeof customerRatesSchema>;
+export type CustomerRate = z.infer<typeof customerRateSchema>;
 
 export const customerDetailsSchema = customerSchema.extend({
-  rates: customerRatesSchema,
+  rates: z.array(customerRateSchema),
 });
 export type CustomerDetails = z.infer<typeof customerDetailsSchema>;
 
@@ -32,7 +48,7 @@ export const createCustomerSchema = customerSchema
     mobile_no: true,
   })
   .extend({
-    rates: customerRatesSchema,
+    rates: z.array(customerRateSchema).min(5),
   });
 export type CreateCustomer = z.infer<typeof createCustomerSchema>;
 
@@ -59,11 +75,8 @@ export const updateCustomerSchema = customerSchema.pick({
 });
 export type UpdateCustomer = z.infer<typeof updateCustomerSchema>;
 
-export const updateCustomerRatesSchema = customerRatesSchema.pick({
-  size_1_5: true,
-  size_2: true,
-  size_2_5: true,
-  size_3: true,
+export const updateCustomerRatesSchema = z.object({
+  rates: z.array(customerRateSchema).min(5),
 });
 export type UpdateCustomerRates = z.infer<typeof updateCustomerRatesSchema>;
 
@@ -72,7 +85,7 @@ export const customerInventorySchema = z.array(
     part: true,
     size: true,
     item_amount: true,
-  })
+  }),
 );
 export type CustomerInventory = z.infer<typeof customerInventorySchema>;
 

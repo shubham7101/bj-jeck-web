@@ -48,7 +48,7 @@ export const billLineSchema = z.object({
 });
 export type BillLine = z.infer<typeof billLineSchema>;
 
-// 2. Size Category Schema
+// 2. Size Category Schema (The leaf node of the data)
 export const sizeCategorySchema = z.object({
   initial_line: z.object({
     date: z.string().datetime(),
@@ -75,7 +75,8 @@ export const billDetailsSchema = z.object({
   to_date: z.string().datetime(),
   khata_no: z.string(),
   total: z.number(),
-  items_by_size: z.record(z.string(), sizeCategorySchema),
+  // UPDATED: Nested structure (Part -> Size -> Data)
+  items_by_part: z.record(z.string(), z.record(z.string(), sizeCategorySchema)),
   labour_charges: z.record(z.string(), z.number()),
   after_inventory: z.array(billInventorySchema).nullish(),
 });

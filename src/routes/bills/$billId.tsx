@@ -14,10 +14,9 @@ import {
   Loader2,
   Trash,
   CalendarDays,
-  Building2,
-  Info,
   Box,
-  Layers,
+  Info,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +34,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { billService } from "@/services/billService";
 import { customerService } from "@/services/customerService";
-import type { BillDetails } from "@/schemas/billSchema";
+import type { BillDetails, SizeCategory } from "@/schemas/billSchema"; // Ensure SizeCategory is imported
 import { format } from "date-fns";
 
 // Define the route
@@ -197,7 +196,7 @@ function CustomerSection({ bill }: { bill: BillDetails }) {
 function FinancialSection({ bill }: { bill: BillDetails }) {
   const totalLabour = Object.values(bill.labour_charges).reduce(
     (a, b) => a + b,
-    0
+    0,
   );
   const rentalTotal = bill.total - totalLabour;
 
@@ -260,7 +259,6 @@ function ClosingStockPanel({
 }: {
   inventory: BillDetails["after_inventory"];
 }) {
-  // Safe guard: don't render if null or empty
   if (!inventory || inventory.length === 0) return null;
 
   return (
@@ -292,7 +290,7 @@ function ClosingStockPanel({
             <TableBody>
               {inventory.map((item, idx) => (
                 <TableRow
-                  key={`${item.size}-${idx}`}
+                  key={`${item.part}-${item.size}-${idx}`}
                   className="border-zinc-800 hover:bg-zinc-900/40 transition-colors"
                 >
                   <TableCell className="pl-6 font-medium text-zinc-200 capitalize">
@@ -303,7 +301,7 @@ function ClosingStockPanel({
                       variant="outline"
                       className="bg-zinc-900 border-zinc-700 text-zinc-400 font-normal"
                     >
-                      {Number(item.size).toFixed(1)} ft
+                      {Number(item.size).toFixed(1)}
                     </Badge>
                   </TableCell>
                   <TableCell
@@ -323,12 +321,15 @@ function ClosingStockPanel({
   );
 }
 
+// --- UPDATED: Ledger Table now accepts Part and Size ---
 function LedgerTable({
+  part,
   size,
   data,
 }: {
+  part: string;
   size: string;
-  data: BillDetails["items_by_size"][string];
+  data: SizeCategory;
 }) {
   const sizeSubtotal =
     data.lines.reduce((acc, line) => acc + line.total, 0) +
@@ -339,9 +340,16 @@ function LedgerTable({
       <div className="flex items-center gap-2 px-1">
         <Badge
           variant="outline"
-          className="bg-zinc-900 text-base px-2.5 py-0.5 border-zinc-700 text-white font-mono rounded-md"
+          className="bg-zinc-900 text-base px-2.5 py-0.5 border-zinc-700 text-white font-mono rounded-md capitalize"
         >
-          Size {size}
+          {part}
+        </Badge>
+        <span className="text-zinc-600 text-xs">●</span>
+        <Badge
+          variant="secondary"
+          className="bg-zinc-800/50 text-base px-2.5 py-0.5 text-zinc-300 font-mono rounded-md"
+        >
+          {size}
         </Badge>
         <Separator className="flex-1 bg-zinc-800/50" />
       </div>
@@ -351,7 +359,6 @@ function LedgerTable({
           <Table>
             <TableHeader className="bg-zinc-900/50">
               <TableRow className="border-zinc-800 hover:bg-transparent h-9">
-                {/* NEW: Record ID Column Header */}
                 <TableHead className="w-[70px] pl-4 text-[10px] font-bold uppercase text-zinc-500 tracking-wider text-left">
                   Ref #
                 </TableHead>
@@ -381,7 +388,6 @@ function LedgerTable({
             <TableBody>
               {/* 1. Initial Line (Opening Balance) */}
               <TableRow className="bg-zinc-900/20 border-zinc-800/50 hover:bg-zinc-900/30 h-9">
-                {/* NEW: Placeholder for ID */}
                 <TableCell className="pl-4 font-mono text-zinc-600 text-xs">
                   -
                 </TableCell>
@@ -418,7 +424,6 @@ function LedgerTable({
                   key={`${line.record_id}-${idx}`}
                   className="border-zinc-800/50 hover:bg-zinc-900/40 h-10 transition-colors"
                 >
-                  {/* NEW: Record ID with Link */}
                   <TableCell className="pl-4 font-mono text-xs">
                     <Link
                       to="/records/$recordId"
@@ -474,12 +479,11 @@ function LedgerTable({
             </TableBody>
             <TableFooter className="bg-zinc-900/80 border-t border-zinc-800">
               <TableRow className="hover:bg-transparent">
-                {/* Updated ColSpan to 7 because we added 1 new column */}
                 <TableCell
                   colSpan={7}
                   className="text-right text-xs font-bold text-zinc-400 uppercase tracking-wider h-10"
                 >
-                  Subtotal (Size {size})
+                  Subtotal
                 </TableCell>
                 <TableCell className="text-right text-sm font-bold text-white font-mono pr-4 tabular-nums">
                   {formatCurrency(sizeSubtotal)}
@@ -548,9 +552,18 @@ function BillDetailsPage() {
           </h3>
         </div>
 
-        {/* Dynamically render tables for each size */}
-        {Object.entries(bill.items_by_size).map(([size, data]) => (
-          <LedgerTable key={size} size={size} data={data} />
+        {/* UPDATED: Nested Loop for Part -> Size -> Table */}
+        {Object.entries(bill.items_by_part).map(([part, sizesMap]) => (
+          <div key={part} className="mb-6">
+            {Object.entries(sizesMap).map(([size, data]) => (
+              <LedgerTable
+                key={`${part}-${size}`}
+                part={part}
+                size={size}
+                data={data}
+              />
+            ))}
+          </div>
         ))}
 
         <ClosingStockPanel inventory={bill.after_inventory} />

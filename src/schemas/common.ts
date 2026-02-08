@@ -10,7 +10,7 @@ export type Pagination = z.infer<typeof paginationSchema>;
 
 export const inventorySchema = z.object({
   part: z.string(),
-  size: z.number(),
+  size: z.string(),
   item_amount: z.number(),
 });
 export type Inventory = z.infer<typeof inventorySchema>;

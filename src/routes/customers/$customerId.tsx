@@ -1,4 +1,4 @@
-import React from "react";
+import { useState } from "react";
 import {
   Link,
   useRouter,
@@ -24,6 +24,8 @@ import {
   Trash,
   Edit,
   Truck,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -259,6 +261,9 @@ function CustomerContactCard({ customer }: { customer: Customer }) {
 }
 
 function CustomerRatesCard({ id }: { id: number }) {
+  const [showAll, setShowAll] = useState(false);
+  const INITIAL_LIMIT = 4;
+
   const { data: rates, isLoading } = useQuery({
     queryKey: ["customer", id, "rates"],
     queryFn: () => customerService.getRates(id),
@@ -266,11 +271,22 @@ function CustomerRatesCard({ id }: { id: number }) {
 
   if (isLoading)
     return (
-      <Skeleton className="h-50 w-full bg-zinc-900 border border-zinc-800 rounded-xl" />
+      <Skeleton className="h-52 w-full bg-zinc-900 border border-zinc-800 rounded-xl" />
     );
 
+  const hasRates = Array.isArray(rates) && rates.length > 0;
+
+  // Determine what to show based on state
+  const visibleRates = hasRates
+    ? showAll
+      ? rates
+      : rates.slice(0, INITIAL_LIMIT)
+    : [];
+
+  const hasMore = hasRates && rates.length > INITIAL_LIMIT;
+
   return (
-    <Card className="bg-zinc-950 border-zinc-800 shadow-lg shadow-black/20 flex flex-col h-full">
+    <Card className="bg-zinc-950 border-zinc-800 shadow-lg shadow-black/20 flex flex-col h-full min-h-56">
       <CardHeader className="pb-4 flex flex-row items-center justify-between border-b border-zinc-800/50">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-zinc-900 rounded-md border border-zinc-800">
@@ -293,20 +309,30 @@ function CustomerRatesCard({ id }: { id: number }) {
           </Button>
         </Link>
       </CardHeader>
-      <CardContent className="flex-1 pt-6">
+
+      <CardContent className="flex-1 pt-6 flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
-          {rates ? (
-            Object.entries(rates).map(([key, val]) => (
+          {hasRates ? (
+            visibleRates.map((rateItem, index) => (
               <div
-                key={key}
+                key={`${rateItem.part}-${rateItem.size}-${index}`}
                 className="flex flex-col p-3 rounded-lg bg-zinc-900/30 border border-zinc-800/50 hover:border-zinc-700 transition-colors"
               >
-                <span className="text-xs text-zinc-500 tracking-wider mb-1 capitalize">
-                  {key.replace(/_/g, " ")}
-                </span>
+                <div className="flex justify-between items-start mb-1 gap-2">
+                  <span className="text-xs text-zinc-500 tracking-wider capitalize font-medium truncate">
+                    {rateItem.part}
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 text-[10px] h-4 px-1.5 py-0 border-zinc-700 text-zinc-400 bg-zinc-950"
+                  >
+                    {rateItem.size}
+                  </Badge>
+                </div>
+
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-bold text-zinc-200">
-                    ₹{(val as number).toFixed(2)}
+                    ₹{Number(rateItem.rate).toFixed(2)}
                   </span>
                   <span className="text-xs text-zinc-600">/day</span>
                 </div>
@@ -318,13 +344,34 @@ function CustomerRatesCard({ id }: { id: number }) {
               <Link
                 to="/customers/update/$customerId"
                 params={{ customerId: id.toString() }}
-                className="block mt-2 text-emerald-500 underline"
+                className="block mt-2 text-emerald-500 underline hover:text-emerald-400"
               >
                 Set Rates
               </Link>
             </div>
           )}
         </div>
+
+        {/* Show More / Show Less Button */}
+        {hasMore && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAll(!showAll)}
+            className="w-full mt-auto h-8 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50"
+          >
+            {showAll ? (
+              <>
+                <ChevronUp className="mr-2 h-3 w-3" /> Show Less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="mr-2 h-3 w-3" /> Show{" "}
+                {rates.length - INITIAL_LIMIT} More
+              </>
+            )}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
@@ -520,7 +567,7 @@ function CustomerInventorySection({ id }: { id: number }) {
                         variant="outline"
                         className="bg-zinc-900 border-zinc-700 text-zinc-400 font-normal"
                       >
-                        {item.size.toFixed(1)}
+                        {item.size}
                       </Badge>
                     </TableCell>
                     <TableCell
@@ -542,67 +589,55 @@ function CustomerInventorySection({ id }: { id: number }) {
 }
 
 function QuickLinks({ id }: { id: number }) {
-  const LinkButton = ({
-    to,
-    search,
-    icon,
-    title,
-    subtitle,
-    colorClass,
-  }: {
-    to: string;
-    search: Record<string, any>;
-    icon: React.ElementType;
-    title: string;
-    subtitle: string;
-    colorClass: string;
-  }) => (
-    <Link to={to} search={search}>
-      <div className="group flex items-center justify-between p-4 rounded-lg border border-zinc-800 bg-zinc-900/20 hover:bg-zinc-900 hover:border-zinc-700 transition-all cursor-pointer">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded bg-zinc-950 border border-zinc-800 group-hover:border-zinc-700">
-            <div className={`h-5 w-5 ${colorClass}`}>
-              {React.createElement(icon, { className: "w-full h-full" })}
-            </div>
-          </div>
-          <div>
-            <div className="font-medium text-zinc-200">{title}</div>
-            <div className="text-xs text-zinc-500">{subtitle}</div>
-          </div>
-        </div>
-        <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-300" />
-      </div>
-    </Link>
-  );
+  const LINKS = [
+    {
+      to: "/records",
+      search: { customer_id: id },
+      icon: History,
+      title: "Record History",
+      subtitle: "View In/Out transactions",
+      colorClass: "text-blue-400",
+    },
+    {
+      to: "/ledger",
+      search: { customer_id: id },
+      icon: ClipboardList,
+      title: "Payment Ledger",
+      subtitle: "View payment history",
+      colorClass: "text-emerald-400",
+    },
+    {
+      to: "/bills",
+      search: { customer_id: id },
+      icon: FileText,
+      title: "Generated Bills",
+      subtitle: "View past bills",
+      colorClass: "text-amber-400",
+    },
+  ];
 
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-white">History & Logs</h3>
       <div className="flex flex-col gap-3">
-        <LinkButton
-          to="/records"
-          search={{ customer_id: id }}
-          icon={History}
-          title="Record History"
-          subtitle="View In/Out transactions"
-          colorClass="text-blue-400"
-        />
-        <LinkButton
-          to="/ledger"
-          search={{ customer_id: id }}
-          icon={ClipboardList}
-          title="Payment Ledger"
-          subtitle="View payment history"
-          colorClass="text-emerald-400"
-        />
-        <LinkButton
-          to="/bills"
-          search={{ customer_id: id }}
-          icon={FileText}
-          title="Generated Bills"
-          subtitle="View past bills"
-          colorClass="text-amber-400"
-        />
+        {LINKS.map((link, idx) => (
+          <Link key={idx} to={link.to} search={link.search}>
+            <div className="group flex items-center justify-between p-4 rounded-lg border border-zinc-800 bg-zinc-900/20 hover:bg-zinc-900 hover:border-zinc-700 transition-all cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded bg-zinc-950 border border-zinc-800 group-hover:border-zinc-700">
+                  <div className={`h-5 w-5 ${link.colorClass}`}>
+                    <link.icon className="w-full h-full" />
+                  </div>
+                </div>
+                <div>
+                  <div className="font-medium text-zinc-200">{link.title}</div>
+                  <div className="text-xs text-zinc-500">{link.subtitle}</div>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-300" />
+            </div>
+          </Link>
+        ))}
       </div>
     </div>
   );
@@ -622,8 +657,8 @@ function CustomerSkeleton() {
         <Skeleton className="h-10 w-48 bg-zinc-800" />
       </div>
       <div className="grid gap-6 md:grid-cols-2">
-        <Skeleton className="h-50 w-full bg-zinc-900 border border-zinc-800 rounded-xl" />
-        <Skeleton className="h-50 w-full bg-zinc-900 border border-zinc-800 rounded-xl" />
+        <Skeleton className="h-52 w-full bg-zinc-900 border border-zinc-800 rounded-xl" />
+        <Skeleton className="h-52 w-full bg-zinc-900 border border-zinc-800 rounded-xl" />
       </div>
       <div className="grid gap-4 md:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (

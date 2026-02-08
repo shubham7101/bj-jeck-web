@@ -1,14 +1,15 @@
 import { apiClient } from "@/lib/api-client";
+import { z } from "zod";
 import {
   customerInventorySchema,
-  customerRatesSchema,
+  customerRateSchema,
   customerSchema,
   customerSearchResSchema,
   customersStatsSchema,
   customerStatsSchema,
   type CreateCustomer,
   type CustomerInventory,
-  type CustomerRates,
+  type CustomerRate,
   type CustomerSearchReq,
   type CustomersStats,
   type CustomerStats,
@@ -70,8 +71,8 @@ export const customerService = {
   },
 
   getRates: async (id: number) => {
-    const data = await apiClient<CustomerRates>(`/api/customers/${id}/rates`);
-    return customerRatesSchema.parse(data);
+    const data = await apiClient<CustomerRate[]>(`/api/customers/${id}/rates`);
+    return z.array(customerRateSchema).parse(data);
   },
 
   update: async (id: number, data: UpdateCustomer) => {
@@ -96,7 +97,7 @@ export const customerService = {
 
   getInventory: async (id: number) => {
     const data = await apiClient<CustomerInventory>(
-      `/api/customers/${id}/inventory`
+      `/api/customers/${id}/inventory`,
     );
     return customerInventorySchema.parse(data);
   },

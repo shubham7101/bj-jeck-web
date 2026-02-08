@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Edit,
   Eye,
   Hash,
   Loader2,
@@ -104,7 +105,7 @@ export const RecordDataGrid = ({
     <div
       className={cn(
         "space-y-4",
-        isPlaceholderData && "opacity-70 transition-opacity"
+        isPlaceholderData && "opacity-70 transition-opacity",
       )}
     >
       <RecordFilters {...filterProps} />
@@ -583,6 +584,15 @@ function RecordRow({
                   <Eye className="mr-2 h-4 w-4" /> View Details
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link
+                  to="/records/update/$recordId"
+                  params={{ recordId: record.id.toString() }}
+                  className="cursor-pointer focus:bg-zinc-900 focus:text-zinc-200"
+                >
+                  <Edit className="mr-2 h-4 w-4" /> Edit
+                </Link>
+              </DropdownMenuItem>
 
               {onDelete && (
                 <>
@@ -598,7 +608,7 @@ function RecordRow({
                       "cursor-pointer",
                       isBilled
                         ? "text-zinc-600 opacity-50 cursor-not-allowed pointer-events-none"
-                        : "text-rose-500 focus:bg-rose-950/20 focus:text-rose-400"
+                        : "text-rose-500 focus:bg-rose-950/20 focus:text-rose-400",
                     )}
                   >
                     <Trash className="mr-2 h-4 w-4" />
@@ -636,7 +646,7 @@ function FilterInput({
           {...props}
           className={cn(
             "pl-9 bg-zinc-950 border-zinc-800 focus:ring-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            className
+            className,
           )}
         />
       </div>
@@ -675,7 +685,7 @@ function FilterDatePicker({
             disabled={disabled}
             className={cn(
               "w-full pl-3 text-left font-normal bg-zinc-950 border-zinc-800 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed",
-              !dateValue && "text-muted-foreground"
+              !dateValue && "text-muted-foreground",
             )}
           >
             {dateValue ? (

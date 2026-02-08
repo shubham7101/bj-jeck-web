@@ -407,7 +407,7 @@ function RecordItemsTable({ items }: { items: RecordItem[] }) {
                       variant="outline"
                       className="bg-zinc-900 border-zinc-700 text-zinc-400 font-normal font-mono mx-auto"
                     >
-                      {item.size.toFixed(1)}
+                      {item.size}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center">

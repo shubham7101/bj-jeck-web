@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Edit,
   Eye,
   Loader2,
   MapPin,
@@ -102,7 +103,7 @@ export const CustomerDataGrid = ({
     <div
       className={cn(
         "space-y-4",
-        isPlaceholderData && "opacity-70 transition-opacity"
+        isPlaceholderData && "opacity-70 transition-opacity",
       )}
     >
       <CustomerFilters {...filterProps} />
@@ -545,6 +546,15 @@ function CustomerRow({
                   className="cursor-pointer focus:bg-zinc-900 focus:text-zinc-200"
                 >
                   <Eye className="mr-2 h-4 w-4" /> View Details
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link
+                  to="/customers/update/$customerId"
+                  params={{ customerId: customer.id.toString() }}
+                  className="cursor-pointer focus:bg-zinc-900 focus:text-zinc-200"
+                >
+                  <Edit className="mr-2 h-4 w-4" /> Edit
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-zinc-800" />

@@ -61,7 +61,11 @@ import { useAppForm } from "@/components/form/hooks";
 import { FormBase } from "@/components/form/FormBase";
 import { customerService } from "@/services/customerService";
 import { recordService } from "@/services/recordService";
-import type { Customer } from "@/schemas/customerSchema";
+import {
+  PART_OPTIONS,
+  SIZE_OPTIONS,
+  type Customer,
+} from "@/schemas/customerSchema";
 import {
   createRecordSchema,
   type CreateRecord,
@@ -100,15 +104,6 @@ export const Route = createFileRoute("/records/new")({
 });
 
 // --- Constants ---
-
-const PART_OPTIONS = [
-  { label: "Full", value: "full" },
-  { label: "Inner", value: "inner" },
-  { label: "Outer", value: "outer" },
-] as const;
-
-const SIZE_OPTIONS = [1.5, 2.0, 2.5, 3.0] as const;
-
 const DATE_FORMAT = "dd-MM-yyyy";
 
 const DEFAULT_FORM_VALUES: Partial<CreateRecord> = {
@@ -122,7 +117,7 @@ const DEFAULT_FORM_VALUES: Partial<CreateRecord> = {
   items: [
     {
       part: "full",
-      size: 2,
+      size: "2.0",
       item_amount: 0,
       broken_amount: 0,
       service_charge: 0,
@@ -639,7 +634,7 @@ function RecordEntryForm({
                   onClick={() =>
                     field.pushValue({
                       part: "full",
-                      size: 2.0,
+                      size: "2.0",
                       item_amount: 0,
                       broken_amount: 0,
                       service_charge: 0,
@@ -706,9 +701,9 @@ function RecordEntryForm({
                             {(subField) => (
                               <FormBase field={subField}>
                                 <Select
-                                  value={String(subField.state.value || "2")}
+                                  value={subField.state.value}
                                   onValueChange={(val) =>
-                                    subField.handleChange(Number(val))
+                                    subField.handleChange(val)
                                   }
                                 >
                                   <SelectTrigger className="border-zinc-800 bg-transparent focus:ring-offset-0 cursor-pointer">
@@ -721,7 +716,7 @@ function RecordEntryForm({
                                         value={String(size)}
                                         className="cursor-pointer"
                                       >
-                                        {size.toFixed(1)}
+                                        {size}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
@@ -878,12 +873,9 @@ function RecordEntryForm({
                               field.state.value === 0 ? "" : field.state.value
                             }
                             onChange={(e) => {
-                            
-                                      const val = Number(e.target.value);
+                              const val = Number(e.target.value);
                               field.handleChange(val);
-                              form.setFieldValue(
-                                        `labour_charge`,
-                                        val * 3);
+                              form.setFieldValue(`labour_charge`, val * 3);
                             }}
                             onWheel={(e) => e.currentTarget.blur()}
                           />
