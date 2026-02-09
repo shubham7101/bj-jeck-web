@@ -301,7 +301,7 @@ function ClosingStockPanel({
                       variant="outline"
                       className="bg-zinc-900 border-zinc-700 text-zinc-400 font-normal"
                     >
-                      {Number(item.size).toFixed(1)}
+                      {item.size}
                     </Badge>
                   </TableCell>
                   <TableCell
