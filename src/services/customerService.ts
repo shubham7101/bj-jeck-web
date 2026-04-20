@@ -1,18 +1,18 @@
-import { apiClient } from "@/lib/api-client";
 import { z } from "zod";
+import { apiClient } from "@/lib/api-client";
 import {
-  customerInventorySchema,
-  customerRateSchema,
-  customerSchema,
-  customerSearchResSchema,
-  customersStatsSchema,
-  customerStatsSchema,
   type CreateCustomer,
   type CustomerInventory,
   type CustomerRate,
   type CustomerSearchReq,
-  type CustomersStats,
   type CustomerStats,
+  type CustomersStats,
+  customerInventorySchema,
+  customerRateSchema,
+  customerSchema,
+  customerSearchResSchema,
+  customerStatsSchema,
+  customersStatsSchema,
   type UpdateCustomer,
   type UpdateCustomerRates,
 } from "@/schemas/customerSchema";

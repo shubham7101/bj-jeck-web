@@ -1,70 +1,67 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
-import { z } from "zod";
-import {
-  format,
-  parse,
-  isValid,
-  parseISO,
-  startOfDay,
-  addDays,
-  isAfter,
-} from "date-fns";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ArrowLeft,
-  Calendar as CalendarIcon,
-  Hash,
-  Loader2,
-  Save,
-  User,
-  AlertCircle,
-  Package,
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle2,
-  X,
-  Plus,
-  Receipt,
-  IndianRupee,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAppForm } from "@/components/form/hooks";
-import { FormBase } from "@/components/form/FormBase";
-import { customerService } from "@/services/customerService";
-import { billService } from "@/services/billService";
-import { recordService } from "@/services/recordService";
-import type { Customer } from "@/schemas/customerSchema";
-import { useDebounce } from "@/hooks/use-debounce";
+import { useStore } from "@tanstack/react-form";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useStore } from "@tanstack/react-form";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  format,
+  isAfter,
+  isValid,
+  parse,
+  parseISO,
+  startOfDay,
+} from "date-fns";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Calendar as CalendarIcon,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Hash,
+  Loader2,
+  Package,
+  Plus,
+  Receipt,
+  Save,
+  User,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { CustomerDataGrid } from "@/components/CustomerDataGrid";
+import { FormBase } from "@/components/form/FormBase";
+import { useAppForm } from "@/components/form/hooks";
 import { RecordTable } from "@/components/RecordDataGrid";
-import { getInitials } from "@/utils";
+import { SuccessFeedback } from "@/components/SuccessFeedback";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from "@/hooks/use-debounce";
+import { cn } from "@/lib/utils";
+import type { Customer } from "@/schemas/customerSchema";
+import { billService } from "@/services/billService";
+import { customerService } from "@/services/customerService";
+import { recordService } from "@/services/recordService";
+import { formatCurrency, getInitials } from "@/utils";
 
 const DATE_FORMAT = "dd-MM-yyyy";
 
@@ -92,7 +89,7 @@ export const Route = createFileRoute("/bills/new")({
     try {
       const customer = await customerService.get(customer_id);
       return { customer };
-    } catch (e) {
+    } catch (_e) {
       return { customer: null };
     }
   },
@@ -120,7 +117,7 @@ export default function NewBillPage() {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6 max-w-6xl mx-auto pb-20">
+    <div className="flex-1 p-6 md:p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-24">
       <Header
         step={customer ? 2 : 1}
         hasCustomer={!!customer}
@@ -146,10 +143,12 @@ function Header({
   onChangeCustomer: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div className="space-y-1">
-        <h2 className="text-3xl font-bold tracking-tight">Create New Bill</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-3xl font-bold tracking-tight text-white">
+          Create New Bill
+        </h2>
+        <p className="text-zinc-400">
           {step === 1 ? "Step 1: Select a Customer" : "Step 2: Bill Details"}
         </p>
       </div>
@@ -158,15 +157,15 @@ function Header({
           <Button
             variant="outline"
             onClick={onChangeCustomer}
-            className="hidden sm:flex cursor-pointer"
+            className="hidden sm:flex cursor-pointer border-zinc-700 bg-zinc-950/50 hover:bg-zinc-800 text-zinc-300"
           >
             <User className="mr-2 h-4 w-4" /> Change Customer
           </Button>
         )}
         <Button
-          variant="outline"
+          variant="ghost"
           asChild
-          className="hidden sm:flex cursor-pointer"
+          className="hidden sm:flex hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer"
         >
           <Link to="/bills">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
@@ -228,8 +227,9 @@ function CustomerSelectionStep({
   };
 
   return (
-    <Card className="bg-zinc-900/50 border-zinc-800 animate-in fade-in duration-500">
-      <CardHeader>
+    <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden animate-in fade-in duration-500">
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-400/50" />
+      <CardHeader className="border-b border-zinc-800/50 bg-zinc-900/50">
         <CardTitle>Find Customer</CardTitle>
         <CardDescription>
           Search for an existing customer to generate a bill for.
@@ -269,7 +269,7 @@ function CustomerSelectionStep({
 function BillEntryForm({ customer }: { customer: Customer }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [maxToDate, setMaxToDate] = useState<Date | null>(null);
+  const [_maxToDate, setMaxToDate] = useState<Date | null>(null);
   const [successBill, setSuccessBill] = useState<any | null>(null);
   const successRef = useRef<HTMLDivElement>(null);
 
@@ -312,7 +312,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
     if (customer.id && !successBill) {
       billParamsMutation.mutate(customer.id);
     }
-  }, [customer.id, successBill]);
+  }, [customer.id, successBill, billParamsMutation.mutate]);
 
   // Scroll to success message
   useEffect(() => {
@@ -393,7 +393,6 @@ function BillEntryForm({ customer }: { customer: Customer }) {
     recordsData?.data.filter((record) => !record.bill_id) || [];
 
   // Derived Constraints
-  const minToDate = parsedFrom ? addDays(parsedFrom, 1) : new Date();
   const defaultMonth = parsedFrom || new Date();
 
   return (
@@ -459,8 +458,9 @@ function BillEntryForm({ customer }: { customer: Customer }) {
         }}
         className="space-y-6"
       >
-        <Card className="bg-zinc-900/50 border-zinc-800">
-          <CardHeader className="pb-4">
+        <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-400/50" />
+          <CardHeader className="pb-4 border-b border-zinc-800/50 bg-zinc-900/50">
             <CardTitle className="text-base font-medium flex items-center gap-2">
               <Hash className="h-4 w-4 text-emerald-500" />
               Bill Configuration
@@ -469,28 +469,16 @@ function BillEntryForm({ customer }: { customer: Customer }) {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
               {/* Bill ID */}
-              <form.Field
-                name="bill_id"
-                validators={{
-                  onChange: z.number().min(1, "Bill ID is required"),
-                }}
-              >
+              <form.Field name="bill_id">
                 {(field) => (
-                  <FormBase
-                    field={field}
-                    label={
-                      <span className="flex gap-1">
-                        Bill ID <span className="text-rose-500">*</span>
-                      </span>
-                    }
-                  >
+                  <FormBase field={field} label="Bill ID">
                     <div className="relative">
                       <Hash className="absolute left-2.5 top-3 h-4 w-4 text-zinc-500" />
                       <Input
                         id={field.name}
                         type="number"
                         placeholder="e.g. 101"
-                        className="pl-9 bg-zinc-950/50 border-zinc-700 font-bold text-lg"
+                        className="pl-9 bg-zinc-950/50 border-zinc-700 font-bold text-lg focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors"
                         value={field.state.value || ""}
                         onBlur={field.handleBlur}
                         onChange={(e) =>
@@ -512,7 +500,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                   <FormBase field={field} label="From Date (Fixed)">
                     <div className="relative">
                       <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
-                      <div className="h-10 pl-9 py-2 rounded-md border border-zinc-800 bg-zinc-950/30 text-zinc-400 text-sm flex items-center cursor-not-allowed">
+                      <div className="h-10 pl-9 py-2 rounded-md border border-zinc-800 bg-zinc-950/30 text-zinc-400 text-sm flex items-center cursor-not-allowed shadow-inner backdrop-blur-sm">
                         {billParamsMutation.isPending ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
@@ -535,9 +523,9 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                     if (parsedFrom && !isAfter(current, parsedFrom)) {
                       return "Must be after From Date";
                     }
-                    if (maxToDate && isAfter(current, maxToDate)) {
-                      return `Max date: ${format(maxToDate, DATE_FORMAT)}`;
-                    }
+                    // if (maxToDate && isAfter(current, maxToDate)) {
+                    //   return `Max date: ${format(maxToDate, DATE_FORMAT)}`;
+                    // }
                     return undefined;
                   },
                 }}
@@ -561,7 +549,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                             !!successBill
                           }
                           className={cn(
-                            "w-full pl-3 text-left font-normal bg-zinc-950/50 border-zinc-700 hover:bg-zinc-900",
+                            "w-full pl-3 text-left font-normal bg-zinc-950/50 border-zinc-700 hover:bg-zinc-900 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors",
                             !field.state.value && "text-muted-foreground",
                             field.state.meta.errors.length > 0 &&
                               "border-rose-500 text-rose-500",
@@ -589,12 +577,12 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                             if (date)
                               field.handleChange(format(date, DATE_FORMAT));
                           }}
-                          disabled={(date) => {
-                            if (date < minToDate) return true;
-                            if (maxToDate && isAfter(date, maxToDate))
-                              return true;
-                            return false;
-                          }}
+                          // disabled={(date) => {
+                          //   if (date < minToDate) return true;
+                          //   if (maxToDate && isAfter(date, maxToDate))
+                          //     return true;
+                          //   return false;
+                          // }}
                           initialFocus
                           className="text-zinc-100"
                         />
@@ -611,7 +599,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                     <Input
                       id={field.name}
                       placeholder="e.g. 3 12"
-                      className="bg-zinc-950/50 border-zinc-700"
+                      className="bg-zinc-950/50 border-zinc-700 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors"
                       value={field.state.value || ""}
                       onChange={(e) => field.handleChange(e.target.value)}
                       disabled={!!successBill}
@@ -636,7 +624,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
             </Badge>
           </h3>
 
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 shadow-xl overflow-hidden">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm shadow-xl overflow-hidden">
             <RecordTable
               data={filteredRecords}
               isLoading={isRecordsLoading}
@@ -732,108 +720,59 @@ function BillEntryForm({ customer }: { customer: Customer }) {
       {/* Success Feedback Appended at Bottom */}
       {successBill && (
         <div ref={successRef}>
-          <BillSuccessFeedback
-            bill={successBill}
+          <SuccessFeedback
+            title="Bill Generated Successfully"
+            description={
+              <>
+                Invoice{" "}
+                <span className="font-mono font-medium text-emerald-300 ml-1">
+                  #{successBill.id}
+                </span>{" "}
+                has been created and saved.
+              </>
+            }
+            details={[
+              {
+                label: "Billing Period",
+                value: (
+                  <span className="flex items-center gap-1">
+                    {format(new Date(successBill.from_date), "dd MMM")} -{" "}
+                    {format(new Date(successBill.to_date), "dd MMM yyyy")}
+                  </span>
+                ),
+              },
+              {
+                label: "Khata No",
+                value: (
+                  <span className="font-mono">
+                    {successBill.khata_no || "N/A"}
+                  </span>
+                ),
+              },
+              {
+                label: "Total Amount",
+                value: (
+                  <span className="flex items-center text-emerald-400 font-bold text-lg">
+                    {formatCurrency(successBill.total || 0)}
+                  </span>
+                ),
+              },
+            ]}
+            primaryAction={{
+              to: "/bills/$billId",
+              params: { billId: successBill.id.toString() },
+              label: "View Bill Details",
+              icon: Receipt,
+            }}
+            secondaryAction={{
+              onClick: handleReset,
+              label: "Add Another Bill",
+              icon: Plus,
+            }}
             onDismiss={() => navigate({ to: "/bills" })}
-            onReset={handleReset}
           />
         </div>
       )}
-    </div>
-  );
-}
-
-function BillSuccessFeedback({
-  bill,
-  onDismiss,
-  onReset,
-}: {
-  bill: any;
-  onDismiss: () => void;
-  onReset: () => void;
-}) {
-  return (
-    <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
-      <Card className="border-emerald-500/30 bg-emerald-950/10 relative overflow-hidden shadow-lg shadow-emerald-900/10">
-        <div className="absolute top-4 right-4 z-10">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-emerald-600 hover:text-emerald-400 hover:bg-emerald-900/30 cursor-pointer"
-            onClick={onDismiss}
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close notification</span>
-          </Button>
-        </div>
-
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-            <CardTitle className="text-xl text-emerald-500">
-              Bill Generated Successfully
-            </CardTitle>
-          </div>
-          <CardDescription className="text-emerald-400/80">
-            Invoice{" "}
-            <span className="font-mono font-medium text-emerald-300 ml-1">
-              #{bill.id}
-            </span>{" "}
-            has been created and saved.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm bg-black/20 p-4 rounded-md border border-emerald-500/10">
-            <div className="flex flex-col gap-1">
-              <span className="text-emerald-500/70 text-xs uppercase font-semibold">
-                Billing Period
-              </span>
-              <span className="font-medium text-emerald-100 flex items-center gap-1">
-                {format(new Date(bill.from_date), "dd MMM")} -{" "}
-                {format(new Date(bill.to_date), "dd MMM yyyy")}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-emerald-500/70 text-xs uppercase font-semibold">
-                Khata No
-              </span>
-              <span className="font-medium text-emerald-100 font-mono">
-                {bill.khata_no || "N/A"}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-emerald-500/70 text-xs uppercase font-semibold">
-                Total Amount
-              </span>
-              <span className="font-bold text-emerald-100 flex items-center">
-                <IndianRupee className="h-3 w-3 mr-0.5" />
-                {bill.total.toLocaleString()}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-
-        <CardFooter className="bg-emerald-950/30 py-4 flex gap-3">
-          <Button
-            asChild
-            className="bg-emerald-600 hover:bg-emerald-500 text-white border-none cursor-pointer"
-          >
-            <Link to="/bills/$billId" params={{ billId: bill.id.toString() }}>
-              <Receipt className="mr-2 h-4 w-4" />
-              View Bill Details
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-950/50 hover:text-emerald-300 cursor-pointer"
-            onClick={onReset}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Another Bill
-          </Button>
-        </CardFooter>
-      </Card>
     </div>
   );
 }

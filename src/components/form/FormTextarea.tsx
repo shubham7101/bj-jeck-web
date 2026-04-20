@@ -27,7 +27,7 @@ export function FormTextarea({
         onBlur={field.handleBlur}
         onChange={(e) => field.handleChange(e.target.value)}
         className={cn(
-          isInvalid && "border-destructive focus-visible:ring-destructive"
+          isInvalid && "border-destructive focus-visible:ring-destructive",
         )}
         aria-invalid={isInvalid}
       />

@@ -2,7 +2,7 @@ const BASE_URL = import.meta.env.VITE_API_URL;
 
 export const apiClient = async <T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> => {
   // await new Promise((resolve) => setTimeout(resolve, 1500));
   const response = await fetch(BASE_URL + endpoint, {

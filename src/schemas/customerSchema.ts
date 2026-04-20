@@ -8,13 +8,23 @@ export const PART_OPTIONS = [
   { label: "Plate", value: "plate" },
 ] as const;
 
-export const SIZE_OPTIONS = ["1.5", "2.0", "2.5", "3.0", "2x3"] as const;
+export const SIZE_OPTIONS = [
+  "1.5",
+  "2.0",
+  "2.5",
+  "3.0",
+  "2x3",
+  "9x3",
+  "12x3",
+  "15x3",
+  "18x3",
+] as const;
 
 export const STANDARD_RATES_SETUP: CustomerRate[] = [
   { part: "full", size: "1.5", rate: 1.5 },
   { part: "full", size: "2.0", rate: 1.5 },
-  { part: "full", size: "2.5", rate: 1.5 },
-  { part: "full", size: "3.0", rate: 1.5 },
+  { part: "full", size: "2.5", rate: 1.75 },
+  { part: "full", size: "3.0", rate: 2.0 },
   { part: "plate", size: "2x3", rate: 1.0 },
 ];
 

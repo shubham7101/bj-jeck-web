@@ -1,13 +1,12 @@
 "use client";
 
+import { Link, useLocation } from "@tanstack/react-router";
 import { ChevronRight, type LucideIcon } from "lucide-react";
-
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -18,7 +17,6 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import { Link, useLocation } from "@tanstack/react-router";
 
 export function NavMain({
   items,
@@ -38,7 +36,7 @@ export function NavMain({
 
   const isRouteActive = (url: string, exact = false) => {
     if (exact) return location.pathname === url;
-    return location.pathname === url || location.pathname.startsWith(url + "/");
+    return location.pathname === url || location.pathname.startsWith(`${url}/`);
   };
 
   return (
@@ -47,7 +45,7 @@ export function NavMain({
       <SidebarMenu>
         {items.map((item) => {
           const isChildActive = item.items?.some((sub) =>
-            isRouteActive(sub.url)
+            isRouteActive(sub.url),
           );
           const isOpen = item.isActive || isChildActive;
           const isMainActive = !item.items && isRouteActive(item.url, true);

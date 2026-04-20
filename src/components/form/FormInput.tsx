@@ -4,8 +4,7 @@ import { FormBase } from "./FormBase";
 import type { BaseFormControlProps } from "./types";
 
 interface FormInputProps
-  extends
-    BaseFormControlProps,
+  extends BaseFormControlProps,
     Omit<
       React.ComponentProps<"input">,
       "value" | "onChange" | "onBlur" | "name"
@@ -47,14 +46,14 @@ export function FormInput({
           onChange={(e) => {
             if (type === "number") {
               const value = e.target.valueAsNumber;
-              field.handleChange(isNaN(value) ? "" : value);
+              field.handleChange(Number.isNaN(value) ? "" : value);
             } else {
               field.handleChange(e.target.value);
             }
           }}
           className={cn(
             icon && "pl-9",
-            isInvalid && "border-destructive focus-visible:ring-destructive"
+            isInvalid && "border-destructive focus-visible:ring-destructive",
           )}
           aria-invalid={isInvalid}
         />

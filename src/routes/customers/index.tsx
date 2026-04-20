@@ -1,24 +1,23 @@
-import { useDebounce } from "@/hooks/use-debounce";
-import {
-  customerSearchReqSchema,
-  type Customer,
-} from "@/schemas/customerSchema";
-import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { customerService } from "@/services/customerService";
-import { z } from "zod";
-
-import { CustomerDataGrid } from "@/components/CustomerDataGrid";
-import { Button } from "@/components/ui/button";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus, UserCheck, Users, UserX } from "lucide-react";
-import { StatsCard } from "@/components/StatsCard";
+import { useEffect, useState } from "react";
+import type { z } from "zod";
+import { CustomerDataGrid } from "@/components/CustomerDataGrid";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { StatsCard } from "@/components/StatsCard";
+import { Button } from "@/components/ui/button";
+import { useDebounce } from "@/hooks/use-debounce";
+import {
+  type Customer,
+  customerSearchReqSchema,
+} from "@/schemas/customerSchema";
+import { customerService } from "@/services/customerService";
 
 export const Route = createFileRoute("/customers/")({
   component: CustomerPage,
@@ -36,7 +35,7 @@ function CustomerPage() {
   const queryClient = useQueryClient();
 
   const page = search.page ?? 1;
-  const per_page = search.per_page ?? 10;
+  const per_page = search.per_page ?? 25;
 
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
 
@@ -177,21 +176,32 @@ function CustomerPage() {
   return (
     <div className="flex-1 space-y-6 p-8 pt-6 animate-in fade-in duration-500">
       {/* Header Section */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center justify-between pb-2">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
             Customers
+            <div className="h-6 w-px bg-zinc-800 ml-2 hidden sm:block" />
+            <span className="text-sm font-medium text-zinc-500 hidden sm:block mt-1">
+              Directory
+            </span>
           </h2>
-          <p className="text-muted-foreground">
-            Manage customer details, track rentals, and view history.
+          <p className="text-zinc-400">
+            Manage client profiles, contact details, and their active rental
+            status.
           </p>
         </div>
-        <Button asChild>
+        <Button
+          asChild
+          className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)] transition-all font-medium"
+        >
           <Link to="/customers/new">
             <Plus className="mr-2 h-4 w-4" /> Add Customer
           </Link>
         </Button>
       </div>
+
+      <div className="h-px w-full bg-gradient-to-r from-zinc-800 to-transparent" />
+
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-3">
         <StatsCard
@@ -199,7 +209,8 @@ function CustomerPage() {
           title="Total Customers"
           value={stats?.total ?? 0}
           subText="Recorded in system"
-          icon={<Users className="h-4 w-4 text-zinc-400" />}
+          icon={<Users className="h-4 w-4 text-emerald-400" />}
+          className="bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
         />
         <StatsCard
           loading={isLoadingStats}
@@ -207,13 +218,17 @@ function CustomerPage() {
           value={stats?.active ?? 0}
           subText="Currently renting items"
           icon={<UserCheck className="h-4 w-4 text-emerald-500" />}
-        />
+          className="bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+        </StatsCard>
         <StatsCard
           loading={isLoadingStats}
           title="Inactive Customers"
           value={stats?.inactive ?? 0}
           subText="No active rentals"
           icon={<UserX className="h-4 w-4 text-rose-500" />}
+          className="bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
         />
       </div>
       {isError && error && <ErrorAlert error={error} />}

@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
-  keepPreviousData,
 } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowRightLeft,
@@ -13,6 +12,7 @@ import {
   IndianRupee,
   Plus,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 // Components
 import { ErrorAlert } from "@/components/ErrorAlert";
@@ -22,11 +22,11 @@ import { Button } from "@/components/ui/button";
 
 // Hooks & Services
 import { useDebounce } from "@/hooks/use-debounce";
-import { recordService } from "@/services/recordService";
 import {
-  recordSearchReqSchema,
   type RecordSearchReq,
+  recordSearchReqSchema,
 } from "@/schemas/recordSchema";
+import { recordService } from "@/services/recordService";
 
 export const Route = createFileRoute("/records/")({
   component: RecordPage,
@@ -39,7 +39,7 @@ function RecordPage() {
   const queryClient = useQueryClient();
 
   const page = search.page ?? 1;
-  const per_page = search.per_page ?? 10;
+  const per_page = search.per_page ?? 25;
 
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
 
@@ -65,17 +65,17 @@ function RecordPage() {
       search: (prev) => {
         // Parse strings back to numbers/undefined for the URL schema
         const customerId = debouncedFilters.customer_id
-          ? parseInt(debouncedFilters.customer_id)
+          ? parseInt(debouncedFilters.customer_id, 10)
           : undefined;
         const billId = debouncedFilters.bill_id
-          ? parseInt(debouncedFilters.bill_id)
+          ? parseInt(debouncedFilters.bill_id, 10)
           : undefined;
 
         // Ensure we don't pass NaN
-        const cleanCustomerId = isNaN(customerId || NaN)
+        const cleanCustomerId = Number.isNaN(customerId || NaN)
           ? undefined
           : customerId;
-        const cleanBillId = isNaN(billId || NaN) ? undefined : billId;
+        const cleanBillId = Number.isNaN(billId || NaN) ? undefined : billId;
 
         return {
           ...prev,
@@ -201,44 +201,53 @@ function RecordPage() {
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">
+      {/* Header Section */}
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center justify-between pb-2">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
             Records
+            <div className="h-6 w-px bg-zinc-800 ml-2 hidden sm:block" />
+            <span className="text-sm font-medium text-zinc-500 hidden sm:block mt-1">
+              Inventory
+            </span>
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-zinc-400">
             Manage chalans, track transactions, and view history.
           </p>
         </div>
-        <Link to={`/records/new`}>
-          <Button className="bg-white text-zinc-950 hover:bg-zinc-200 font-semibold shadow-lg shadow-zinc-950/20 transition-all cursor-pointer">
+        <Button
+          asChild
+          className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)] transition-all font-medium"
+        >
+          <Link to="/records/new">
             <Plus className="mr-2 h-4 w-4" /> New Record
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
+
+      <div className="h-px w-full bg-gradient-to-r from-zinc-800 to-transparent" />
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           loading={isLoadingStats}
-          title="Monthly Labour"
-          value={`₹${stats?.month_labour.toLocaleString() ?? 0}`}
-          subText="Charges collected this month"
+          title="Yearly Labour"
+          value={`₹${stats?.year_labour.toLocaleString() ?? 0}`}
+          subText="Charges collected this year"
           icon={<IndianRupee className="h-4 w-4 text-emerald-500" />}
         />
         <StatsCard
           loading={isLoadingStats}
-          title="Monthly Flow"
-          value={stats?.month_records ?? 0}
+          title="Yearly Flow"
+          value={stats?.year_records ?? 0}
           subText={
             <span className="flex items-center gap-2">
               <span className="text-emerald-500 font-medium">
-                {stats?.month_in ?? 0} IN
+                {stats?.year_in ?? 0} IN
               </span>
               <span className="text-zinc-600">/</span>
               <span className="text-rose-500 font-medium">
-                {stats?.month_out ?? 0} OUT
+                {stats?.year_out ?? 0} OUT
               </span>
             </span>
           }
@@ -247,8 +256,8 @@ function RecordPage() {
         <StatsCard
           loading={isLoadingStats}
           title="Damaged Items"
-          value={stats?.month_broken ?? 0}
-          subText="Broken quantity this month"
+          value={stats?.year_broken ?? 0}
+          subText="Broken quantity this year"
           icon={<AlertTriangle className="h-4 w-4 text-amber-500" />}
         />
         <StatsCard

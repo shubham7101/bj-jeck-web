@@ -1,41 +1,50 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
-import { z } from "zod";
-import { format, parse, isValid } from "date-fns";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { format, isValid, parse } from "date-fns";
+import {
+  AlertCircle,
   ArrowLeft,
+  Calendar as CalendarIcon,
+  FileText,
+  Hash,
+  Loader2,
   Plus,
+  Save,
   Trash2,
   Truck,
   User,
-  Save,
-  Loader2,
-  CheckCircle2,
-  X,
-  AlertCircle,
-  Calendar as CalendarIcon,
-  Hash,
-  FileText,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { formatDate, getInitials } from "@/utils";
+import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
+import { CustomerDataGrid } from "@/components/CustomerDataGrid";
+import { FormBase } from "@/components/form/FormBase";
+import { useAppForm } from "@/components/form/hooks";
+import { SuccessFeedback } from "@/components/SuccessFeedback";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -43,9 +52,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -54,31 +62,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Label } from "@/components/ui/label";
-import { useAppForm } from "@/components/form/hooks";
-import { FormBase } from "@/components/form/FormBase";
-import { customerService } from "@/services/customerService";
-import { recordService } from "@/services/recordService";
+import { useDebounce } from "@/hooks/use-debounce";
+import { cn } from "@/lib/utils";
 import {
+  type Customer,
   PART_OPTIONS,
   SIZE_OPTIONS,
-  type Customer,
 } from "@/schemas/customerSchema";
 import {
-  createRecordSchema,
   type CreateRecord,
+  createRecordSchema,
   type Record,
 } from "@/schemas/recordSchema";
-import { useDebounce } from "@/hooks/use-debounce";
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { CustomerDataGrid } from "@/components/CustomerDataGrid";
+import { customerService } from "@/services/customerService";
+import { recordService } from "@/services/recordService";
+import { formatDate, getInitials } from "@/utils";
 
 // --- Route Definition ---
 
@@ -95,7 +93,7 @@ export const Route = createFileRoute("/records/new")({
     try {
       const customer = await customerService.get(customer_id);
       return { customer };
-    } catch (e) {
+    } catch (_e) {
       // If ID is invalid, return null so we can show selection screen
       return { customer: null };
     }
@@ -111,6 +109,7 @@ const DEFAULT_FORM_VALUES: Partial<CreateRecord> = {
   date: format(new Date(), DATE_FORMAT),
   transaction_type: "OUT",
   labour_charge: 0,
+  transport_charge: 0,
   total: 0,
   vehicle_no: "",
   vehicle_mobile_no: "",
@@ -160,7 +159,7 @@ export default function NewRecordPage() {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6 max-w-6xl mx-auto pb-20">
+    <div className="flex-1 p-6 md:p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-24">
       <Header
         step={customer ? 2 : 1}
         hasCustomer={!!customer}
@@ -179,7 +178,7 @@ export default function NewRecordPage() {
 
       {createdRecord && (
         <div ref={successRef}>
-          <SuccessFeedback
+          <NewRecordSuccessFeedback
             record={createdRecord}
             onDismiss={() => setCreatedRecord(null)}
             onReset={() => setCreatedRecord(null)}
@@ -200,10 +199,12 @@ function Header({
   onChangeCustomer: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div className="space-y-1">
-        <h2 className="text-3xl font-bold tracking-tight">New Record</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-3xl font-bold tracking-tight text-white">
+          New Record
+        </h2>
+        <p className="text-zinc-400">
           {step === 1 ? "Step 1: Select a Customer" : "Step 2: Enter Details"}
         </p>
       </div>
@@ -212,15 +213,15 @@ function Header({
           <Button
             variant="outline"
             onClick={onChangeCustomer}
-            className="hidden sm:flex cursor-pointer"
+            className="hidden sm:flex cursor-pointer border-zinc-700 bg-zinc-950/50 hover:bg-zinc-800 text-zinc-300"
           >
             <User className="mr-2 h-4 w-4" /> Change Customer
           </Button>
         )}
         <Button
-          variant="outline"
+          variant="ghost"
           asChild
-          className="hidden sm:flex cursor-pointer"
+          className="hidden sm:flex hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer"
         >
           <Link to="/records">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
@@ -280,14 +281,15 @@ function CustomerSelectionStep({
   };
 
   return (
-    <Card className="bg-zinc-900/50 border-zinc-800 animate-in fade-in duration-500">
-      <CardHeader>
+    <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden animate-in fade-in duration-500">
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-400/50" />
+      <CardHeader className="border-b border-zinc-800/50 bg-zinc-900/50">
         <CardTitle>Find Customer</CardTitle>
         <CardDescription>
           Search for an existing customer to generate a bill for.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <CustomerDataGrid
           data={data?.data || []}
           isLoading={isLoading}
@@ -439,8 +441,9 @@ function RecordEntryForm({
       )}
 
       {/* Transaction Details */}
-      <Card className="bg-zinc-900/50 border-zinc-800">
-        <CardHeader className="pb-4">
+      <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-400/50" />
+        <CardHeader className="pb-4 border-b border-zinc-800/50 bg-zinc-900/50">
           <CardTitle className="text-base font-medium flex items-center gap-2">
             <Hash className="h-4 w-4 text-emerald-500" />
             Record Details
@@ -458,7 +461,7 @@ function RecordEntryForm({
                       id={field.name}
                       type="number"
                       placeholder="Chalan No."
-                      className="pl-9 bg-zinc-950/50 border-zinc-700"
+                      className="pl-9 bg-zinc-950/50 border-zinc-700 font-bold text-lg focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors"
                       value={field.state.value || ""}
                       onBlur={field.handleBlur}
                       onChange={(e) =>
@@ -487,7 +490,7 @@ function RecordEntryForm({
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full pl-3 text-left font-normal bg-zinc-950/50 border-zinc-700 hover:bg-zinc-900 hover:text-zinc-200",
+                            "w-full pl-3 text-left font-normal bg-zinc-950/50 border-zinc-700 hover:bg-zinc-900 hover:text-zinc-200 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors",
                             !dateValue && "text-muted-foreground",
                           )}
                         >
@@ -585,7 +588,7 @@ function RecordEntryForm({
                     <Input
                       id={field.name}
                       placeholder="e.g. GJ-05-AB-1234"
-                      className="bg-zinc-950/50 border-zinc-700"
+                      className="bg-zinc-950/50 border-zinc-700 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors"
                       value={field.state.value || ""}
                       onChange={(e) => field.handleChange(e.target.value)}
                     />
@@ -598,7 +601,7 @@ function RecordEntryForm({
                     <Input
                       id={field.name}
                       placeholder="e.g. 9876543210"
-                      className="bg-zinc-950/50 border-zinc-700"
+                      className="bg-zinc-950/50 border-zinc-700 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors"
                       value={field.state.value || ""}
                       onChange={(e) => field.handleChange(e.target.value)}
                     />
@@ -611,11 +614,12 @@ function RecordEntryForm({
       </Card>
 
       {/* Items Section */}
-      <Card className="bg-zinc-900/50 border-zinc-800 flex flex-col">
+      <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl flex flex-col relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-zinc-500 to-zinc-400/50" />
         <form.Field name="items" mode="array">
           {(field) => (
             <>
-              <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-zinc-800">
+              <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-zinc-800/50 bg-zinc-900/50">
                 <div>
                   <CardTitle className="text-lg">Items List</CardTitle>
                   <CardDescription>
@@ -649,12 +653,22 @@ function RecordEntryForm({
               <CardContent className="p-0">
                 <Table>
                   <TableHeader className="bg-zinc-950/50">
-                    <TableRow className="border-zinc-800 hover:bg-transparent">
-                      <TableHead className="w-[20%] pl-6">Part Type</TableHead>
-                      <TableHead className="w-[20%]">Size</TableHead>
-                      <TableHead className="w-[20%]">Quantity</TableHead>
-                      <TableHead className="w-[15%]">Broken?</TableHead>
-                      <TableHead className="w-[20%]">Service Charge</TableHead>
+                    <TableRow className="border-zinc-800/80 hover:bg-transparent">
+                      <TableHead className="w-[20%] pl-6 text-zinc-400 font-medium">
+                        Part Type
+                      </TableHead>
+                      <TableHead className="w-[20%] text-zinc-400 font-medium">
+                        Size
+                      </TableHead>
+                      <TableHead className="w-[20%] text-zinc-400 font-medium">
+                        Quantity
+                      </TableHead>
+                      <TableHead className="w-[15%] text-zinc-400 font-medium text-center">
+                        Broken?
+                      </TableHead>
+                      <TableHead className="w-[20%] text-zinc-400 font-medium text-center">
+                        Service Charge
+                      </TableHead>
                       <TableHead className="w-[10%]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -662,7 +676,7 @@ function RecordEntryForm({
                     {field.state.value.map((_, index) => (
                       <TableRow
                         key={index}
-                        className="hover:bg-zinc-900/30 border-zinc-800 group"
+                        className="hover:bg-zinc-900/40 border-zinc-800/80 group transition-colors"
                       >
                         <TableCell className="pl-6 py-3 align-top">
                           <form.Field name={`items[${index}].part`}>
@@ -676,7 +690,7 @@ function RecordEntryForm({
                                     )
                                   }
                                 >
-                                  <SelectTrigger className="border-zinc-800 bg-transparent focus:ring-offset-0 cursor-pointer">
+                                  <SelectTrigger className="border-zinc-800 bg-zinc-950/50 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors cursor-pointer">
                                     <SelectValue placeholder="Select Part" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -706,7 +720,7 @@ function RecordEntryForm({
                                     subField.handleChange(val)
                                   }
                                 >
-                                  <SelectTrigger className="border-zinc-800 bg-transparent focus:ring-offset-0 cursor-pointer">
+                                  <SelectTrigger className="border-zinc-800 bg-zinc-950/50 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors cursor-pointer">
                                     <SelectValue placeholder="Size" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -732,7 +746,7 @@ function RecordEntryForm({
                               <FormBase field={subField}>
                                 <Input
                                   type="number"
-                                  className="border-zinc-800 bg-transparent"
+                                  className="border-zinc-800 bg-zinc-950/50 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors"
                                   placeholder="0"
                                   value={
                                     subField.state.value === 0
@@ -758,7 +772,7 @@ function RecordEntryForm({
                                 <div className="flex justify-center">
                                   <Input
                                     type="number"
-                                    className="border-zinc-800 bg-transparent"
+                                    className="border-zinc-800 bg-zinc-950/50 text-center focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors"
                                     placeholder="0"
                                     value={
                                       subField.state.value === 0
@@ -796,7 +810,7 @@ function RecordEntryForm({
                                   </span>
                                   <Input
                                     type="number"
-                                    className="pl-5 bg-zinc-900/50 border-emerald-500/30 text-emerald-400"
+                                    className="pl-6 bg-zinc-950/80 border-emerald-500/30 text-emerald-400 text-center focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors"
                                     placeholder="0"
                                     value={
                                       subField.state.value === 0
@@ -847,7 +861,32 @@ function RecordEntryForm({
                             <Input
                               type="number"
                               placeholder="0"
-                              className="pl-7 bg-zinc-900 border-emerald-500/50 text-emerald-400 font-bold text-lg h-10 shadow-[0_0_10px_-3px_rgba(16,185,129,0.2)]"
+                              className="pl-7 bg-zinc-950/50 border-emerald-500/50 text-emerald-400 font-bold text-lg h-10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.15)] focus:ring-emerald-500/50 transition-all"
+                              value={
+                                field.state.value === 0 ? "" : field.state.value
+                              }
+                              onChange={(e) =>
+                                field.handleChange(Number(e.target.value))
+                              }
+                              onWheel={(e) => e.currentTarget.blur()}
+                            />
+                          </div>
+                        </FormBase>
+                      )}
+                    </form.Field>
+                  </div>
+                  <div className="w-full md:w-48">
+                    <form.Field name="transport_charge">
+                      {(field) => (
+                        <FormBase field={field} label="Transport Charge">
+                          <div className="relative">
+                            <span className="absolute left-3 top-2 text-zinc-500">
+                              ₹
+                            </span>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              className="pl-7 bg-zinc-950/50 border-purple-500/50 text-purple-400 font-bold text-lg h-10 shadow-[0_0_15px_-3px_rgba(168,85,247,0.15)] focus:ring-purple-500/50 transition-all"
                               value={
                                 field.state.value === 0 ? "" : field.state.value
                               }
@@ -868,7 +907,7 @@ function RecordEntryForm({
                           <Input
                             type="number"
                             placeholder="0"
-                            className="bg-zinc-900 border-zinc-700 font-bold text-lg h-10"
+                            className="bg-zinc-950/50 border-zinc-700 font-bold text-lg h-10 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors"
                             value={
                               field.state.value === 0 ? "" : field.state.value
                             }
@@ -917,7 +956,7 @@ function RecordEntryForm({
   );
 }
 
-function SuccessFeedback({
+function NewRecordSuccessFeedback({
   record,
   onDismiss,
   onReset,
@@ -930,94 +969,57 @@ function SuccessFeedback({
   if (!record) return null;
 
   return (
-    <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
-      <Card className="border-emerald-500/30 bg-emerald-950/10 relative overflow-hidden shadow-lg shadow-emerald-900/10">
-        <div className="absolute top-4 right-4 z-10">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-emerald-600 hover:text-emerald-400 hover:bg-emerald-900/30 cursor-pointer"
-            onClick={onDismiss}
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close notification</span>
-          </Button>
-        </div>
-
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-            <CardTitle className="text-xl text-emerald-500">
-              Record Saved Successfully
-            </CardTitle>
-          </div>
-          <CardDescription className="text-emerald-400/80">
-            Transaction{" "}
-            <span className="font-mono font-medium text-emerald-300 ml-1">
-              #{record.id}
-            </span>{" "}
-            has been recorded.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm bg-black/20 p-4 rounded-md border border-emerald-500/10">
-            <div className="flex flex-col gap-1">
-              <span className="text-emerald-500/70 text-xs uppercase font-semibold">
-                Date
-              </span>
-              <span className="font-medium text-emerald-100">
-                {formatDate(record.date)}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-emerald-500/70 text-xs uppercase font-semibold">
-                Type
-              </span>
-              <span
-                className={cn(
-                  "font-medium font-mono inline-flex w-fit",
-                  record.transaction_type === "OUT"
-                    ? "text-rose-300"
-                    : "text-emerald-300",
-                )}
-              >
-                {record.transaction_type}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-emerald-500/70 text-xs uppercase font-semibold">
-                Total Items
-              </span>
-              <span className="font-bold text-emerald-100">{record.total}</span>
-            </div>
-          </div>
-        </CardContent>
-
-        <CardFooter className="bg-emerald-950/30 py-4 flex gap-3">
-          <Button
-            asChild
-            className="bg-emerald-600 hover:bg-emerald-500 text-white border-none cursor-pointer"
-          >
-            <Link
-              to="/records/$recordId"
-              params={{ recordId: record.id.toString() }}
+    <SuccessFeedback
+      title="Record Saved Successfully"
+      description={
+        <>
+          Transaction{" "}
+          <span className="font-mono font-medium text-emerald-300 ml-1">
+            #{record.id}
+          </span>{" "}
+          has been recorded.
+        </>
+      }
+      details={[
+        {
+          label: "Date",
+          value: formatDate(record.date),
+        },
+        {
+          label: "Type",
+          value: (
+            <span
+              className={cn(
+                "font-medium font-mono inline-flex w-fit",
+                record.transaction_type === "OUT"
+                  ? "text-rose-300"
+                  : "text-emerald-300",
+              )}
             >
-              <FileText className="mr-2 h-4 w-4" />
-              View Record
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-950/50 hover:text-emerald-300 cursor-pointer"
-            onClick={onReset}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Create Another
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
+              {record.transaction_type}
+            </span>
+          ),
+        },
+        {
+          label: "Total Items",
+          value: (
+            <span className="font-bold text-emerald-100">{record.total}</span>
+          ),
+        },
+      ]}
+      primaryAction={{
+        to: "/records/$recordId",
+        params: { recordId: record.id.toString() },
+        label: "View Record",
+        icon: FileText,
+      }}
+      secondaryAction={{
+        onClick: onReset,
+        label: "Create Another",
+        icon: Plus,
+      }}
+      onDismiss={onDismiss}
+    />
   );
 }
 

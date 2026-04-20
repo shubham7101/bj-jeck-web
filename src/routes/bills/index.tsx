@@ -1,23 +1,23 @@
-import { useEffect, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
-  keepPreviousData,
 } from "@tanstack/react-query";
-import { FileText, IndianRupee, Plus, TrendingUp, Receipt } from "lucide-react";
-
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { FileText, IndianRupee, Plus, Receipt, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
+import { BillDataGrid } from "@/components/BillDataGrid";
 // Components
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { BillDataGrid } from "@/components/BillDataGrid";
 import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
 
 // Hooks & Services
 import { useDebounce } from "@/hooks/use-debounce";
+import { type BillSearchReq, billSearchReqSchema } from "@/schemas/billSchema";
 import { billService } from "@/services/billService";
-import { billSearchReqSchema, type BillSearchReq } from "@/schemas/billSchema";
+import { formatCurrency } from "@/utils";
 
 export const Route = createFileRoute("/bills/")({
   component: BillsPage,
@@ -30,7 +30,7 @@ function BillsPage() {
   const queryClient = useQueryClient();
 
   const page = search.page ?? 1;
-  const per_page = search.per_page ?? 10;
+  const per_page = search.per_page ?? 25;
 
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
 
@@ -51,11 +51,11 @@ function BillsPage() {
       search: (prev) => {
         // Parse strings back to numbers/undefined for the URL schema
         const customerId = debouncedFilters.customer_id
-          ? parseInt(debouncedFilters.customer_id)
+          ? parseInt(debouncedFilters.customer_id, 10)
           : undefined;
 
         // Ensure we don't pass NaN
-        const cleanCustomerId = isNaN(customerId || NaN)
+        const cleanCustomerId = Number.isNaN(customerId || NaN)
           ? undefined
           : customerId;
 
@@ -78,8 +78,8 @@ function BillsPage() {
     queryKey: ["bills", "stats"],
     queryFn: () => billService.stats(),
     placeholderData: {
-      month_total: 0,
-      month_bills: 0,
+      year_total: 0,
+      year_bills: 0,
       total_bills: 0,
     },
   });
@@ -176,37 +176,46 @@ function BillsPage() {
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">
+      {/* Header Section */}
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center justify-between pb-2">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
             Invoices
+            <div className="h-6 w-px bg-zinc-800 ml-2 hidden sm:block" />
+            <span className="text-sm font-medium text-zinc-500 hidden sm:block mt-1">
+              Billing
+            </span>
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-zinc-400">
             View generated bills, track payments, and manage history.
           </p>
         </div>
-        <Link to={`/bills/new`}>
-          <Button className="bg-white text-zinc-950 hover:bg-zinc-200 font-semibold shadow-lg shadow-zinc-950/20 transition-all cursor-pointer">
+        <Button
+          asChild
+          className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)] transition-all font-medium"
+        >
+          <Link to="/bills/new">
             <Plus className="mr-2 h-4 w-4" /> Generate Bill
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
+
+      <div className="h-px w-full bg-gradient-to-r from-zinc-800 to-transparent" />
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           loading={isLoadingStats}
-          title="Monthly Revenue"
-          value={`₹${(stats?.month_total || 0).toLocaleString()}`}
-          subText="Billed amount this month"
+          title="Yearly Revenue"
+          value={formatCurrency(stats?.year_total || 0)}
+          subText="Billed amount this year"
           icon={<IndianRupee className="h-4 w-4 text-emerald-500" />}
         />
         <StatsCard
           loading={isLoadingStats}
           title="Bills Generated"
-          value={stats?.month_bills || 0}
-          subText="Invoices created this month"
+          value={stats?.year_bills || 0}
+          subText="Invoices created this year"
           icon={<Receipt className="h-4 w-4 text-blue-500" />}
         />
         <StatsCard
@@ -219,7 +228,9 @@ function BillsPage() {
         <StatsCard
           loading={isLoadingStats}
           title="Avg. Bill Value"
-          value={`₹${Math.round((stats?.month_total || 0) / (stats?.month_bills || 1)).toLocaleString()}`}
+          value={formatCurrency(
+            (stats?.year_total || 0) / (stats?.year_bills || 1),
+          )}
           subText="Average invoice size"
           icon={<TrendingUp className="h-4 w-4 text-amber-500" />}
         />

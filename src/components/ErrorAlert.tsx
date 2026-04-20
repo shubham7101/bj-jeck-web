@@ -1,5 +1,5 @@
+import { AlertCircle, Database, FileJson } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, FileJson, Database } from "lucide-react";
 
 interface ErrorAlertProps {
   error: Error | string | null | undefined;
@@ -16,7 +16,7 @@ export function ErrorAlert({ error, title = "Error" }: ErrorAlertProps) {
   let parsedJson: any = null;
   try {
     parsedJson = JSON.parse(rawMessage);
-  } catch (e) {
+  } catch (_e) {
     // Not JSON, ignore
   }
 

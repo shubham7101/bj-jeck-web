@@ -43,7 +43,7 @@ export type CustomerSearchRes = z.infer<typeof ledgerSearchResSchema>;
 
 export const ledgerStatsSchema = z.object({
   total_received: z.number(),
-  month_received: z.number(),
+  year_received: z.number(),
   total_entries: z.number(),
 });
 export type LedgerStats = z.infer<typeof ledgerStatsSchema>;

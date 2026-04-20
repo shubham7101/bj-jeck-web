@@ -1,10 +1,17 @@
 import { Link, useLocation } from "@tanstack/react-router";
+import { Fragment } from "react/jsx-runtime";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "./ui/sidebar";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Fragment } from "react/jsx-runtime";
 
-export default function Header() {
+export function Header() {
   const location = useLocation();
   const path = location.pathname;
 
@@ -20,7 +27,7 @@ export default function Header() {
   const segments = path.split("/").filter(Boolean);
   const cumulative: string[] = [];
   segments.forEach((_, idx) => {
-    cumulative.push("/" + segments.slice(0, idx + 1).join("/"));
+    cumulative.push(`/${segments.slice(0, idx + 1).join("/")}`);
   });
 
   const formatLabel = (p: string) => {
@@ -33,7 +40,7 @@ export default function Header() {
 
   return (
     <>
-    <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+      <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator
@@ -82,6 +89,5 @@ export default function Header() {
       </header>
       <Separator />
     </>
-      
-  )
+  );
 }

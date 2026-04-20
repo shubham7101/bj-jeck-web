@@ -1,62 +1,56 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
-import { z } from "zod";
-import { format, parse, isValid } from "date-fns";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ArrowLeft,
-  Calendar as CalendarIcon,
-  CheckCircle2,
-  IndianRupee,
-  Loader2,
-  Save,
-  User,
-  X,
-  AlertCircle,
-  Wallet,
-  Receipt,
-  Plus,
-  FileText,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { formatDate, getInitials } from "@/utils";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAppForm } from "@/components/form/hooks";
-import { FormBase } from "@/components/form/FormBase";
-import { customerService } from "@/services/customerService";
-import { ledgerService } from "@/services/ledgerService";
-import type { Customer } from "@/schemas/customerSchema";
-import { useDebounce } from "@/hooks/use-debounce";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { CustomerDataGrid } from "@/components/CustomerDataGrid";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { format, isValid, parse } from "date-fns";
 import {
-  createLedgerSchema,
-  type CreateLedger,
-  type Ledger,
-} from "@/schemas/ledgerSchema";
+  AlertCircle,
+  ArrowLeft,
+  Calendar as CalendarIcon,
+  IndianRupee,
+  Loader2,
+  Plus,
+  Receipt,
+  Save,
+  User,
+  Wallet,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
+import { CustomerDataGrid } from "@/components/CustomerDataGrid";
+import { FormBase } from "@/components/form/FormBase";
+import { useAppForm } from "@/components/form/hooks";
+import { SuccessFeedback } from "@/components/SuccessFeedback";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from "@/hooks/use-debounce";
+import { cn } from "@/lib/utils";
+import type { Customer } from "@/schemas/customerSchema";
+import { type CreateLedger, createLedgerSchema } from "@/schemas/ledgerSchema";
+import { customerService } from "@/services/customerService";
+import { ledgerService } from "@/services/ledgerService";
+import { formatCurrency, formatDate, getInitials } from "@/utils";
 
 // --- Route Definition ---
 
@@ -73,7 +67,7 @@ export const Route = createFileRoute("/ledger/new")({
     try {
       const customer = await customerService.get(customer_id);
       return { customer };
-    } catch (e) {
+    } catch (_e) {
       return { customer: null };
     }
   },
@@ -137,7 +131,7 @@ export default function NewLedgerPage() {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6 max-w-5xl mx-auto pb-20">
+    <div className="flex-1 p-6 md:p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-24">
       <Header
         step={customer ? 2 : 1}
         hasCustomer={!!customer}
@@ -158,9 +152,38 @@ export default function NewLedgerPage() {
       {createdEntry && (
         <div ref={successRef}>
           <SuccessFeedback
-            entry={createdEntry}
+            title="Payment Recorded"
+            description="The ledger has been updated successfully."
+            details={[
+              {
+                label: "Amount Received",
+                value: (
+                  <span className="flex items-center text-2xl font-bold text-emerald-400">
+                    <IndianRupee className="mr-1 h-5 w-5" />
+                    {formatCurrency(createdEntry.amount || 0)}
+                  </span>
+                ),
+              },
+              {
+                label: "Transaction Date",
+                value: (
+                  <span className="text-lg font-medium text-emerald-100">
+                    {formatDate(createdEntry.date)}
+                  </span>
+                ),
+              },
+            ]}
+            primaryAction={{
+              to: "/ledger",
+              label: "View Ledger",
+              icon: Receipt,
+            }}
+            secondaryAction={{
+              onClick: handleAddAnother,
+              label: "Add Another",
+              icon: Plus,
+            }}
             onDismiss={() => setCreatedEntry(null)}
-            onReset={handleAddAnother} // 4. Pass the new handler
           />
         </div>
       )}
@@ -178,10 +201,12 @@ function Header({
   onChangeCustomer: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div className="space-y-1">
-        <h2 className="text-3xl font-bold tracking-tight">New Payment</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-3xl font-bold tracking-tight text-white">
+          New Payment
+        </h2>
+        <p className="text-zinc-400">
           {step === 1 ? "Step 1: Select Customer" : "Step 2: Payment Details"}
         </p>
       </div>
@@ -190,15 +215,15 @@ function Header({
           <Button
             variant="outline"
             onClick={onChangeCustomer}
-            className="hidden sm:flex cursor-pointer"
+            className="hidden sm:flex cursor-pointer border-zinc-700 bg-zinc-950/50 hover:bg-zinc-800 text-zinc-300"
           >
             <User className="mr-2 h-4 w-4" /> Change Customer
           </Button>
         )}
         <Button
-          variant="outline"
+          variant="ghost"
           asChild
-          className="hidden sm:flex cursor-pointer"
+          className="hidden sm:flex hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer"
         >
           <Link to="/ledger">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Ledger
@@ -260,14 +285,15 @@ function CustomerSelectionStep({
   };
 
   return (
-    <Card className="bg-zinc-900/50 border-zinc-800 animate-in fade-in duration-500">
-      <CardHeader>
+    <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl animate-in fade-in duration-500 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500/50" />
+      <CardHeader className="bg-zinc-900/50 border-b border-zinc-800/50 pb-4">
         <CardTitle>Find Customer</CardTitle>
         <CardDescription>
           Select the customer who made the payment.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <CustomerDataGrid
           data={data?.data || []}
           isLoading={isLoading}
@@ -404,8 +430,9 @@ function LedgerEntryForm({
         </Alert>
       )}
 
-      <Card className="bg-zinc-900/50 border-zinc-800">
-        <CardHeader className="pb-4">
+      <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-400/50" />
+        <CardHeader className="pb-4 border-b border-zinc-800/50 bg-zinc-900/50">
           <CardTitle className="text-base font-medium flex items-center gap-2">
             <Wallet className="h-4 w-4 text-emerald-500" />
             Transaction Details
@@ -429,7 +456,7 @@ function LedgerEntryForm({
                       id={field.name}
                       type="number"
                       placeholder="0.00"
-                      className="pl-10 h-14 bg-zinc-950/80 border-zinc-700 focus:border-emerald-500/50 text-2xl font-bold text-white placeholder:text-zinc-700"
+                      className="pl-10 h-14 bg-zinc-950/50 border-emerald-500/30 ring-emerald-500/50 focus:border-emerald-500/50 text-2xl font-bold text-white placeholder:text-zinc-700 transition-all shadow-[0_0_15px_-3px_rgba(16,185,129,0.1)]"
                       value={field.state.value === 0 ? "" : field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) =>
@@ -464,7 +491,7 @@ function LedgerEntryForm({
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full h-14 pl-4 text-left font-normal bg-zinc-950/50 border-zinc-700 hover:bg-zinc-900 hover:text-zinc-200",
+                            "w-full h-14 pl-4 text-left font-normal bg-zinc-950/50 border-zinc-700 hover:bg-zinc-900 hover:text-zinc-200 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors",
                             !dateValue && "text-muted-foreground",
                           )}
                         >
@@ -509,7 +536,7 @@ function LedgerEntryForm({
           </div>
         </CardContent>
 
-        <CardFooter className="bg-zinc-950/30 border-t border-zinc-800 p-6 flex justify-end gap-4">
+        <CardFooter className="bg-zinc-900/50 border-t border-zinc-800/50 p-6 flex justify-end gap-4 rounded-b-xl">
           <Button
             variant="ghost"
             type="button"
@@ -535,90 +562,6 @@ function LedgerEntryForm({
         </CardFooter>
       </Card>
     </form>
-  );
-}
-
-// --- Success Feedback ---
-
-function SuccessFeedback({
-  entry,
-  onDismiss,
-  onReset,
-}: {
-  entry: Ledger;
-  onDismiss: () => void;
-  onReset: () => void;
-}) {
-  return (
-    <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
-      <Card className="border-emerald-500/30 bg-emerald-950/10 relative overflow-hidden shadow-lg shadow-emerald-900/10">
-        <div className="absolute top-4 right-4 z-10">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-emerald-600 hover:text-emerald-400 hover:bg-emerald-900/30 cursor-pointer"
-            onClick={onDismiss}
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close notification</span>
-          </Button>
-        </div>
-
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-            <CardTitle className="text-xl text-emerald-500">
-              Payment Recorded
-            </CardTitle>
-          </div>
-          <CardDescription className="text-emerald-400/80">
-            The ledger has been updated successfully.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm bg-black/20 p-4 rounded-md border border-emerald-500/10 max-w-2xl">
-            <div className="flex flex-col gap-1">
-              <span className="text-emerald-500/70 text-xs uppercase font-semibold">
-                Amount Received
-              </span>
-              <span className="font-bold text-2xl text-emerald-400 flex items-center">
-                <IndianRupee className="h-5 w-5 mr-1" />
-                {entry.amount?.toLocaleString() || "0"}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-emerald-500/70 text-xs uppercase font-semibold">
-                Transaction Date
-              </span>
-              <span className="font-medium text-emerald-100 text-lg">
-                {formatDate(entry.date)}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-
-        <CardFooter className="bg-emerald-950/30 py-4 flex gap-3">
-          <Button
-            asChild
-            className="bg-emerald-600 hover:bg-emerald-500 text-white border-none cursor-pointer"
-          >
-            <Link to="/ledger">
-              <Receipt className="mr-2 h-4 w-4" />
-              View Ledger
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-950/50 hover:text-emerald-300 cursor-pointer"
-            onClick={onReset}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Another
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
   );
 }
 

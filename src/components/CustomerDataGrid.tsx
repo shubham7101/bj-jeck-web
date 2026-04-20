@@ -1,8 +1,4 @@
-import { z } from "zod";
-import type {
-  Customer,
-  customerSearchReqSchema,
-} from "@/schemas/customerSchema";
+import { Link, type useNavigate } from "@tanstack/react-router";
 import {
   Check,
   ChevronDown,
@@ -19,8 +15,18 @@ import {
   Search,
   Trash,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { useEffect, useState } from "react";
+import type { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import type {
+  Customer,
+  customerSearchReqSchema,
+} from "@/schemas/customerSchema";
+import { formatDate } from "@/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Badge } from "./ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +37,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { useEffect, useState } from "react";
+import { Skeleton } from "./ui/skeleton";
 import {
   Table,
   TableBody,
@@ -40,12 +46,6 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { Link, type useNavigate } from "@tanstack/react-router";
-import { Skeleton } from "./ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Badge } from "./ui/badge";
-import { formatDate } from "@/utils";
-import { cn } from "@/lib/utils";
 
 // --- Types ---
 
@@ -90,7 +90,7 @@ type CustomerDataGridProps = {
   paginationProps: CustomerPaginationProps;
 } & Partial<CustomerTableActions>;
 
-export const CustomerDataGrid = ({
+export function CustomerDataGrid({
   data,
   isLoading,
   isPlaceholderData,
@@ -98,7 +98,7 @@ export const CustomerDataGrid = ({
   paginationProps,
   processingIds,
   ...actions
-}: CustomerDataGridProps) => {
+}: CustomerDataGridProps) {
   return (
     <div
       className={cn(
@@ -120,7 +120,7 @@ export const CustomerDataGrid = ({
       </div>
     </div>
   );
-};
+}
 
 function CustomerFilters({
   filters,
@@ -135,39 +135,39 @@ function CustomerFilters({
   );
 
   return (
-    <div className="flex flex-col gap-4 bg-zinc-900/50 p-4 rounded-lg border border-zinc-800 shadow-sm">
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
+    <div className="flex flex-col gap-4 bg-zinc-900/40 p-3 rounded-2xl border border-zinc-800/60 shadow-lg backdrop-blur-xl mb-2">
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
           <Input
             name="name"
-            placeholder="Filter by name..."
+            placeholder="Search by name..."
             value={filters.name}
             onChange={onChange}
             disabled={disabledFields?.name}
-            className="pl-9 bg-zinc-950 border-zinc-800 focus:ring-zinc-700"
+            className="pl-10 h-11 bg-zinc-950/50 border-zinc-800/50 hover:bg-zinc-900/50 focus:bg-zinc-950 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 rounded-xl transition-all"
           />
         </div>
-        <div className="relative w-full flex-1">
-          <Phone className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
+        <div className="relative w-full flex-1 group">
+          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
           <Input
             name="mobile_no"
-            placeholder="Mobile..."
+            placeholder="Search mobile..."
             value={filters.mobile_no}
             onChange={onChange}
             disabled={disabledFields?.mobile_no}
-            className="pl-9 bg-zinc-950 border-zinc-800 focus:ring-zinc-700"
+            className="pl-10 h-11 bg-zinc-950/50 border-zinc-800/50 hover:bg-zinc-900/50 focus:bg-zinc-950 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 rounded-xl transition-all font-mono"
           />
         </div>
-        <div className="relative w-full flex-1">
-          <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
+        <div className="relative w-full flex-1 group">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
           <Input
             name="address"
-            placeholder="Address..."
+            placeholder="Search address..."
             value={filters.address}
             onChange={onChange}
             disabled={disabledFields?.address}
-            className="pl-9 bg-zinc-950 border-zinc-800 focus:ring-zinc-700"
+            className="pl-10 h-11 bg-zinc-950/50 border-zinc-800/50 hover:bg-zinc-900/50 focus:bg-zinc-950 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 rounded-xl transition-all"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -176,10 +176,17 @@ function CustomerFilters({
             size="icon"
             onClick={onReset}
             disabled={!hasActiveFilters}
-            className="text-zinc-500 hover:text-rose-500 cursor-pointer"
+            className={cn(
+              "h-11 w-11 rounded-xl transition-all duration-300",
+              hasActiveFilters
+                ? "text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 hover:text-rose-300 border border-rose-500/20 cursor-pointer"
+                : "text-zinc-600 bg-zinc-900/30",
+            )}
             title="Clear filters"
           >
-            <RotateCcw className="h-4 w-4" />
+            <RotateCcw
+              className={cn("h-4 w-4", hasActiveFilters && "animate-spin-once")}
+            />
           </Button>
         </div>
       </div>
@@ -202,8 +209,8 @@ function CustomerPaginationControls({
   }, [currentPage]);
 
   const handlePageInputCommit = () => {
-    let p = parseInt(pageInput);
-    if (isNaN(p)) {
+    let p = parseInt(pageInput, 10);
+    if (Number.isNaN(p)) {
       setPageInput(currentPage.toString());
       return;
     }
@@ -224,7 +231,7 @@ function CustomerPaginationControls({
   const startRecord = totalCount === 0 ? 0 : (currentPage - 1) * perPage + 1;
   const endRecord = Math.min(currentPage * perPage, totalCount);
   return (
-    <div className="border-t border-zinc-800 bg-zinc-900/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 select-none">
+    <div className="rounded-b-xl border border-t-0 border-zinc-800/80 bg-zinc-900/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 select-none">
       {/* Left Side: Rows Per Page & Info */}
       <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
         <DropdownMenu>
@@ -232,7 +239,7 @@ function CustomerPaginationControls({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 gap-2 border-zinc-800 bg-zinc-950 text-zinc-400 text-xs"
+              className="h-8 gap-2 border-zinc-700 bg-zinc-950/50 text-zinc-400 text-xs hover:bg-zinc-900 focus:ring-1 focus:ring-emerald-500/50 transition-all rounded-lg"
             >
               <span>
                 Rows: <span className="text-zinc-200">{perPage}</span>
@@ -264,21 +271,21 @@ function CustomerPaginationControls({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <div className="text-xs text-zinc-500">
-          <span className="hidden sm:inline">Showing </span>
-          <span className="text-zinc-300 font-medium">
+        <div className="text-xs text-zinc-500 flex items-center gap-1 bg-zinc-900/50 px-3 py-1.5 rounded-lg border border-zinc-800/50">
+          <span className="hidden sm:inline">Showing</span>
+          <span className="text-zinc-200 font-medium">
             {startRecord}-{endRecord}
           </span>
-          <span> of </span>
-          <span className="text-zinc-300 font-medium">{totalCount}</span>
+          <span>of</span>
+          <span className="text-zinc-200 font-medium">{totalCount}</span>
         </div>
       </div>
 
       {/* Right Side: Navigation */}
       <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-center sm:justify-end">
         {/* Page Input */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-zinc-500">Page</span>
+        <div className="flex items-center gap-2 bg-zinc-900/50 p-1 rounded-lg">
+          <span className="text-xs text-zinc-500 pl-2">Page</span>
           <Input
             type="number"
             min={1}
@@ -288,12 +295,10 @@ function CustomerPaginationControls({
             onFocus={(e) => e.target.select()}
             onBlur={handlePageInputCommit}
             onKeyDown={handleKeyDown}
-            className="h-8 w-12 text-center text-xs px-1 bg-zinc-950 border-zinc-800 focus:ring-zinc-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="h-7 w-12 text-center text-xs px-1 bg-zinc-950 border-zinc-800 focus:ring-1 focus:ring-emerald-500/50 rounded transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
-          <span className="text-xs text-zinc-500">of {totalPages}</span>
+          <span className="text-xs text-zinc-500 pr-2">of {totalPages}</span>
         </div>
-
-        <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
 
         <div className="flex items-center gap-1">
           <Button
@@ -301,16 +306,17 @@ function CustomerPaginationControls({
             size="icon"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage <= 1}
-            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30"
+            className="h-7 w-7 border-transparent bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-all disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
+          <div className="h-4 w-px bg-zinc-800 mx-1" />
           <Button
             variant="outline"
             size="icon"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage >= totalPages}
-            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30"
+            className="h-7 w-7 border-transparent bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-all disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -450,59 +456,61 @@ function CustomerRow({
       onClick={handleRowClick}
       onDoubleClick={handleDoubleClick}
       className={`
-        group border-zinc-800 transition-all duration-200 hover:bg-zinc-900/60 
+        group border-zinc-800/50 transition-all duration-300 hover:bg-zinc-800/30 
         ${onSelect ? "cursor-pointer" : ""} 
         ${isProcessing ? "opacity-50 pointer-events-none bg-zinc-900/40" : ""}
       `}
     >
-      <TableCell className="pl-6 font-mono text-xs text-zinc-600 group-hover:text-zinc-400">
+      <TableCell className="pl-6 font-mono text-xs text-zinc-600 group-hover:text-emerald-500/70 transition-colors">
         #{customer.id.toString().padStart(4, "0")}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-4">
-          <Avatar className="h-9 w-9 border border-zinc-800">
+          <Avatar className="h-10 w-10 border border-zinc-700/50 shadow-sm group-hover:border-emerald-500/50 transition-colors">
             <AvatarImage
               src={customer.avatar || undefined}
               alt={customer.name}
             />
-            <AvatarFallback className="bg-zinc-800 text-xs text-zinc-300">
+            <AvatarFallback className="bg-zinc-800 text-xs text-zinc-300 font-medium">
               {customer.name.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div>
-            <span className="font-semibold text-zinc-200 text-sm block">
+            <span className="font-semibold text-zinc-200 text-sm block group-hover:text-emerald-50 transition-colors">
               {customer.name}
             </span>
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-zinc-500 group-hover:text-zinc-400 transition-colors">
               Joined {formatDate(customer.joined_date)}
             </span>
           </div>
         </div>
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-2 text-zinc-400 text-xs font-mono">
-          <Phone className="h-3 w-3" />
+        <div className="flex items-center gap-2 text-zinc-400 text-xs font-mono group-hover:text-zinc-300 transition-colors">
+          <Phone className="h-3.5 w-3.5 opacity-70" />
           {customer.mobile_no}
         </div>
       </TableCell>
       <TableCell className="hidden md:table-cell">
-        <div className="flex items-center gap-2 text-zinc-500 max-w-45">
-          <MapPin className="h-3 w-3 shrink-0" />
+        <div className="flex items-center gap-2 text-zinc-500 max-w-45 group-hover:text-zinc-400 transition-colors">
+          <MapPin className="h-3.5 w-3.5 shrink-0 opacity-70" />
           <span className="truncate text-sm">{customer.address}</span>
         </div>
       </TableCell>
       <TableCell>
         <Badge
           variant="outline"
-          className={`pl-2 pr-2.5 py-0.5 rounded-full border ${
+          className={`pl-2 pr-2.5 py-0.5 rounded-full border transition-colors ${
             customer.active
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-              : "bg-zinc-800 text-zinc-400 border-zinc-700"
+              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 group-hover:bg-emerald-500/20"
+              : "bg-zinc-800/50 text-zinc-400 border-zinc-700/50 group-hover:bg-zinc-800"
           }`}
         >
           <span
             className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-              customer.active ? "bg-emerald-500 animate-pulse" : "bg-zinc-500"
+              customer.active
+                ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"
+                : "bg-zinc-500"
             }`}
           />
           {customer.active ? "Active" : "Inactive"}

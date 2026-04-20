@@ -1,13 +1,13 @@
 import { apiClient } from "@/lib/api-client";
 import {
-  recordDetailsSchema,
-  recordSchema,
-  recordSearchResSchema,
-  recordStatsSchema,
   type CreateRecord,
   type Record,
   type RecordSearchReq,
   type RecordStats,
+  recordDetailsSchema,
+  recordSchema,
+  recordSearchResSchema,
+  recordStatsSchema,
 } from "@/schemas/recordSchema";
 
 export const recordService = {

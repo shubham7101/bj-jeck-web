@@ -1,36 +1,38 @@
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Link,
-  useRouter,
   createFileRoute,
+  Link,
   useNavigate,
+  useRouter,
 } from "@tanstack/react-router";
 import {
-  ArrowLeft,
-  Phone,
-  MapPin,
-  FileText,
-  Coins,
-  Calculator,
-  Layers,
-  UserX,
-  ClipboardList,
-  ArrowRight,
-  History,
-  BarChart3,
-  Loader2,
   AlertCircle,
-  PackageOpen,
-  Trash,
-  Edit,
-  Truck,
-  ChevronUp,
+  ArrowLeft,
+  ArrowRight,
+  BarChart3,
+  Calculator,
   ChevronDown,
+  ChevronUp,
+  ClipboardList,
+  Coins,
+  Edit,
+  FileText,
+  History,
+  Layers,
+  Loader2,
+  MapPin,
+  PackageOpen,
+  Phone,
+  Trash,
+  Truck,
+  UserX,
 } from "lucide-react";
+import { useState } from "react";
+import { StatsCard } from "@/components/StatsCard";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -40,11 +42,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { StatsCard } from "@/components/StatsCard";
-import { customerService } from "@/services/customerService";
-import { formatDate, getInitials } from "@/utils";
 import type { Customer } from "@/schemas/customerSchema";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { customerService } from "@/services/customerService";
+import { formatCurrency, formatDate, getInitials } from "@/utils";
 
 export const Route = createFileRoute("/customers/$customerId")({
   component: CustomerDetailsPage,
@@ -230,8 +230,9 @@ function CustomerHeader({ customer }: { customer: Customer }) {
 
 function CustomerContactCard({ customer }: { customer: Customer }) {
   return (
-    <Card className="bg-zinc-950 border-zinc-800 shadow-lg shadow-black/20 flex flex-col justify-between h-full">
-      <div className="h-24 bg-linear-to-r from-zinc-900 to-zinc-800 relative">
+    <Card className="bg-zinc-900/40 border-zinc-800 shadow-xl backdrop-blur-sm relative overflow-hidden flex flex-col justify-between h-full">
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-400/50 z-10" />
+      <div className="h-24 bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 relative border-b border-zinc-800/50">
         <Avatar className="absolute -bottom-10 left-6 h-20 w-20 border-4 border-zinc-950 shadow-md">
           <AvatarImage src="" />
           <AvatarFallback className="bg-zinc-800 text-xl font-bold text-zinc-300">
@@ -239,9 +240,11 @@ function CustomerContactCard({ customer }: { customer: Customer }) {
           </AvatarFallback>
         </Avatar>
       </div>
-      <CardContent className="pt-12 pb-6 px-6">
+      <CardContent className="pt-12 pb-6 px-6 relative z-10">
         <div className="space-y-4">
-          <h3 className="text-xl font-bold tracking-tight">{customer.name}</h3>
+          <h3 className="text-xl font-bold tracking-tight text-zinc-100">
+            {customer.name}
+          </h3>
           <div className="flex gap-6">
             <div className="flex items-center gap-2 text-sm text-zinc-400">
               <Phone className="h-4 w-4 text-emerald-500" />
@@ -286,8 +289,8 @@ function CustomerRatesCard({ id }: { id: number }) {
   const hasMore = hasRates && rates.length > INITIAL_LIMIT;
 
   return (
-    <Card className="bg-zinc-950 border-zinc-800 shadow-lg shadow-black/20 flex flex-col h-full min-h-56">
-      <CardHeader className="pb-4 flex flex-row items-center justify-between border-b border-zinc-800/50">
+    <Card className="bg-zinc-900/40 border-zinc-800 shadow-xl backdrop-blur-sm relative overflow-hidden flex flex-col h-full min-h-56">
+      <CardHeader className="pb-4 flex flex-row items-center justify-between border-b border-zinc-800/50 bg-zinc-900/50">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-zinc-900 rounded-md border border-zinc-800">
             <Calculator className="h-4 w-4 text-emerald-500" />
@@ -303,9 +306,9 @@ function CustomerRatesCard({ id }: { id: number }) {
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 text-xs text-zinc-500 hover:text-emerald-400 hover:bg-emerald-950/30 cursor-pointer"
+            className="h-8 text-xs text-zinc-400 hover:text-emerald-400 hover:bg-emerald-950/30 cursor-pointer"
           >
-            <Edit className="h-3 w-3 mr-1" /> Modify
+            <Edit className="h-3 w-3 mr-1" /> Edit Rates
           </Button>
         </Link>
       </CardHeader>
@@ -316,7 +319,7 @@ function CustomerRatesCard({ id }: { id: number }) {
             visibleRates.map((rateItem, index) => (
               <div
                 key={`${rateItem.part}-${rateItem.size}-${index}`}
-                className="flex flex-col p-3 rounded-lg bg-zinc-900/30 border border-zinc-800/50 hover:border-zinc-700 transition-colors"
+                className="flex flex-col p-3 rounded-lg bg-zinc-950/40 border border-zinc-800/50 hover:border-zinc-700 transition-colors"
               >
                 <div className="flex justify-between items-start mb-1 gap-2">
                   <span className="text-xs text-zinc-500 tracking-wider capitalize font-medium truncate">
@@ -402,10 +405,10 @@ function CustomerStatsSection({ id }: { id: number }) {
 
   if (!stats) {
     return (
-      <div className="w-full rounded-xl border border-zinc-800 bg-zinc-900/20 border-dashed p-8">
+      <div className="w-full rounded-xl border border-zinc-800/50 bg-zinc-900/30 border-dashed p-8 backdrop-blur-sm">
         <div className="flex flex-col items-center justify-center text-center space-y-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-900 border border-zinc-800">
-            <BarChart3 className="h-6 w-6 text-zinc-600" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-900 border border-zinc-800 shadow-inner">
+            <BarChart3 className="h-6 w-6 text-zinc-500" />
           </div>
           <div className="space-y-1">
             <h3 className="text-sm font-medium text-zinc-300">
@@ -443,7 +446,7 @@ function CustomerStatsSection({ id }: { id: number }) {
       />
       <StatsCard
         title="Total Billed Amount"
-        value={`₹${billed.toLocaleString()}`}
+        value={formatCurrency(billed)}
         valueColor="text-zinc-200"
         icon={<FileText className="h-4 w-4" />}
         subText={
@@ -456,7 +459,7 @@ function CustomerStatsSection({ id }: { id: number }) {
       />
       <StatsCard
         title="Total Ledger Paid"
-        value={`₹${ledgerPaid.toLocaleString()}`}
+        value={formatCurrency(ledgerPaid)}
         valueColor="text-emerald-400"
         icon={<Coins className="h-4 w-4" />}
         subText={
@@ -467,7 +470,7 @@ function CustomerStatsSection({ id }: { id: number }) {
       />
       <StatsCard
         title="Outstanding Balance"
-        value={`₹${balance.toLocaleString()}`}
+        value={formatCurrency(balance)}
         subText={balance > 0 ? "Due Payment" : "Fully Paid"}
         icon={<Calculator className="h-4 w-4" />}
         valueColor={balance > 0 ? "text-rose-400" : "text-emerald-400"}
@@ -490,13 +493,13 @@ function CustomerInventorySection({ id }: { id: number }) {
 
   return (
     <div className="lg:col-span-2 space-y-4">
-      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+      <h3 className="text-lg font-semibold text-zinc-100 flex items-center gap-2 px-1">
         Current Inventory
       </h3>
-      <Card className="bg-zinc-950 border-zinc-800 shadow-xl shadow-black/20">
+      <Card className="bg-zinc-900/40 border-zinc-800 shadow-xl backdrop-blur-sm overflow-hidden min-h-64">
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-zinc-900/50 sticky top-0 z-10">
+            <TableHeader className="bg-zinc-900/50 sticky top-0 z-10 border-b border-zinc-800/50">
               <TableRow className="border-zinc-800 hover:bg-transparent">
                 <TableHead className="w-1/3 pl-6 h-10 text-zinc-500 uppercase text-xs font-bold">
                   Part Type
@@ -618,23 +621,27 @@ function QuickLinks({ id }: { id: number }) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-white">History & Logs</h3>
+      <h3 className="text-lg font-semibold text-zinc-100 px-1">
+        History & Logs
+      </h3>
       <div className="flex flex-col gap-3">
         {LINKS.map((link, idx) => (
           <Link key={idx} to={link.to} search={link.search}>
-            <div className="group flex items-center justify-between p-4 rounded-lg border border-zinc-800 bg-zinc-900/20 hover:bg-zinc-900 hover:border-zinc-700 transition-all cursor-pointer">
+            <div className="group flex items-center justify-between p-4 rounded-xl border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-sm hover:bg-zinc-800/60 hover:border-zinc-700 transition-all cursor-pointer shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded bg-zinc-950 border border-zinc-800 group-hover:border-zinc-700">
+                <div className="p-2.5 rounded-lg bg-zinc-950/80 border border-zinc-800 group-hover:border-zinc-700 shadow-inner">
                   <div className={`h-5 w-5 ${link.colorClass}`}>
                     <link.icon className="w-full h-full" />
                   </div>
                 </div>
                 <div>
                   <div className="font-medium text-zinc-200">{link.title}</div>
-                  <div className="text-xs text-zinc-500">{link.subtitle}</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">
+                    {link.subtitle}
+                  </div>
                 </div>
               </div>
-              <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-300" />
+              <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-300 transition-transform group-hover:translate-x-1" />
             </div>
           </Link>
         ))}

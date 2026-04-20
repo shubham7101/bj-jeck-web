@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import {
   BookOpen,
   FileText,
@@ -9,8 +8,10 @@ import {
   Receipt,
   User,
 } from "lucide-react";
+import type * as React from "react";
 
 import { NavMain } from "@/components/NavMain";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
@@ -22,7 +23,6 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // This is sample data.
 const data = {

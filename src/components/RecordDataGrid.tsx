@@ -1,7 +1,5 @@
-import type { Record, RecordSearchReq } from "@/schemas/recordSchema";
 import { Link, type useNavigate } from "@tanstack/react-router";
-import { cn } from "@/lib/utils";
-import { Input } from "./ui/input";
+import { format, isValid, parse } from "date-fns";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -13,6 +11,7 @@ import {
   Eye,
   Hash,
   Loader2,
+  type LucideIcon,
   MoreHorizontal,
   Package,
   RotateCcw,
@@ -20,12 +19,13 @@ import {
   Smartphone,
   Trash,
   Truck,
-  type LucideIcon,
 } from "lucide-react";
+import { useEffect, useId, useState } from "react";
+import { cn } from "@/lib/utils";
+import type { Record, RecordSearchReq } from "@/schemas/recordSchema";
+import { formatCurrency, formatDate } from "@/utils";
+import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { useEffect, useState } from "react";
-import { format, isValid, parse } from "date-fns";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import {
   DropdownMenu,
@@ -37,6 +37,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { Input } from "./ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Skeleton } from "./ui/skeleton";
 import {
   Table,
   TableBody,
@@ -45,9 +48,6 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { formatDate } from "@/utils";
-import { Badge } from "./ui/badge";
-import { Skeleton } from "./ui/skeleton";
 
 type RecordFilterDisableFlags = {
   [K in keyof RecordSearchReq]?: boolean;
@@ -90,7 +90,7 @@ const DATE_FORMAT = "dd-MM-yyyy";
 
 // --- Main Component ---
 
-export const RecordDataGrid = ({
+export function RecordDataGrid({
   data,
   isLoading,
   isPlaceholderData,
@@ -100,7 +100,7 @@ export const RecordDataGrid = ({
   isRecordDisabled,
   onDelete,
   navigate,
-}: RecordDataGridProps) => {
+}: RecordDataGridProps) {
   return (
     <div
       className={cn(
@@ -110,7 +110,7 @@ export const RecordDataGrid = ({
     >
       <RecordFilters {...filterProps} />
 
-      <div className="flex flex-col rounded-xl border border-zinc-800 bg-zinc-950/50 shadow-2xl shadow-black/40 overflow-hidden">
+      <div className="flex flex-col rounded-xl border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-sm shadow-2xl shadow-black/40 overflow-hidden">
         <RecordTable
           data={data}
           isLoading={isLoading}
@@ -123,7 +123,7 @@ export const RecordDataGrid = ({
       </div>
     </div>
   );
-};
+}
 
 function RecordFilters({
   filters,
@@ -134,7 +134,7 @@ function RecordFilters({
   const hasActiveFilters = Object.values(filters).some((v) => v !== "");
 
   return (
-    <div className="bg-zinc-900/50 p-4 rounded-lg border border-zinc-800 shadow-sm">
+    <div className="bg-zinc-900/40 backdrop-blur-sm p-4 rounded-2xl border border-zinc-800/80 shadow-lg">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
         {/* Customer ID */}
         <FilterInput
@@ -238,8 +238,8 @@ function RecordPaginationControls({
   }, [currentPage]);
 
   const handlePageInputCommit = () => {
-    let p = parseInt(pageInput);
-    if (isNaN(p)) {
+    let p = parseInt(pageInput, 10);
+    if (Number.isNaN(p)) {
       setPageInput(currentPage.toString());
       return;
     }
@@ -480,7 +480,7 @@ function RecordRow({
       </TableCell>
 
       <TableCell>
-        <div className="flex justify-center items-center gap-2 text-xs text-zinc-300">
+        <div className="flex justify-center items-center gap-2 text-xs text-zinc-300 group-hover:text-white transition-colors">
           {formatDate(record.date)}
         </div>
       </TableCell>
@@ -488,7 +488,7 @@ function RecordRow({
       <TableCell className="text-center">
         <Badge
           variant="outline"
-          className={`pl-2 pr-2.5 py-0.5 rounded-full border text-[10px] inline-flex items-center ${
+          className={`pl-2 pr-2.5 py-0.5 rounded-full border text-[10px] inline-flex items-center shadow-sm backdrop-blur-sm ${
             isTypeIn
               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
               : "bg-orange-500/10 text-orange-400 border-orange-500/20"
@@ -505,34 +505,34 @@ function RecordRow({
 
       <TableCell className="hidden md:table-cell pl-4">
         {record.vehicle_no || record.vehicle_mobile_no ? (
-          <div className="flex flex-col items-start">
+          <div className="flex flex-col items-start gap-1">
             {record.vehicle_no && (
-              <span className="text-xs font-medium flex items-center gap-1 text-zinc-400">
+              <span className="text-[10px] font-medium flex items-center gap-1.5 text-zinc-400 bg-zinc-900/80 px-2 py-0.5 rounded-md border border-zinc-800">
                 <Truck className="h-3 w-3" />
                 {record.vehicle_no}
               </span>
             )}
             {record.vehicle_mobile_no && (
-              <span className="text-[10px] text-zinc-600 font-mono flex items-center gap-1 mt-0.5">
-                <Smartphone className="h-2.5 w-2.5" />
+              <span className="text-[10px] text-zinc-500 font-mono flex items-center gap-1.5 px-2">
+                <Smartphone className="h-3 w-3" />
                 {record.vehicle_mobile_no}
               </span>
             )}
           </div>
         ) : (
-          <span className="text-zinc-700 text-xs">-</span>
+          <span className="text-zinc-700 text-xs ml-4">-</span>
         )}
       </TableCell>
 
       <TableCell className="text-center">
         <div className="flex flex-col items-center">
-          <span className="text-sm font-semibold flex items-center gap-1 text-zinc-200">
-            {record.total.toLocaleString()}
-            <Package className="h-3 w-3 text-zinc-500" />
+          <span className="text-sm font-semibold flex items-center gap-1.5 text-zinc-200 group-hover:text-white transition-colors">
+            {record.total || 0}
+            <Package className="h-3 w-3 text-zinc-500 group-hover:text-zinc-400" />
           </span>
           {record.labour_charge > 0 && (
-            <span className="text-[10px] text-zinc-500">
-              + ₹{record.labour_charge} Labour
+            <span className="text-[10px] text-emerald-500/80 font-medium">
+              + {formatCurrency(record.labour_charge || 0)} Labour
             </span>
           )}
         </div>
@@ -544,12 +544,12 @@ function RecordRow({
             to={`/bills/$billId`}
             params={{ billId: record.bill_id.toString() }}
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-medium hover:bg-blue-500/20 transition-colors"
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-zinc-900/80 text-zinc-400 border border-zinc-800/80 text-[10px] font-medium hover:bg-zinc-800 hover:text-zinc-200 transition-colors shadow-sm"
           >
             <Hash className="h-3 w-3" />#{record.bill_id}
           </Link>
         ) : (
-          <span className="text-[10px] text-zinc-700 font-medium uppercase tracking-wider">
+          <span className="text-[10px] text-zinc-600 font-medium uppercase tracking-wider bg-zinc-950 px-2 py-1 rounded-md border border-zinc-800 border-dashed">
             Unbilled
           </span>
         )}
@@ -633,17 +633,27 @@ function FilterInput({
   label,
   icon: Icon,
   className,
+  id,
   ...props
 }: FilterInputProps) {
+  const generatedId = useId();
+  const inputId = id || generatedId;
+
   return (
     <div className="space-y-1.5">
-      <label className="text-xs text-zinc-500 font-medium ml-1">{label}</label>
+      <label
+        htmlFor={inputId}
+        className="text-xs text-zinc-500 font-medium ml-1"
+      >
+        {label}
+      </label>
       <div className="relative">
         {Icon && (
           <Icon className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
         )}
         <Input
           {...props}
+          id={inputId}
           className={cn(
             "pl-9 bg-zinc-950 border-zinc-800 focus:ring-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed",
             className,
@@ -670,6 +680,7 @@ function FilterDatePicker({
   disabled = false,
 }: FilterDatePickerProps) {
   const [open, setOpen] = useState(false);
+  const buttonId = useId();
   const dateValue =
     value && isValid(parse(value, DATE_FORMAT, new Date()))
       ? parse(value, DATE_FORMAT, new Date())
@@ -677,10 +688,16 @@ function FilterDatePicker({
 
   return (
     <div className="space-y-1.5">
-      <label className="text-xs text-zinc-500 font-medium ml-1">{label}</label>
+      <label
+        htmlFor={buttonId}
+        className="text-xs text-zinc-500 font-medium ml-1"
+      >
+        {label}
+      </label>
       <Popover open={open && !disabled} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            id={buttonId}
             variant="outline"
             disabled={disabled}
             className={cn(

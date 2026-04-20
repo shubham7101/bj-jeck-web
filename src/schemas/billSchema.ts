@@ -13,11 +13,11 @@ export type Bill = z.infer<typeof billSchema>;
 
 export const createBillSchema = billSchema
   .pick({
-    id: true,
     customer_id: true,
     khata_no: true,
   })
   .extend({
+    id: z.number().gt(0).optional(),
     from_date: z
       .string()
       .regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY"),
@@ -35,7 +35,6 @@ export type BillParams = z.infer<typeof billParamsSchema>;
 
 export const billLineSchema = z.object({
   record_id: z.number(),
-  record_item_id: z.number(),
   date: z.string(),
   transaction_type: z.enum(["IN", "OUT"]),
   previous_item_amount: z.number(),
@@ -78,6 +77,7 @@ export const billDetailsSchema = z.object({
   // UPDATED: Nested structure (Part -> Size -> Data)
   items_by_part: z.record(z.string(), z.record(z.string(), sizeCategorySchema)),
   labour_charges: z.record(z.string(), z.number()),
+  transport_charges: z.record(z.string(), z.number()),
   after_inventory: z.array(billInventorySchema).nullish(),
 });
 export type BillDetails = z.infer<typeof billDetailsSchema>;
@@ -99,8 +99,8 @@ export const billSearchResSchema = z.object({
 export type BillSearchRes = z.infer<typeof billSearchResSchema>;
 
 export const billStatsSchema = z.object({
-  month_total: z.number(),
-  month_bills: z.number(),
+  year_total: z.number(),
+  year_bills: z.number(),
   total_bills: z.number(),
 });
 export type BillStats = z.infer<typeof billStatsSchema>;

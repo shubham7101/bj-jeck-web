@@ -5,8 +5,8 @@ import {
   FieldError,
   FieldLabel,
 } from "@/components/ui/field";
-import type { BaseFormControlProps } from "./types";
 import { cn } from "@/lib/utils";
+import type { BaseFormControlProps } from "./types";
 
 type FormBaseProps = BaseFormControlProps & {
   children: React.ReactNode;

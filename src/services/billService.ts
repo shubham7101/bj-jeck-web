@@ -1,11 +1,11 @@
 import { apiClient } from "@/lib/api-client";
 import {
+  type BillSearchReq,
   billDetailsSchema,
   billParamsSchema,
   billSchema,
   billSearchResSchema,
   billStatsSchema,
-  type BillSearchReq,
   type CreateBill,
 } from "@/schemas/billSchema";
 
@@ -36,7 +36,7 @@ export const billService = {
 
   billParams: async (customerId: number) => {
     const data = await apiClient(
-      `/api/bills/unbilled?customer_id=${customerId}`
+      `/api/bills/unbilled?customer_id=${customerId}`,
     );
     return billParamsSchema.parse(data);
   },

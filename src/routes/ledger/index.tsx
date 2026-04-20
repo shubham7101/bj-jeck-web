@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
-  keepPreviousData,
 } from "@tanstack/react-query";
-import { IndianRupee, Plus, Wallet, History } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { History, IndianRupee, Plus, Wallet } from "lucide-react";
+import { useEffect, useState } from "react";
 
 // Components
 import { ErrorAlert } from "@/components/ErrorAlert";
@@ -16,11 +16,12 @@ import { Button } from "@/components/ui/button";
 
 // Hooks & Services
 import { useDebounce } from "@/hooks/use-debounce";
-import { ledgerService } from "@/services/ledgerService";
 import {
-  ledgerSearchReqSchema,
   type LedgerSearchReq,
+  ledgerSearchReqSchema,
 } from "@/schemas/ledgerSchema";
+import { ledgerService } from "@/services/ledgerService";
+import { formatCurrency } from "@/utils";
 
 export const Route = createFileRoute("/ledger/")({
   component: LedgerPage,
@@ -41,7 +42,7 @@ function LedgerPage() {
   const queryClient = useQueryClient();
 
   const page = search.page ?? 1;
-  const per_page = search.per_page ?? 10;
+  const per_page = search.per_page ?? 25;
 
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
 
@@ -60,11 +61,11 @@ function LedgerPage() {
     navigate({
       search: (prev) => {
         const customerId = debouncedFilters.customer_id
-          ? parseInt(debouncedFilters.customer_id)
+          ? parseInt(debouncedFilters.customer_id, 10)
           : undefined;
 
         // Ensure we don't pass NaN for IDs
-        const cleanCustomerId = isNaN(customerId || NaN)
+        const cleanCustomerId = Number.isNaN(customerId || NaN)
           ? undefined
           : customerId;
 
@@ -88,7 +89,7 @@ function LedgerPage() {
     queryFn: () => ledgerService.stats(),
     placeholderData: {
       total_received: 0,
-      month_received: 0,
+      year_received: 0,
       total_entries: 0,
     },
   });
@@ -192,17 +193,18 @@ function LedgerPage() {
   return (
     <div className="flex-1 space-y-6 p-8 pt-6 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/50 backdrop-blur-sm shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500/50" />
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-100">
             Payment Ledger
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-zinc-400 mt-1">
             Track incoming payments and manage transaction history.
           </p>
         </div>
         <Link to={`/ledger/new`}>
-          <Button className="bg-white text-zinc-950 hover:bg-zinc-200 font-semibold shadow-lg shadow-zinc-950/20 transition-all cursor-pointer">
+          <Button className="bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-lg shadow-blue-900/20 transition-all cursor-pointer border-none">
             <Plus className="mr-2 h-4 w-4" /> New Payment
           </Button>
         </Link>
@@ -213,15 +215,15 @@ function LedgerPage() {
         <StatsCard
           loading={isLoadingStats}
           title="Total Collected"
-          value={`₹${(stats?.total_received || 0).toLocaleString()}`}
+          value={formatCurrency(stats?.total_received || 0)}
           subText="All-time revenue collected"
           icon={<Wallet className="h-4 w-4 text-emerald-500" />}
         />
         <StatsCard
           loading={isLoadingStats}
-          title="This Month"
-          value={`₹${(stats?.month_received || 0).toLocaleString()}`}
-          subText="Payments received this month"
+          title="This Year"
+          value={formatCurrency(stats?.year_received || 0)}
+          subText="Payments received this year"
           icon={<IndianRupee className="h-4 w-4 text-blue-500" />}
         />
         <StatsCard

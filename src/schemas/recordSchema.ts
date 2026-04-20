@@ -2,7 +2,6 @@ import { z } from "zod";
 import { paginationSchema } from "./common";
 
 export const recordItemSchema = z.object({
-  id: z.number().min(1),
   part: z.string(),
   size: z.string(),
   broken_amount: z.number().min(0),
@@ -11,18 +10,19 @@ export const recordItemSchema = z.object({
 });
 export type RecordItem = z.infer<typeof recordItemSchema>;
 
-export const createRecordItemSchema = recordItemSchema.omit({ id: true });
+export const createRecordItemSchema = recordItemSchema;
 export type CreateRecordItem = z.infer<typeof createRecordItemSchema>;
 
 export const recordSchema = z.object({
-  customer_id: z.number().min(1),
   id: z.number().min(1),
+  customer_id: z.number().min(1),
   date: z.string(),
   transaction_type: z.enum(["IN", "OUT"]),
+  total: z.number().min(1),
+  labour_charge: z.number().min(0),
+  transport_charge: z.number().min(0),
   vehicle_no: z.string().optional(),
   vehicle_mobile_no: z.string().length(10).or(z.literal("")).optional(),
-  labour_charge: z.number().min(0),
-  total: z.number().min(1),
   bill_id: z.number().min(0).optional(),
 });
 export type Record = z.infer<typeof recordSchema>;
@@ -40,6 +40,7 @@ export const createRecordSchema = recordSchema
     vehicle_no: true,
     vehicle_mobile_no: true,
     labour_charge: true,
+    transport_charge: true,
     total: true,
   })
   .extend({
@@ -50,11 +51,11 @@ export type CreateRecord = z.infer<typeof createRecordSchema>;
 
 export const recordStatsSchema = z.object({
   total_records: z.number().min(0),
-  month_records: z.number().min(0),
-  month_in: z.number().min(0),
-  month_out: z.number().min(0),
-  month_broken: z.number().min(0),
-  month_labour: z.number().min(0),
+  year_records: z.number().min(0),
+  year_in: z.number().min(0),
+  year_out: z.number().min(0),
+  year_broken: z.number().min(0),
+  year_labour: z.number().min(0),
 });
 export type RecordStats = z.infer<typeof recordStatsSchema>;
 

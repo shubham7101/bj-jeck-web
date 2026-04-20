@@ -1,24 +1,24 @@
 import type { useNavigate } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
-import { cn } from "@/lib/utils";
-import { Input } from "./ui/input";
+import { format, isValid, parse } from "date-fns";
 import {
+  Calendar as CalendarIcon,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Hash,
   IndianRupee,
   Loader2,
+  type LucideIcon,
   MoreHorizontal,
   RotateCcw,
   Search,
   Trash2,
-  Calendar as CalendarIcon,
-  type LucideIcon,
 } from "lucide-react";
+import { useEffect, useId, useState } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
-import { useEffect, useState } from "react";
-import { format, isValid, parse } from "date-fns";
+import { Calendar } from "./ui/calendar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,9 +26,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { Input } from "./ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Skeleton } from "./ui/skeleton";
 import {
   Table,
   TableBody,
@@ -37,9 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { Skeleton } from "./ui/skeleton";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { Calendar } from "./ui/calendar";
+import { formatCurrency } from "@/utils";
 
 // --- Types ---
 
@@ -99,7 +99,7 @@ type LedgerDataGridProps = {
 
 // --- Main Component ---
 
-export const LedgerDataGrid = ({
+export function LedgerDataGrid({
   data,
   isLoading,
   isPlaceholderData,
@@ -108,17 +108,18 @@ export const LedgerDataGrid = ({
   processingIds,
   onDelete,
   navigate,
-}: LedgerDataGridProps) => {
+}: LedgerDataGridProps) {
   return (
     <div
       className={cn(
         "space-y-4",
-        isPlaceholderData && "opacity-70 transition-opacity"
+        isPlaceholderData && "opacity-70 transition-opacity",
       )}
     >
       <LedgerFilters {...filterProps} />
 
-      <div className="flex flex-col rounded-xl border border-zinc-800 bg-zinc-950/50 shadow-2xl shadow-black/40 overflow-hidden">
+      <div className="flex flex-col rounded-2xl border border-zinc-800/60 bg-zinc-900/40 backdrop-blur-sm shadow-2xl shadow-black/40 overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-zinc-500/50 to-transparent" />
         <LedgerTable
           data={data}
           isLoading={isLoading}
@@ -130,7 +131,7 @@ export const LedgerDataGrid = ({
       </div>
     </div>
   );
-};
+}
 
 // --- Filters Component ---
 
@@ -144,7 +145,7 @@ function LedgerFilters({
   const hasActiveFilters = Object.values(filters).some((v) => v !== "");
 
   return (
-    <div className="bg-zinc-900/50 p-4 rounded-lg border border-zinc-800 shadow-sm">
+    <div className="bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800/50 backdrop-blur-sm shadow-sm">
       <div className="flex flex-col md:flex-row gap-4">
         {/* Customer ID Filter */}
         <FilterInput
@@ -219,8 +220,8 @@ function LedgerPaginationControls({
   }, [currentPage]);
 
   const handlePageInputCommit = () => {
-    let p = parseInt(pageInput);
-    if (isNaN(p)) {
+    let p = parseInt(pageInput, 10);
+    if (Number.isNaN(p)) {
       setPageInput(currentPage.toString());
       return;
     }
@@ -437,7 +438,7 @@ function LedgerRow({
   return (
     <TableRow
       className={`
-        group border-zinc-800 transition-all duration-200 hover:bg-zinc-900/60 
+        group border-zinc-800/60 transition-all duration-300 hover:bg-zinc-800/40 
         ${isProcessing ? "opacity-50 pointer-events-none bg-zinc-900/40" : ""}
       `}
     >
@@ -451,9 +452,9 @@ function LedgerRow({
         <Link
           to={`/customers/$customerId`}
           params={{ customerId: entry.customer_id.toString() }}
-          className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-zinc-900 text-zinc-400 border border-zinc-800 text-[10px] font-medium hover:bg-zinc-800 hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-950/50 text-zinc-400 border border-zinc-800/80 text-[11px] font-medium hover:bg-zinc-800 hover:text-white transition-colors shadow-sm"
         >
-          <Hash className="h-3 w-3" />
+          <Hash className="h-3.5 w-3.5" />
           {entry.customer_id}
         </Link>
       </TableCell>
@@ -468,9 +469,9 @@ function LedgerRow({
 
       {/* Amount */}
       <TableCell className="text-right pr-6">
-        <span className="text-sm font-bold text-emerald-400 flex items-center justify-end gap-0.5 tabular-nums">
-          <IndianRupee className="h-3 w-3" />
-          {entry.amount.toLocaleString()}
+        <span className="text-base font-bold text-emerald-400 flex items-center justify-end gap-0.5 tabular-nums drop-shadow-[0_0_10px_rgba(52,211,153,0.15)] group-hover:drop-shadow-[0_0_12px_rgba(52,211,153,0.3)] transition-all">
+          <IndianRupee className="h-3.5 w-3.5" />
+          {formatCurrency(entry.amount)}
         </span>
       </TableCell>
 
@@ -525,20 +526,30 @@ function FilterInput({
   label,
   icon: Icon,
   className,
+  id,
   ...props
 }: FilterInputProps) {
+  const generatedId = useId();
+  const inputId = id || generatedId;
+
   return (
     <div className="space-y-1.5 flex-1">
-      <label className="text-xs text-zinc-500 font-medium ml-1">{label}</label>
+      <label
+        htmlFor={inputId}
+        className="text-xs text-zinc-500 font-medium ml-1"
+      >
+        {label}
+      </label>
       <div className="relative">
         {Icon && (
           <Icon className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
         )}
         <Input
           {...props}
+          id={inputId}
           className={cn(
             "pl-9 bg-zinc-950 border-zinc-800 focus:ring-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            className
+            className,
           )}
         />
       </div>
@@ -562,6 +573,7 @@ function FilterDatePicker({
   disabled = false,
 }: FilterDatePickerProps) {
   const [open, setOpen] = useState(false);
+  const buttonId = useId();
   const dateValue =
     value && isValid(parse(value, DATE_FORMAT, new Date()))
       ? parse(value, DATE_FORMAT, new Date())
@@ -569,15 +581,21 @@ function FilterDatePicker({
 
   return (
     <div className="space-y-1.5 flex-1">
-      <label className="text-xs text-zinc-500 font-medium ml-1">{label}</label>
+      <label
+        htmlFor={buttonId}
+        className="text-xs text-zinc-500 font-medium ml-1"
+      >
+        {label}
+      </label>
       <Popover open={open && !disabled} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            id={buttonId}
             variant="outline"
             disabled={disabled}
             className={cn(
               "w-full pl-3 text-left font-normal bg-zinc-950 border-zinc-800 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed",
-              !dateValue && "text-muted-foreground"
+              !dateValue && "text-muted-foreground",
             )}
           >
             {dateValue ? (
