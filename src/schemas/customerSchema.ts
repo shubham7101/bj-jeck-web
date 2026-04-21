@@ -18,6 +18,7 @@ export const SIZE_OPTIONS = [
   "12x3",
   "15x3",
   "18x3",
+  "21x3",
 ] as const;
 
 export const STANDARD_RATES_SETUP: CustomerRate[] = [

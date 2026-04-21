@@ -72,6 +72,7 @@ type CustomerPaginationProps = {
   totalCount: number;
   onPageChange: (page: number) => void;
   onPerPageChange: (perPage: number) => void;
+  className?: string;
 };
 
 type CustomerTableActions = {
@@ -108,7 +109,11 @@ export function CustomerDataGrid({
     >
       <CustomerFilters {...filterProps} />
 
-      <div className="flex flex-col rounded-xl border border-zinc-800 bg-zinc-950/50 shadow-2xl shadow-black/40 overflow-hidden">
+      <div className="flex flex-col rounded-xl border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-sm shadow-2xl shadow-black/40 overflow-hidden">
+        <CustomerPaginationControls
+          {...paginationProps}
+          className="border-b border-zinc-800/80"
+        />
         <CustomerTable
           data={data}
           isLoading={isLoading}
@@ -116,7 +121,10 @@ export function CustomerDataGrid({
           processingIds={processingIds}
           {...actions}
         />
-        <CustomerPaginationControls {...paginationProps} />
+        <CustomerPaginationControls
+          {...paginationProps}
+          className="border-t border-zinc-800/80"
+        />
       </div>
     </div>
   );
@@ -135,7 +143,7 @@ function CustomerFilters({
   );
 
   return (
-    <div className="flex flex-col gap-4 bg-zinc-900/40 p-3 rounded-2xl border border-zinc-800/60 shadow-lg backdrop-blur-xl mb-2">
+    <div className="flex flex-col gap-4 bg-zinc-900/40 p-3 rounded-2xl border border-zinc-800/60 shadow-lg backdrop-blur-xl">
       <div className="flex flex-col md:flex-row gap-3">
         <div className="relative flex-1 group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
@@ -201,6 +209,7 @@ function CustomerPaginationControls({
   totalCount,
   onPageChange,
   onPerPageChange,
+  className,
 }: CustomerPaginationProps) {
   const [pageInput, setPageInput] = useState(currentPage.toString());
 
@@ -231,7 +240,12 @@ function CustomerPaginationControls({
   const startRecord = totalCount === 0 ? 0 : (currentPage - 1) * perPage + 1;
   const endRecord = Math.min(currentPage * perPage, totalCount);
   return (
-    <div className="rounded-b-xl border border-t-0 border-zinc-800/80 bg-zinc-900/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 select-none">
+    <div
+      className={cn(
+        "bg-zinc-900/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 select-none",
+        className,
+      )}
+    >
       {/* Left Side: Rows Per Page & Info */}
       <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
         <DropdownMenu>

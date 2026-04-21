@@ -81,6 +81,7 @@ type LedgerPaginationProps = {
   totalCount: number;
   onPageChange: (page: number) => void;
   onPerPageChange: (perPage: number) => void;
+  className?: string;
 };
 
 type LedgerTableActions = {
@@ -120,6 +121,7 @@ export function LedgerDataGrid({
 
       <div className="flex flex-col rounded-2xl border border-zinc-800/60 bg-zinc-900/40 backdrop-blur-sm shadow-2xl shadow-black/40 overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-zinc-500/50 to-transparent" />
+        <LedgerPaginationControls {...paginationProps} className="border-b border-zinc-800" />
         <LedgerTable
           data={data}
           isLoading={isLoading}
@@ -127,7 +129,7 @@ export function LedgerDataGrid({
           processingIds={processingIds}
           onDelete={onDelete}
         />
-        <LedgerPaginationControls {...paginationProps} />
+        <LedgerPaginationControls {...paginationProps} className="border-t border-zinc-800" />
       </div>
     </div>
   );
@@ -212,6 +214,7 @@ function LedgerPaginationControls({
   totalCount,
   onPageChange,
   onPerPageChange,
+  className,
 }: LedgerPaginationProps) {
   const [pageInput, setPageInput] = useState(currentPage.toString());
 
@@ -242,7 +245,7 @@ function LedgerPaginationControls({
   const endRecord = Math.min(currentPage * perPage, totalCount);
 
   return (
-    <div className="border-t border-zinc-800 bg-zinc-900/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 select-none">
+    <div className={cn("bg-zinc-900/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 select-none", className)}>
       {/* Left Side: Rows Per Page & Info */}
       <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
         <DropdownMenu>

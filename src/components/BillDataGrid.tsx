@@ -9,7 +9,6 @@ import {
   Eye,
   FileText,
   Hash,
-  IndianRupee,
   Loader2,
   type LucideIcon,
   MoreHorizontal,
@@ -63,6 +62,7 @@ type BillPaginationProps = {
   totalCount: number;
   onPageChange: (page: number) => void;
   onPerPageChange: (perPage: number) => void;
+  className?: string;
 };
 
 type BillTableActions = {
@@ -103,6 +103,10 @@ export function BillDataGrid({
       <BillFilters {...filterProps} />
 
       <div className="flex flex-col rounded-xl border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-sm shadow-2xl shadow-black/40 overflow-hidden">
+        <BillPaginationControls
+          {...paginationProps}
+          className="border-b border-zinc-800"
+        />
         <BillTable
           data={data}
           isLoading={isLoading}
@@ -110,7 +114,10 @@ export function BillDataGrid({
           processingIds={processingIds}
           onDelete={onDelete}
         />
-        <BillPaginationControls {...paginationProps} />
+        <BillPaginationControls
+          {...paginationProps}
+          className="border-t border-zinc-800"
+        />
       </div>
     </div>
   );
@@ -187,6 +194,7 @@ function BillPaginationControls({
   totalCount,
   onPageChange,
   onPerPageChange,
+  className,
 }: BillPaginationProps) {
   const [pageInput, setPageInput] = useState(currentPage.toString());
 
@@ -216,7 +224,12 @@ function BillPaginationControls({
   const endRecord = Math.min(currentPage * perPage, totalCount);
 
   return (
-    <div className="border-t border-zinc-800 bg-zinc-900/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 select-none">
+    <div
+      className={cn(
+        "bg-zinc-900/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 select-none",
+        className,
+      )}
+    >
       {/* Left Side: Rows Per Page & Info */}
       <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
         <DropdownMenu>
