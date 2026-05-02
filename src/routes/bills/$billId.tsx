@@ -357,7 +357,7 @@ function LedgerTable({
   data: SizeCategory;
 }) {
   const sizeSubtotal =
-    data.lines.reduce((acc, line) => acc + line.total, 0) +
+    (data.lines || []).reduce((acc, line) => acc + line.total, 0) +
     data.initial_line.total;
 
   return (
@@ -428,7 +428,11 @@ function LedgerTable({
                   -
                 </TableCell>
                 <TableCell className="text-right font-bold text-zinc-400 font-mono text-xs tabular-nums print:text-black">
-                  {data.initial_line.item_amount}
+                  {Object.keys(data.initial_line.item_details || {}).length > 0
+                    ? Object.entries(data.initial_line.item_details || {})
+                        .map(([k, v]) => `${k[0].toUpperCase()}: ${v}`)
+                        .join(", ")
+                    : "-"}
                 </TableCell>
                 <TableCell className="text-right text-zinc-400 font-mono text-xs tabular-nums print:text-black">
                   {data.initial_line.days > 0 ? data.initial_line.days : "-"}
@@ -444,7 +448,7 @@ function LedgerTable({
               </TableRow>
 
               {/* 2. Transaction Lines */}
-              {data.lines.map((line, idx) => (
+              {(data.lines || []).map((line, idx) => (
                 <TableRow
                   key={`${line.record_id}-${idx}`}
                   className="border-zinc-800/50 hover:bg-zinc-900/40 h-10 transition-colors print:border-zinc-300 print:hover:bg-transparent"
@@ -477,8 +481,22 @@ function LedgerTable({
                   <TableCell className="text-right font-mono text-zinc-300 text-xs tabular-nums print:text-black">
                     {line.item_amount}
                   </TableCell>
-                  <TableCell className="text-right font-mono font-bold text-white text-xs tabular-nums print:text-black">
-                    {line.total_item_amount}
+                  <TableCell className="text-right font-mono font-bold text-white text-[10px] tabular-nums print:text-black">
+                    {line.total_item_amount && (
+                      <div className="flex flex-col gap-0 items-end">
+                        {Object.entries(line.total_item_amount).map(
+                          ([k, v]) =>
+                            v !== 0 && (
+                              <div
+                                key={k}
+                                className={v < 0 ? "text-rose-500" : ""}
+                              >
+                                {k[0].toUpperCase()}: {v as number}
+                              </div>
+                            )
+                        )}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-right font-mono text-zinc-400 text-xs tabular-nums print:text-black">
                     {line.days > 0 ? (
@@ -588,19 +606,19 @@ function BillDetailsPage() {
           </h3>
         </div>
 
-        {/* UPDATED: Nested Loop for Part -> Size -> Table */}
-        {Object.entries(bill.items_by_part).map(([part, sizesMap]) => (
-          <div key={part} className="mb-6">
-            {Object.entries(sizesMap).map(([size, data]) => (
+        {/* UPDATED: Loop for items_by_size_and_part -> Table */}
+        {Object.entries(bill.items_by_size_and_part || {}).map(([key, data]) => {
+          const [part, size] = key.split("_");
+          return (
+            <div key={key} className="mb-6">
               <LedgerTable
-                key={`${part}-${size}`}
                 part={part}
                 size={size}
                 data={data}
               />
-            ))}
-          </div>
-        ))}
+            </div>
+          );
+        })}
 
         <ClosingStockPanel inventory={bill.after_inventory} />
       </div>

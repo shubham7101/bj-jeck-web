@@ -37,12 +37,14 @@ export const billLineSchema = z.object({
   record_id: z.number(),
   date: z.string(),
   transaction_type: z.enum(["IN", "OUT"]),
-  previous_item_amount: z.number(),
   item_amount: z.number(),
-  total_item_amount: z.number(),
-  negative_item_amount: z.number(),
+  item_part: z.string().optional(),
+  total_item_amount: z.record(z.string(), z.number()),
+  negative_item_amount: z.boolean(),
   days: z.number(),
+  rate: z.number(),
   service_charge: z.number(),
+  broken_charge: z.number(),
   total: z.number(),
 });
 export type BillLine = z.infer<typeof billLineSchema>;
@@ -50,12 +52,13 @@ export type BillLine = z.infer<typeof billLineSchema>;
 // 2. Size Category Schema (The leaf node of the data)
 export const sizeCategorySchema = z.object({
   initial_line: z.object({
-    date: z.string().datetime(),
-    item_amount: z.number(),
+    date: z.string(),
+    item_details: z.record(z.string(), z.number()).optional(),
     days: z.number(),
+    rate: z.number(),
     total: z.number(),
   }),
-  lines: z.array(billLineSchema),
+  lines: z.array(billLineSchema).nullable(),
 });
 export type SizeCategory = z.infer<typeof sizeCategorySchema>;
 
@@ -75,7 +78,7 @@ export const billDetailsSchema = z.object({
   khata_no: z.string(),
   total: z.number(),
   // UPDATED: Nested structure (Part -> Size -> Data)
-  items_by_part: z.record(z.string(), z.record(z.string(), sizeCategorySchema)),
+  items_by_size_and_part: z.record(z.string(), sizeCategorySchema),
   labour_charges: z.record(z.string(), z.number()),
   transport_charges: z.record(z.string(), z.number()),
   after_inventory: z.array(billInventorySchema).nullish(),

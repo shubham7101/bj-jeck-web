@@ -23,6 +23,7 @@ import { Route as BillsNewRouteImport } from './routes/bills/new'
 import { Route as BillsBillIdRouteImport } from './routes/bills/$billId'
 import { Route as RecordsUpdateRecordIdRouteImport } from './routes/records/update.$recordId'
 import { Route as CustomersUpdateCustomerIdRouteImport } from './routes/customers/update.$customerId'
+import { Route as BillsPrintBillIdRouteImport } from './routes/bills/print.$billId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -95,6 +96,11 @@ const CustomersUpdateCustomerIdRoute =
     path: '/customers/update/$customerId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const BillsPrintBillIdRoute = BillsPrintBillIdRouteImport.update({
+  id: '/bills/print/$billId',
+  path: '/bills/print/$billId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/customers': typeof CustomersIndexRoute
   '/ledger': typeof LedgerIndexRoute
   '/records': typeof RecordsIndexRoute
+  '/bills/print/$billId': typeof BillsPrintBillIdRoute
   '/customers/update/$customerId': typeof CustomersUpdateCustomerIdRoute
   '/records/update/$recordId': typeof RecordsUpdateRecordIdRoute
 }
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/customers': typeof CustomersIndexRoute
   '/ledger': typeof LedgerIndexRoute
   '/records': typeof RecordsIndexRoute
+  '/bills/print/$billId': typeof BillsPrintBillIdRoute
   '/customers/update/$customerId': typeof CustomersUpdateCustomerIdRoute
   '/records/update/$recordId': typeof RecordsUpdateRecordIdRoute
 }
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/customers/': typeof CustomersIndexRoute
   '/ledger/': typeof LedgerIndexRoute
   '/records/': typeof RecordsIndexRoute
+  '/bills/print/$billId': typeof BillsPrintBillIdRoute
   '/customers/update/$customerId': typeof CustomersUpdateCustomerIdRoute
   '/records/update/$recordId': typeof RecordsUpdateRecordIdRoute
 }
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/customers'
     | '/ledger'
     | '/records'
+    | '/bills/print/$billId'
     | '/customers/update/$customerId'
     | '/records/update/$recordId'
   fileRoutesByTo: FileRoutesByTo
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/customers'
     | '/ledger'
     | '/records'
+    | '/bills/print/$billId'
     | '/customers/update/$customerId'
     | '/records/update/$recordId'
   id:
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/customers/'
     | '/ledger/'
     | '/records/'
+    | '/bills/print/$billId'
     | '/customers/update/$customerId'
     | '/records/update/$recordId'
   fileRoutesById: FileRoutesById
@@ -209,6 +221,7 @@ export interface RootRouteChildren {
   CustomersIndexRoute: typeof CustomersIndexRoute
   LedgerIndexRoute: typeof LedgerIndexRoute
   RecordsIndexRoute: typeof RecordsIndexRoute
+  BillsPrintBillIdRoute: typeof BillsPrintBillIdRoute
   CustomersUpdateCustomerIdRoute: typeof CustomersUpdateCustomerIdRoute
   RecordsUpdateRecordIdRoute: typeof RecordsUpdateRecordIdRoute
 }
@@ -313,6 +326,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomersUpdateCustomerIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bills/print/$billId': {
+      id: '/bills/print/$billId'
+      path: '/bills/print/$billId'
+      fullPath: '/bills/print/$billId'
+      preLoaderRoute: typeof BillsPrintBillIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -329,6 +349,7 @@ const rootRouteChildren: RootRouteChildren = {
   CustomersIndexRoute: CustomersIndexRoute,
   LedgerIndexRoute: LedgerIndexRoute,
   RecordsIndexRoute: RecordsIndexRoute,
+  BillsPrintBillIdRoute: BillsPrintBillIdRoute,
   CustomersUpdateCustomerIdRoute: CustomersUpdateCustomerIdRoute,
   RecordsUpdateRecordIdRoute: RecordsUpdateRecordIdRoute,
 }
