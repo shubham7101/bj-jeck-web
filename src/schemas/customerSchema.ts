@@ -13,6 +13,7 @@ export const SIZE_OPTIONS = [
   "2.0",
   "2.5",
   "3.0",
+  "1x3",
   "2x3",
   "9x3",
   "12x3",
@@ -143,11 +144,15 @@ export const customerStatsSchema = z.object({
   ledger: z
     .object({
       total_paid: z.number().nullish().default(0),
+      total_discounted: z.number().nullish().default(0),
+      total_refunded: z.number().nullish().default(0),
       latest_date: z.string().nullish().default(""),
     })
     .nullish()
     .default({
       total_paid: 0,
+      total_discounted: 0,
+      total_refunded: 0,
       latest_date: "",
     }),
 });

@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  FileText,
   Hash,
   IndianRupee,
   Loader2,
@@ -14,9 +15,15 @@ import {
   RotateCcw,
   Search,
   Trash2,
+  User,
 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
+import type { Customer } from "@/schemas/customerSchema";
+import { formatCurrency, getInitials } from "@/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Calendar } from "./ui/calendar";
 import {
@@ -39,7 +46,6 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { formatCurrency } from "@/utils";
 
 // --- Types ---
 
@@ -49,6 +55,8 @@ export type LedgerEntry = {
   customer_id: number;
   amount: number;
   date: string;
+  notes?: string;
+  type: "payment" | "discount" | "refund";
 };
 
 // Define the Search Request shape (Ensure your schema exports match this)
@@ -96,6 +104,7 @@ type LedgerDataGridProps = {
   isPlaceholderData: boolean;
   filterProps: LedgerFiltersProps;
   paginationProps: LedgerPaginationProps;
+  customerMap?: Map<number, Customer>;
 } & Partial<LedgerTableActions>;
 
 // --- Main Component ---
@@ -109,6 +118,7 @@ export function LedgerDataGrid({
   processingIds,
   onDelete,
   navigate,
+  customerMap,
 }: LedgerDataGridProps) {
   return (
     <div
@@ -120,16 +130,23 @@ export function LedgerDataGrid({
       <LedgerFilters {...filterProps} />
 
       <div className="flex flex-col rounded-2xl border border-zinc-800/60 bg-zinc-900/40 backdrop-blur-sm shadow-2xl shadow-black/40 overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-zinc-500/50 to-transparent" />
-        <LedgerPaginationControls {...paginationProps} className="border-b border-zinc-800" />
+        <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-zinc-500/50 to-transparent" />
+        <LedgerPaginationControls
+          {...paginationProps}
+          className="border-b border-zinc-800"
+        />
         <LedgerTable
           data={data}
           isLoading={isLoading}
           navigate={navigate!}
           processingIds={processingIds}
           onDelete={onDelete}
+          customerMap={customerMap}
         />
-        <LedgerPaginationControls {...paginationProps} className="border-t border-zinc-800" />
+        <LedgerPaginationControls
+          {...paginationProps}
+          className="border-t border-zinc-800"
+        />
       </div>
     </div>
   );
@@ -147,8 +164,9 @@ function LedgerFilters({
   const hasActiveFilters = Object.values(filters).some((v) => v !== "");
 
   return (
-    <div className="bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800/50 backdrop-blur-sm shadow-sm">
-      <div className="flex flex-col md:flex-row gap-4">
+    <div className={themeStyles.glassHeader}>
+      <div className={themeStyles.glassHeaderOverlay} />
+      <div className="relative z-10 flex flex-col md:flex-row gap-4 items-end">
         {/* Customer ID Filter */}
         <FilterInput
           label="Customer ID"
@@ -178,7 +196,7 @@ function LedgerFilters({
         />
 
         {/* To Date Filter & Reset Button */}
-        <div className="flex gap-2 items-end col-span-1 sm:col-span-2 lg:col-span-2 flex-1">
+        <div className="flex gap-3 items-end flex-1 w-full">
           <div className="flex-1">
             <FilterDatePicker
               label="To Date"
@@ -189,16 +207,26 @@ function LedgerFilters({
             />
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onReset}
-            disabled={!hasActiveFilters}
-            className="text-zinc-500 hover:text-rose-500 cursor-pointer shrink-0 mb-0.5"
-            title="Clear filters"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-3 shrink-0 h-10 pb-0.5">
+            {hasActiveFilters && (
+              <Badge
+                variant="outline"
+                className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] uppercase font-bold tracking-wider py-0.5 px-2 animate-pulse"
+              >
+                Filters Active
+              </Badge>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onReset}
+              disabled={!hasActiveFilters}
+              className="text-zinc-500 hover:text-rose-500 hover:bg-rose-950/10 cursor-pointer shrink-0 rounded-lg transition-all"
+              title="Clear filters"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -245,7 +273,12 @@ function LedgerPaginationControls({
   const endRecord = Math.min(currentPage * perPage, totalCount);
 
   return (
-    <div className={cn("bg-zinc-900/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 select-none", className)}>
+    <div
+      className={cn(
+        "bg-zinc-900/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 select-none",
+        className,
+      )}
+    >
       {/* Left Side: Rows Per Page & Info */}
       <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
         <DropdownMenu>
@@ -308,7 +341,7 @@ function LedgerPaginationControls({
             onFocus={(e) => e.target.select()}
             onBlur={handlePageInputCommit}
             onKeyDown={handleKeyDown}
-            className="h-8 w-12 text-center text-xs px-1 bg-zinc-950 border-zinc-800 focus:ring-zinc-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="h-8 w-12 text-center text-xs px-1 bg-zinc-950 border-zinc-800 focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
           <span className="text-xs text-zinc-500">of {totalPages}</span>
         </div>
@@ -321,7 +354,7 @@ function LedgerPaginationControls({
             size="icon"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage <= 1}
-            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30"
+            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-700 disabled:opacity-30 transition-all"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -330,7 +363,7 @@ function LedgerPaginationControls({
             size="icon"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage >= totalPages}
-            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30"
+            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-700 disabled:opacity-30 transition-all"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -345,6 +378,7 @@ function LedgerPaginationControls({
 export type LedgerTableProps = {
   data: LedgerEntry[];
   isLoading: boolean;
+  customerMap?: Map<number, Customer>;
 } & LedgerTableActions;
 
 export function LedgerTable({
@@ -353,6 +387,7 @@ export function LedgerTable({
   processingIds = new Set(),
   onDelete,
   navigate,
+  customerMap,
 }: LedgerTableProps) {
   if (isLoading) {
     return (
@@ -366,7 +401,7 @@ export function LedgerTable({
     return (
       <TableWrapper>
         <TableRow>
-          <TableCell colSpan={5} className="h-96 text-center">
+          <TableCell colSpan={6} className="h-96 text-center">
             <div className="flex flex-col items-center justify-center text-zinc-500">
               <div className="bg-zinc-900/50 p-4 rounded-full mb-4">
                 <Search className="h-8 w-8 opacity-50" />
@@ -393,6 +428,7 @@ export function LedgerTable({
           isProcessing={processingIds.has(entry.id)}
           onDelete={onDelete}
           navigate={navigate}
+          customer={customerMap?.get(entry.customer_id)}
         />
       ))}
     </TableWrapper>
@@ -403,21 +439,29 @@ function TableWrapper({ children }: { children: React.ReactNode }) {
   return (
     <div className="w-full overflow-auto">
       <Table>
-        <TableHeader className="bg-zinc-900/50 sticky top-0 z-10">
+        <TableHeader
+          className={cn("sticky top-0 z-10", themeStyles.tableHeaderRow)}
+        >
           <TableRow className="border-zinc-800 hover:bg-transparent">
             <TableHead className="w-24 pl-6 h-12 text-zinc-500 uppercase text-xs font-bold text-left">
               ID
             </TableHead>
-            <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-center">
-              Customer ID
+            <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-left pl-4">
+              Customer
             </TableHead>
             <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-center">
               Transaction Date
             </TableHead>
+            <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-center">
+              Type
+            </TableHead>
+            <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-left pl-4">
+              Notes / Remarks
+            </TableHead>
             <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-right pr-6">
               Amount
             </TableHead>
-            <TableHead className="text-right pr-6 h-12 text-zinc-500 uppercase text-xs font-bold">
+            <TableHead className="text-right pr-6 h-12 text-zinc-500 uppercase text-xs font-bold w-20">
               Actions
             </TableHead>
           </TableRow>
@@ -432,18 +476,20 @@ function LedgerRow({
   entry,
   isProcessing,
   onDelete,
+  customer,
 }: {
   entry: LedgerEntry;
   isProcessing: boolean;
   onDelete?: (r: LedgerEntry) => void;
   navigate: ReturnType<typeof useNavigate>;
+  customer?: Customer;
 }) {
   return (
     <TableRow
-      className={`
-        group border-zinc-800/60 transition-all duration-300 hover:bg-zinc-800/40 
-        ${isProcessing ? "opacity-50 pointer-events-none bg-zinc-900/40" : ""}
-      `}
+      className={cn(
+        themeStyles.tableRowInteractive,
+        isProcessing && "opacity-50 pointer-events-none bg-zinc-900/40",
+      )}
     >
       {/* ID */}
       <TableCell className="pl-6 font-mono text-xs text-left text-zinc-400 group-hover:text-zinc-200">
@@ -451,23 +497,75 @@ function LedgerRow({
       </TableCell>
 
       {/* Customer Link */}
-      <TableCell className="text-center">
+      <TableCell className="text-left pl-4">
         <Link
           to={`/customers/$customerId`}
           params={{ customerId: entry.customer_id.toString() }}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-950/50 text-zinc-400 border border-zinc-800/80 text-[11px] font-medium hover:bg-zinc-800 hover:text-white transition-colors shadow-sm"
+          className="flex items-center gap-3 group/cust hover:opacity-90 transition-opacity"
         >
-          <Hash className="h-3.5 w-3.5" />
-          {entry.customer_id}
+          <Avatar className="h-8 w-8 border border-zinc-800 shrink-0">
+            <AvatarImage
+              src={customer?.avatar || undefined}
+              alt={customer?.name}
+            />
+            <AvatarFallback className="bg-zinc-850 text-[10px] text-zinc-450 font-bold">
+              {customer ? (
+                getInitials(customer.name)
+              ) : (
+                <User className="h-3.5 w-3.5 text-zinc-500" />
+              )}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-semibold text-zinc-200 group-hover/cust:text-emerald-400 truncate max-w-[180px] transition-colors">
+              {customer ? customer.name : `Customer #${entry.customer_id}`}
+            </span>
+            <span className="text-[10px] text-zinc-500 font-mono">
+              ID: #{entry.customer_id}{" "}
+              {customer?.mobile_no ? `• ${customer.mobile_no}` : ""}
+            </span>
+          </div>
         </Link>
       </TableCell>
 
       {/* Date */}
       <TableCell>
         <div className="flex justify-center items-center gap-2 text-xs text-zinc-300">
-          <CalendarIcon className="h-3.5 w-3.5 text-zinc-500" />
+          <CalendarIcon className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
           {format(new Date(entry.date), "dd MMM yyyy")}
         </div>
+      </TableCell>
+
+      {/* Type */}
+      <TableCell className="text-center">
+        <Badge
+          variant="outline"
+          className={cn(
+            "text-[10px] uppercase font-bold tracking-wider py-0.5 px-2",
+            entry.type === "payment" &&
+              "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+            entry.type === "discount" &&
+              "bg-amber-500/10 text-amber-400 border-amber-500/20",
+            entry.type === "refund" &&
+              "bg-rose-500/10 text-rose-400 border-rose-500/20",
+          )}
+        >
+          {entry.type}
+        </Badge>
+      </TableCell>
+
+      {/* Notes / Remarks */}
+      <TableCell className="text-left pl-4">
+        {entry.notes ? (
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400 max-w-[280px]">
+            <FileText className="h-3.5 w-3.5 text-zinc-550 shrink-0" />
+            <span className="truncate" title={entry.notes}>
+              {entry.notes}
+            </span>
+          </div>
+        ) : (
+          <span className="text-zinc-600 text-xs">-</span>
+        )}
       </TableCell>
 
       {/* Amount */}
@@ -489,7 +587,7 @@ function LedgerRow({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-8 w-8 p-0 text-zinc-600 hover:text-white"
+                className="h-8 w-8 p-0 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/80 hover:border-zinc-700 border border-transparent rounded-lg transition-all"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
@@ -640,17 +738,26 @@ function SkeletonRows({ count }: { count: number }) {
           <TableCell className="pl-6">
             <Skeleton className="h-4 w-12 bg-zinc-800" />
           </TableCell>
-          <TableCell className="flex justify-center">
-            <Skeleton className="h-5 w-16 bg-zinc-800 rounded-md" />
+          <TableCell className="pl-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-8 rounded-full bg-zinc-800 shrink-0" />
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-32 bg-zinc-800" />
+                <Skeleton className="h-3 w-20 bg-zinc-800/60" />
+              </div>
+            </div>
           </TableCell>
-          <TableCell className="flex justify-center">
+          <TableCell className="flex justify-center h-12 items-center">
             <Skeleton className="h-4 w-24 bg-zinc-800" />
           </TableCell>
-          <TableCell className="flex justify-end pr-6">
-            <Skeleton className="h-5 w-20 bg-zinc-800" />
+          <TableCell className="pl-4">
+            <Skeleton className="h-4 w-40 bg-zinc-800/50" />
           </TableCell>
-          <TableCell className="pr-6 flex justify-end">
-            <Skeleton className="h-8 w-8 bg-zinc-800" />
+          <TableCell className="text-right pr-6">
+            <Skeleton className="h-5 w-20 bg-zinc-800 ml-auto" />
+          </TableCell>
+          <TableCell className="pr-6 text-right">
+            <Skeleton className="h-8 w-8 bg-zinc-800 ml-auto rounded-lg" />
           </TableCell>
         </TableRow>
       ))}

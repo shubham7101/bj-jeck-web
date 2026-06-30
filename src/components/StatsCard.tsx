@@ -60,7 +60,7 @@ export function StatsCard({
       )}
     >
       {/* Subtle Gradient Background Effect on Hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-zinc-900/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="absolute inset-0 bg-linear-to-br from-zinc-900/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       {children}
 
       <CardHeader className="relative z-10 flex flex-row items-center justify-between space-y-0 pb-2">

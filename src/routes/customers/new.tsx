@@ -156,7 +156,7 @@ function NewCustomerPage() {
         <div className="grid gap-8 grid-cols-1 xl:grid-cols-16 items-start">
           <div className="xl:col-span-7 space-y-6">
             <Card className="bg-zinc-900/50 border-zinc-800 shadow-xl backdrop-blur-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-400/50" />
+              <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-emerald-400/50" />
               <CardHeader className="pb-4 border-b border-zinc-800/50 bg-zinc-900/50">
                 <CardTitle className="flex items-center text-lg font-medium text-zinc-100">
                   <Contact className="mr-2 h-5 w-5 text-emerald-500" />

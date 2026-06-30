@@ -97,11 +97,16 @@ function BillHeader({ bill }: { bill: BillDetails }) {
       <div className="flex items-center gap-2 print:hidden">
         <Button
           variant="outline"
-          onClick={() => window.print()}
+          asChild
           className="h-9 border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:text-white hover:bg-zinc-700 hover:border-zinc-600 transition-all cursor-pointer"
         >
-          <Printer className="mr-2 h-4 w-4" />
-          Print Invoice
+          <Link
+            to="/bills/print/$billId"
+            params={{ billId: bill.id.toString() }}
+          >
+            <Printer className="mr-2 h-4 w-4" />
+            Print Invoice
+          </Link>
         </Button>
         <Button
           variant="ghost"
@@ -212,11 +217,15 @@ function FinancialSection({ bill }: { bill: BillDetails }) {
     (a, b) => a + b,
     0,
   );
-  const rentalTotal = bill.total - totalLabour - totalTransport;
+  const totalLost = Object.values(bill.lost_charges || {}).reduce(
+    (a, b) => a + b,
+    0,
+  );
+  const rentalTotal = bill.total - totalLabour - totalTransport - totalLost;
 
   return (
     <Card className="bg-zinc-900/40 backdrop-blur-sm border-zinc-800 shadow-xl h-full overflow-hidden flex flex-col print:bg-white print:border-zinc-300 print:shadow-none">
-      <div className="bg-gradient-to-br from-emerald-500/10 via-zinc-900/50 to-zinc-950/50 p-6 border-b border-emerald-900/20 print:bg-none print:bg-white print:border-b-zinc-300 print:p-4">
+      <div className="bg-linear-to-br from-emerald-500/10 via-zinc-900/50 to-zinc-950/50 p-6 border-b border-emerald-900/20 print:bg-none print:bg-white print:border-b-zinc-300 print:p-4">
         <div className="flex justify-between items-start">
           <div>
             <span className="text-emerald-500/80 text-xs font-bold uppercase tracking-wider print:text-black">
@@ -257,6 +266,14 @@ function FinancialSection({ bill }: { bill: BillDetails }) {
               </span>
               <span className="text-zinc-200 font-mono tabular-nums print:text-black">
                 {formatCurrency(totalTransport)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-zinc-400 flex items-center gap-2 print:text-zinc-600">
+                <Trash className="h-3.5 w-3.5" /> Lost / Damaged Charges
+              </span>
+              <span className="text-rose-400 font-mono tabular-nums print:text-black">
+                {formatCurrency(totalLost)}
               </span>
             </div>
           </div>
@@ -362,7 +379,7 @@ function LedgerTable({
 
   return (
     <div className="space-y-2 mb-8 break-inside-avoid">
-      <div className="flex items-center gap-2 px-1">
+      <div className="flex flex-wrap items-center gap-2 px-1">
         <Badge
           variant="outline"
           className="bg-zinc-900 text-base px-2.5 py-0.5 border-zinc-700 text-white font-mono rounded-md capitalize print:bg-white print:text-black print:border-black"
@@ -376,6 +393,18 @@ function LedgerTable({
         >
           {size}
         </Badge>
+
+        {part.toLowerCase() === "full" && (
+          <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider print:text-zinc-700 hidden sm:inline-block ml-2">
+            F: Full | I: Inner | O: Outer
+          </span>
+        )}
+        {part.toLowerCase() === "plate" && (
+          <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider print:text-zinc-700 hidden sm:inline-block ml-2">
+            P: Plate
+          </span>
+        )}
+
         <Separator className="flex-1 bg-zinc-800/50 print:bg-zinc-300" />
       </div>
 
@@ -403,7 +432,13 @@ function LedgerTable({
                   Days
                 </TableHead>
                 <TableHead className="text-[10px] font-bold uppercase text-zinc-500 text-right tracking-wider print:text-black">
+                  Rate
+                </TableHead>
+                <TableHead className="text-[10px] font-bold uppercase text-zinc-500 text-right tracking-wider print:text-black">
                   Service
+                </TableHead>
+                <TableHead className="text-[10px] font-bold uppercase text-zinc-500 text-right tracking-wider print:text-black">
+                  Damage
                 </TableHead>
                 <TableHead className="text-[10px] font-bold uppercase text-zinc-500 text-right pr-4 tracking-wider print:text-black">
                   Total
@@ -436,6 +471,14 @@ function LedgerTable({
                 </TableCell>
                 <TableCell className="text-right text-zinc-400 font-mono text-xs tabular-nums print:text-black">
                   {data.initial_line.days > 0 ? data.initial_line.days : "-"}
+                </TableCell>
+                <TableCell className="text-right text-zinc-400 font-mono text-xs tabular-nums print:text-black">
+                  {data.initial_line.rate
+                    ? data.initial_line.rate.toFixed(2)
+                    : "-"}
+                </TableCell>
+                <TableCell className="text-right text-zinc-600 font-mono text-xs print:text-black">
+                  -
                 </TableCell>
                 <TableCell className="text-right text-zinc-600 font-mono text-xs print:text-black">
                   -
@@ -493,7 +536,7 @@ function LedgerTable({
                               >
                                 {k[0].toUpperCase()}: {v as number}
                               </div>
-                            )
+                            ),
                         )}
                       </div>
                     )}
@@ -508,8 +551,22 @@ function LedgerTable({
                     )}
                   </TableCell>
                   <TableCell className="text-right font-mono text-zinc-400 text-xs tabular-nums print:text-black">
+                    {line.rate ? line.rate.toFixed(2) : "-"}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-zinc-400 text-xs tabular-nums print:text-black">
                     {line.service_charge > 0 ? (
                       line.service_charge
+                    ) : (
+                      <span className="text-zinc-700 print:text-zinc-400">
+                        -
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell
+                    className={`text-right font-mono text-xs tabular-nums print:text-black ${line.broken_charge > 0 ? "text-rose-400 font-semibold" : ""}`}
+                  >
+                    {line.broken_charge > 0 ? (
+                      line.broken_charge
                     ) : (
                       <span className="text-zinc-700 print:text-zinc-400">
                         -
@@ -531,7 +588,7 @@ function LedgerTable({
             <TableFooter className="bg-zinc-900/80 border-t border-zinc-800 print:bg-zinc-100 print:border-zinc-300">
               <TableRow className="hover:bg-transparent">
                 <TableCell
-                  colSpan={7}
+                  colSpan={9}
                   className="text-right text-xs font-bold text-zinc-400 uppercase tracking-wider h-10 print:text-black"
                 >
                   Subtotal
@@ -589,13 +646,14 @@ function BillDetailsPage() {
     <div className="flex-1 space-y-8 p-6 md:p-8 animate-in fade-in duration-500 max-w-5xl mx-auto print:max-w-none print:p-0">
       <BillHeader bill={bill} />
 
-      {/* Grid Layout: Customer Left, Finance Right */}
+      {/* Grid Layout: 2 Columns Dashboard */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 print:grid-cols-2 h-auto items-start">
         <CustomerSection bill={bill} />
         {/* Added print specific styling to Rates card */}
         <CustomerRatesCard id={bill.customer_id} />
         {/* Financial Section often needs to be at bottom or distinct in print. Keeping in grid but style adjusted */}
         <FinancialSection bill={bill} />
+        <AdditionalChargesSection bill={bill} />
       </div>
 
       <div className="pt-4">
@@ -607,18 +665,16 @@ function BillDetailsPage() {
         </div>
 
         {/* UPDATED: Loop for items_by_size_and_part -> Table */}
-        {Object.entries(bill.items_by_size_and_part || {}).map(([key, data]) => {
-          const [part, size] = key.split("_");
-          return (
-            <div key={key} className="mb-6">
-              <LedgerTable
-                part={part}
-                size={size}
-                data={data}
-              />
-            </div>
-          );
-        })}
+        {Object.entries(bill.items_by_size_and_part || {}).map(
+          ([key, data]) => {
+            const [part, size] = key.split("_");
+            return (
+              <div key={key} className="mb-6">
+                <LedgerTable part={part} size={size} data={data} />
+              </div>
+            );
+          },
+        )}
 
         <ClosingStockPanel inventory={bill.after_inventory} />
       </div>
@@ -633,6 +689,116 @@ function BillDetailsPage() {
   );
 }
 
+function AdditionalChargesSection({ bill }: { bill: BillDetails }) {
+  const allRecordIds = Array.from(
+    new Set([
+      ...Object.keys(bill.labour_charges || {}),
+      ...Object.keys(bill.transport_charges || {}),
+      ...Object.keys(bill.lost_charges || {}),
+    ]),
+  );
+
+  const charges = allRecordIds
+    .map((recordId) => {
+      const labour = bill.labour_charges?.[recordId] || 0;
+      const transport = bill.transport_charges?.[recordId] || 0;
+      const lost = bill.lost_charges?.[recordId] || 0;
+      return {
+        recordId,
+        labour,
+        transport,
+        lost,
+        total: labour + transport + lost,
+      };
+    })
+    .filter((rc) => rc.total > 0);
+
+  if (charges.length === 0) {
+    return (
+      <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl flex flex-col h-full items-center justify-center p-6 text-center text-zinc-500 print:hidden min-h-[220px]">
+        <Info className="h-8 w-8 text-zinc-600 mb-2" />
+        <CardTitle className="text-sm font-medium text-zinc-400 mb-1">
+          No Additional Charges
+        </CardTitle>
+        <p className="text-xs text-zinc-600 max-w-[260px]">
+          No labour, transport, or lost charges are associated with the records
+          in this bill.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl flex flex-col h-full print:bg-white print:border-zinc-300 print:shadow-none min-h-[220px]">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between border-b border-zinc-800/50 space-y-0 print:pb-2 print:border-zinc-300">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-zinc-900 rounded border border-zinc-800 print:hidden">
+            <Calculator className="h-3.5 w-3.5 text-orange-400" />
+          </div>
+          <CardTitle className="text-sm font-medium text-zinc-200 print:text-black">
+            Additional Charges Breakdown
+          </CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0 flex-1 overflow-auto max-h-[240px]">
+        <Table>
+          <TableHeader className="bg-zinc-900/30 sticky top-0 z-10 print:static print:bg-zinc-100">
+            <TableRow className="border-zinc-800 hover:bg-transparent print:border-zinc-300">
+              <TableHead className="w-[80px] pl-4 h-9 text-[10px] font-bold uppercase text-zinc-500 tracking-wider text-left print:text-black">
+                Record
+              </TableHead>
+              <TableHead className="h-9 text-[10px] font-bold uppercase text-zinc-500 tracking-wider text-right print:text-black">
+                Labour
+              </TableHead>
+              <TableHead className="h-9 text-[10px] font-bold uppercase text-zinc-500 tracking-wider text-right print:text-black">
+                Trans.
+              </TableHead>
+              <TableHead className="h-9 text-[10px] font-bold uppercase text-zinc-500 tracking-wider text-right print:text-black">
+                Lost
+              </TableHead>
+              <TableHead className="h-9 text-[10px] font-bold uppercase text-zinc-500 tracking-wider text-right pr-4 print:text-black">
+                Total
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {charges.map((charge) => (
+              <TableRow
+                key={charge.recordId}
+                className="border-zinc-800/50 hover:bg-zinc-900/30 transition-colors print:border-zinc-300 print:hover:bg-transparent"
+              >
+                <TableCell className="pl-4 font-bold text-zinc-400 text-xs">
+                  <Link
+                    to="/records/$recordId"
+                    params={{ recordId: charge.recordId }}
+                    className="hover:underline hover:text-orange-400 font-mono"
+                  >
+                    #{charge.recordId}
+                  </Link>
+                </TableCell>
+                <TableCell className="text-right font-mono text-zinc-300 text-xs">
+                  {charge.labour > 0 ? formatCurrency(charge.labour) : "-"}
+                </TableCell>
+                <TableCell className="text-right font-mono text-zinc-300 text-xs">
+                  {charge.transport > 0
+                    ? formatCurrency(charge.transport)
+                    : "-"}
+                </TableCell>
+                <TableCell className="text-right font-mono text-rose-400 text-xs font-medium">
+                  {charge.lost > 0 ? formatCurrency(charge.lost) : "-"}
+                </TableCell>
+                <TableCell className="text-right font-mono font-bold text-zinc-100 text-xs pr-4">
+                  {formatCurrency(charge.total)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
 function CustomerRatesCard({ id }: { id: number }) {
   const [showAll, setShowAll] = useState(false);
   const INITIAL_LIMIT = 4;
@@ -644,7 +810,7 @@ function CustomerRatesCard({ id }: { id: number }) {
 
   if (isLoading)
     return (
-      <Skeleton className="h-full min-h-[14rem] w-full bg-zinc-900/50 border border-zinc-800/50 rounded-xl" />
+      <Skeleton className="h-full min-h-56 w-full bg-zinc-900/50 border border-zinc-800/50 rounded-xl" />
     );
 
   const hasRates = Array.isArray(rates) && rates.length > 0;

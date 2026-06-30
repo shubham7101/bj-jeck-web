@@ -21,6 +21,7 @@ import {
   Truck,
 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import type { Record, RecordSearchReq } from "@/schemas/recordSchema";
 import { formatCurrency, formatDate } from "@/utils";
@@ -142,8 +143,9 @@ function RecordFilters({
   const hasActiveFilters = Object.values(filters).some((v) => v !== "");
 
   return (
-    <div className="bg-zinc-900/40 backdrop-blur-sm p-4 rounded-2xl border border-zinc-800/80 shadow-lg">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+    <div className={themeStyles.glassHeader}>
+      <div className={themeStyles.glassHeaderOverlay} />
+      <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
         {/* Customer ID */}
         <FilterInput
           label="Customer ID"
@@ -213,13 +215,21 @@ function RecordFilters({
         />
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 lg:col-span-1 justify-end">
+        <div className="flex items-center gap-3 lg:col-span-1 justify-end">
+          {hasActiveFilters && (
+            <Badge
+              variant="outline"
+              className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] uppercase font-bold tracking-wider py-0.5 px-2 animate-pulse"
+            >
+              Filters Active
+            </Badge>
+          )}
           <Button
             variant="ghost"
             size="icon"
             onClick={onReset}
             disabled={!hasActiveFilters}
-            className="text-zinc-500 hover:text-rose-500 cursor-pointer shrink-0"
+            className="text-zinc-500 hover:text-rose-500 hover:bg-rose-950/10 cursor-pointer shrink-0 rounded-lg transition-all"
             title="Clear filters"
           >
             <RotateCcw className="h-4 w-4" />
@@ -339,7 +349,7 @@ function RecordPaginationControls({
             onFocus={(e) => e.target.select()}
             onBlur={handlePageInputCommit}
             onKeyDown={handleKeyDown}
-            className="h-8 w-12 text-center text-xs px-1 bg-zinc-950 border-zinc-800 focus:ring-zinc-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="h-8 w-12 text-center text-xs px-1 bg-zinc-950 border-zinc-800 focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
           <span className="text-xs text-zinc-500">of {totalPages}</span>
         </div>
@@ -352,7 +362,7 @@ function RecordPaginationControls({
             size="icon"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage <= 1}
-            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30"
+            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-700 disabled:opacity-30 transition-all"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -361,7 +371,7 @@ function RecordPaginationControls({
             size="icon"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage >= totalPages}
-            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30"
+            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-700 disabled:opacity-30 transition-all"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -432,7 +442,9 @@ function TableWrapper({ children }: { children: React.ReactNode }) {
   return (
     <div className="w-full overflow-auto">
       <Table>
-        <TableHeader className="bg-zinc-900/50 sticky top-0 z-10">
+        <TableHeader
+          className={cn("sticky top-0 z-10", themeStyles.tableHeaderRow)}
+        >
           <TableRow className="border-zinc-800 hover:bg-transparent">
             <TableHead className="w-20 pl-6 h-12 text-zinc-500 uppercase text-xs font-bold text-left">
               ID
@@ -481,10 +493,10 @@ function RecordRow({
 
   return (
     <TableRow
-      className={`
-        group border-zinc-800 transition-all duration-200 hover:bg-zinc-900/60 
-        ${isProcessing ? "opacity-50 pointer-events-none bg-zinc-900/40" : ""}
-      `}
+      className={cn(
+        themeStyles.tableRowInteractive,
+        isProcessing && "opacity-50 pointer-events-none bg-zinc-900/40",
+      )}
       onDoubleClick={() => navigate({ to: `/records/${record.id}` })}
     >
       {/* ... (Previous cells remain exactly the same: ID, Date, Type, Vehicle, Items, Bill Status) ... */}
@@ -502,11 +514,10 @@ function RecordRow({
       <TableCell className="text-center">
         <Badge
           variant="outline"
-          className={`pl-2 pr-2.5 py-0.5 rounded-full border text-[10px] inline-flex items-center shadow-sm backdrop-blur-sm ${
-            isTypeIn
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-              : "bg-orange-500/10 text-orange-400 border-orange-500/20"
-          }`}
+          className={cn(
+            isTypeIn ? themeStyles.badgeIn : themeStyles.badgeOut,
+            "inline-flex items-center shadow-sm backdrop-blur-sm",
+          )}
         >
           {isTypeIn ? (
             <ArrowDownLeft className="h-3 w-3 mr-1" />
@@ -521,34 +532,43 @@ function RecordRow({
         {record.vehicle_no || record.vehicle_mobile_no ? (
           <div className="flex flex-col items-start gap-1">
             {record.vehicle_no && (
-              <span className="text-[10px] font-medium flex items-center gap-1.5 text-zinc-400 bg-zinc-900/80 px-2 py-0.5 rounded-md border border-zinc-800">
-                <Truck className="h-3 w-3" />
+              <span className="text-[10px] font-medium flex items-center gap-1.5 text-zinc-300 bg-zinc-950/80 px-2 py-0.5 rounded border border-zinc-850 shadow-sm">
+                <Truck className="h-3 w-3 text-blue-400" />
                 {record.vehicle_no}
               </span>
             )}
             {record.vehicle_mobile_no && (
               <span className="text-[10px] text-zinc-500 font-mono flex items-center gap-1.5 px-2">
-                <Smartphone className="h-3 w-3" />
+                <Smartphone className="h-3 w-3 text-zinc-500" />
                 {record.vehicle_mobile_no}
               </span>
             )}
           </div>
         ) : (
-          <span className="text-zinc-700 text-xs ml-4">-</span>
+          <span className="text-zinc-650 text-[10px] font-medium italic pl-2 select-none">
+            No Transport Info
+          </span>
         )}
       </TableCell>
 
       <TableCell className="text-center">
-        <div className="flex flex-col items-center">
-          <span className="text-sm font-semibold flex items-center gap-1.5 text-zinc-200 group-hover:text-white transition-colors">
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-xs font-semibold flex items-center gap-1.5 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800 text-zinc-300 group-hover:text-zinc-100 group-hover:border-zinc-700 transition-all shadow-sm">
             {record.total || 0}
-            <Package className="h-3 w-3 text-zinc-500 group-hover:text-zinc-400" />
+            <Package className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-400" />
           </span>
-          {record.labour_charge > 0 && (
-            <span className="text-[10px] text-emerald-500/80 font-medium">
-              + {formatCurrency(record.labour_charge || 0)} Labour
-            </span>
-          )}
+          <div className="flex flex-col gap-0.5">
+            {record.labour_charge > 0 && (
+              <span className="text-[9px] text-emerald-400 font-bold tracking-wide uppercase px-1 rounded bg-emerald-500/5">
+                L: {formatCurrency(record.labour_charge || 0)}
+              </span>
+            )}
+            {record.transport_charge > 0 && (
+              <span className="text-[9px] text-purple-400 font-bold tracking-wide uppercase px-1 rounded bg-purple-500/5">
+                T: {formatCurrency(record.transport_charge || 0)}
+              </span>
+            )}
+          </div>
         </div>
       </TableCell>
 
@@ -558,12 +578,12 @@ function RecordRow({
             to={`/bills/$billId`}
             params={{ billId: record.bill_id.toString() }}
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-zinc-900/80 text-zinc-400 border border-zinc-800/80 text-[10px] font-medium hover:bg-zinc-800 hover:text-zinc-200 transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-950 text-zinc-450 border border-zinc-800 text-[10px] font-semibold hover:border-zinc-700 hover:text-zinc-200 transition-colors shadow-sm"
           >
             <Hash className="h-3 w-3" />#{record.bill_id}
           </Link>
         ) : (
-          <span className="text-[10px] text-zinc-600 font-medium uppercase tracking-wider bg-zinc-950 px-2 py-1 rounded-md border border-zinc-800 border-dashed">
+          <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider bg-zinc-950/60 px-2 py-0.5 rounded border border-zinc-800 border-dashed">
             Unbilled
           </span>
         )}
@@ -580,7 +600,7 @@ function RecordRow({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-8 w-8 p-0 text-zinc-600 hover:text-white"
+                className="h-8 w-8 p-0 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/80 hover:border-zinc-700 border border-transparent rounded-lg transition-all"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>

@@ -24,7 +24,6 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-// This is sample data.
 const data = {
   user: {
     name: "Manish Dhameliya",
@@ -52,6 +51,10 @@ const data = {
         {
           title: "New Customer",
           url: "/customers/new", // POST /customers
+        },
+        {
+          title: "Unbilled Customers",
+          url: "/customers/unbilled", // GET /customers/unbilled
         },
       ],
     },

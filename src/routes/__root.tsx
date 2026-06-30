@@ -16,7 +16,7 @@ export const Route = createRootRoute({
       <StrictMode>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
-            <SidebarProvider className="print:[&_[data-slot=sidebar]]:hidden">
+            <SidebarProvider className="print:**:data-[slot=sidebar]:hidden">
               <AppSidebar />
               <SidebarInset className="print:m-0 print:p-0 print:w-full">
                 <main>

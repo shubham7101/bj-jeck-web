@@ -200,7 +200,7 @@ function BillsPage() {
         </Button>
       </div>
 
-      <div className="h-px w-full bg-gradient-to-r from-zinc-800 to-transparent" />
+      <div className="h-px w-full bg-linear-to-r from-zinc-800 to-transparent" />
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

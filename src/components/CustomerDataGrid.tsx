@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import type {
   Customer,
@@ -88,7 +89,7 @@ type CustomerDataGridProps = {
   isLoading: boolean;
   isPlaceholderData: boolean;
   filterProps: CustomerFiltersProps;
-  paginationProps: CustomerPaginationProps;
+  paginationProps?: CustomerPaginationProps;
 } & Partial<CustomerTableActions>;
 
 export function CustomerDataGrid({
@@ -110,10 +111,12 @@ export function CustomerDataGrid({
       <CustomerFilters {...filterProps} />
 
       <div className="flex flex-col rounded-xl border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-sm shadow-2xl shadow-black/40 overflow-hidden">
-        <CustomerPaginationControls
-          {...paginationProps}
-          className="border-b border-zinc-800/80"
-        />
+        {paginationProps && (
+          <CustomerPaginationControls
+            {...paginationProps}
+            className="border-b border-zinc-800/80"
+          />
+        )}
         <CustomerTable
           data={data}
           isLoading={isLoading}
@@ -121,10 +124,12 @@ export function CustomerDataGrid({
           processingIds={processingIds}
           {...actions}
         />
-        <CustomerPaginationControls
-          {...paginationProps}
-          className="border-t border-zinc-800/80"
-        />
+        {paginationProps && (
+          <CustomerPaginationControls
+            {...paginationProps}
+            className="border-t border-zinc-800/80"
+          />
+        )}
       </div>
     </div>
   );
@@ -143,9 +148,10 @@ function CustomerFilters({
   );
 
   return (
-    <div className="flex flex-col gap-4 bg-zinc-900/40 p-3 rounded-2xl border border-zinc-800/60 shadow-lg backdrop-blur-xl">
-      <div className="flex flex-col md:flex-row gap-3">
-        <div className="relative flex-1 group">
+    <div className={themeStyles.glassHeader}>
+      <div className={themeStyles.glassHeaderOverlay} />
+      <div className="relative z-10 flex flex-col md:flex-row gap-3 items-end">
+        <div className="relative flex-1 group w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
           <Input
             name="name"
@@ -178,18 +184,21 @@ function CustomerFilters({
             className="pl-10 h-11 bg-zinc-950/50 border-zinc-800/50 hover:bg-zinc-900/50 focus:bg-zinc-950 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 rounded-xl transition-all"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 shrink-0 h-11">
+          {hasActiveFilters && (
+            <Badge
+              variant="outline"
+              className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] uppercase font-bold tracking-wider py-0.5 px-2 animate-pulse"
+            >
+              Filters Active
+            </Badge>
+          )}
           <Button
             variant="ghost"
             size="icon"
             onClick={onReset}
             disabled={!hasActiveFilters}
-            className={cn(
-              "h-11 w-11 rounded-xl transition-all duration-300",
-              hasActiveFilters
-                ? "text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 hover:text-rose-300 border border-rose-500/20 cursor-pointer"
-                : "text-zinc-600 bg-zinc-900/30",
-            )}
+            className="h-11 w-11 rounded-xl text-zinc-500 hover:text-rose-500 hover:bg-rose-950/10 cursor-pointer shrink-0 border border-transparent transition-all"
             title="Clear filters"
           >
             <RotateCcw
@@ -309,7 +318,7 @@ function CustomerPaginationControls({
             onFocus={(e) => e.target.select()}
             onBlur={handlePageInputCommit}
             onKeyDown={handleKeyDown}
-            className="h-7 w-12 text-center text-xs px-1 bg-zinc-950 border-zinc-800 focus:ring-1 focus:ring-emerald-500/50 rounded transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="h-7 w-12 text-center text-xs px-1 bg-zinc-950 border-zinc-800 focus:border-zinc-700 focus:ring-1 focus:ring-emerald-500/50 rounded transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
           <span className="text-xs text-zinc-500 pr-2">of {totalPages}</span>
         </div>
@@ -320,7 +329,7 @@ function CustomerPaginationControls({
             size="icon"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage <= 1}
-            className="h-7 w-7 border-transparent bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+            className="h-7 w-7 border-transparent bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-805 rounded transition-all disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -330,7 +339,7 @@ function CustomerPaginationControls({
             size="icon"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage >= totalPages}
-            className="h-7 w-7 border-transparent bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+            className="h-7 w-7 border-transparent bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-805 rounded transition-all disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -411,7 +420,9 @@ function TableWrapper({
   return (
     <div className="w-full overflow-auto">
       <Table>
-        <TableHeader className="bg-zinc-900/50 sticky top-0 z-10">
+        <TableHeader
+          className={cn("sticky top-0 z-10", themeStyles.tableHeaderRow)}
+        >
           <TableRow className="border-zinc-800 hover:bg-transparent">
             <TableHead className="w-20 pl-6 h-12 text-zinc-500 uppercase text-xs font-bold">
               ID
@@ -469,11 +480,11 @@ function CustomerRow({
     <TableRow
       onClick={handleRowClick}
       onDoubleClick={handleDoubleClick}
-      className={`
-        group border-zinc-800/50 transition-all duration-300 hover:bg-zinc-800/30 
-        ${onSelect ? "cursor-pointer" : ""} 
-        ${isProcessing ? "opacity-50 pointer-events-none bg-zinc-900/40" : ""}
-      `}
+      className={cn(
+        themeStyles.tableRowInteractive,
+        onSelect && "cursor-pointer",
+        isProcessing && "opacity-50 pointer-events-none bg-zinc-900/40",
+      )}
     >
       <TableCell className="pl-6 font-mono text-xs text-zinc-600 group-hover:text-emerald-500/70 transition-colors">
         #{customer.id.toString().padStart(4, "0")}
@@ -514,18 +525,18 @@ function CustomerRow({
       <TableCell>
         <Badge
           variant="outline"
-          className={`pl-2 pr-2.5 py-0.5 rounded-full border transition-colors ${
+          className={cn(
             customer.active
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 group-hover:bg-emerald-500/20"
-              : "bg-zinc-800/50 text-zinc-400 border-zinc-700/50 group-hover:bg-zinc-800"
-          }`}
+              ? themeStyles.activeBadge
+              : themeStyles.inactiveBadge,
+            "group-hover:bg-transparent",
+          )}
         >
           <span
-            className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-              customer.active
-                ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"
-                : "bg-zinc-500"
-            }`}
+            className={cn(
+              "mr-1.5 h-1.5 w-1.5 rounded-full print:hidden",
+              customer.active ? "bg-emerald-500 animate-pulse" : "bg-zinc-500",
+            )}
           />
           {customer.active ? "Active" : "Inactive"}
         </Badge>
@@ -552,7 +563,7 @@ function CustomerRow({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-8 w-8 p-0 text-zinc-600 hover:text-white"
+                className="h-8 w-8 p-0 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/80 hover:border-zinc-700 border border-transparent rounded-lg transition-all"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>

@@ -4,9 +4,11 @@ import { paginationSchema } from "./common";
 export const recordItemSchema = z.object({
   part: z.string(),
   size: z.string(),
-  broken_amount: z.number().min(0),
   item_amount: z.number().min(0),
+  broken_amount: z.number().min(0),
+  broken_charge: z.number().min(0),
   service_charge: z.number().min(0),
+  lost_charge: z.number().min(0),
 });
 export type RecordItem = z.infer<typeof recordItemSchema>;
 

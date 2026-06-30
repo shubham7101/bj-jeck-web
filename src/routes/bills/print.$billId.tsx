@@ -1,17 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { billService } from "@/services/billService";
-import { customerService } from "@/services/customerService";
-import { Printer } from "lucide-react";
 import { format } from "date-fns";
+import { Printer } from "lucide-react";
+import { useEffect } from "react";
 import {
   Table,
   TableBody,
+  TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
-  TableFooter,
-  TableCell,
 } from "@/components/ui/table";
+import { billService } from "@/services/billService";
+import { customerService } from "@/services/customerService";
 
 export const Route = createFileRoute("/bills/print/$billId")({
   loader: async ({ params }) => {
@@ -24,10 +25,32 @@ export const Route = createFileRoute("/bills/print/$billId")({
 
 function PrintBillPage() {
   const { bill: billData, customer } = Route.useLoaderData() as any;
+  const navigate = Route.useNavigate();
+
+  useEffect(() => {
+    if (billData && customer) {
+      document.title = `${billData.id}-${customer.name}-${customer.id}`;
+      const timer = setTimeout(() => {
+        window.print();
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          navigate({
+            to: "/bills/$billId",
+            params: { billId: billData.id.toString() },
+            replace: true,
+          });
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [billData, customer, navigate]);
+
   const allRecordCharges = Array.from(
     new Set([
-      ...Object.keys(billData.labour_charges),
-      ...Object.keys(billData.transport_charges),
+      ...Object.keys(billData.labour_charges || {}),
+      ...Object.keys(billData.transport_charges || {}),
+      ...Object.keys(billData.lost_charges || {}),
     ]),
   );
 
@@ -35,7 +58,14 @@ function PrintBillPage() {
     .map((recordCharge) => {
       const labour = (billData.labour_charges as any)[recordCharge] || 0;
       const transport = (billData.transport_charges as any)[recordCharge] || 0;
-      return { recordCharge, labour, transport, rowTotal: labour + transport };
+      const lost = (billData.lost_charges as any)[recordCharge] || 0;
+      return {
+        recordCharge,
+        labour,
+        transport,
+        lost,
+        rowTotal: labour + transport + lost,
+      };
     })
     .filter((c) => c.rowTotal > 0);
 
@@ -65,6 +95,7 @@ function PrintBillPage() {
       {/* Screen-only Print Button */}
       <div className="max-w-[1000px] mx-auto mb-4 flex justify-end print:hidden">
         <button
+          type="button"
           onClick={() => window.print()}
           className="flex items-center gap-2 bg-slate-800 text-white px-5 py-2.5 rounded shadow-md hover:bg-slate-700 transition-colors text-sm font-semibold tracking-wide"
         >
@@ -72,12 +103,12 @@ function PrintBillPage() {
         </button>
       </div>
 
-      <div className="max-w-[1000px] mx-auto border-[2px] border-slate-800 bg-white shadow-2xl print:shadow-none flex flex-col print:min-h-[277mm]">
+      <div className="max-w-[1000px] mx-auto border-2 border-slate-800 bg-white shadow-2xl print:shadow-none flex flex-col print:min-h-[277mm]">
         {/* Header Section */}
-        <div className="flex justify-between items-start border-b-[2px] border-slate-800 p-3">
+        <div className="flex justify-between items-start border-b-2 border-slate-800 p-3">
           <div className="flex items-center justify-start">
             {/* Logo area */}
-            <div className="h-14 w-14 flex flex-col items-center justify-center font-extrabold text-slate-800 border-[2px] border-slate-800 rounded-lg overflow-hidden bg-slate-50">
+            <div className="h-14 w-14 flex flex-col items-center justify-center font-extrabold text-slate-800 border-2 border-slate-800 rounded-lg overflow-hidden bg-slate-50">
               <span className="text-xl tracking-tighter leading-none">BG</span>
               <span className="text-[6px] tracking-widest uppercase mt-0.5 leading-none">
                 JECK
@@ -121,9 +152,9 @@ function PrintBillPage() {
         </div>
 
         {/* Info Details Section */}
-        <div className="flex border-b-[2px] border-slate-800">
+        <div className="flex border-b-2 border-slate-800">
           {/* Customer Left */}
-          <div className="w-3/5 border-r-[2px] border-slate-800 p-2.5 flex flex-col justify-between bg-slate-50/50">
+          <div className="w-3/5 border-r-2 border-slate-800 p-2.5 flex flex-col justify-between bg-slate-50/50">
             <div className="flex flex-col gap-1">
               <div className="font-extrabold text-sm uppercase text-slate-900 tracking-wide leading-none">
                 NAME : {customer.name}
@@ -212,9 +243,9 @@ function PrintBillPage() {
               return (
                 <div
                   key={idx}
-                  className="border-b-[2px] border-slate-800 last:border-b-0 break-inside-avoid"
+                  className="border-b-2 border-slate-800 last:border-b-0 break-inside-avoid"
                 >
-                  <div className="flex justify-between items-center bg-slate-200 border-b-[2px] border-slate-800 font-extrabold text-xs px-4 py-1 uppercase tracking-widest text-slate-900">
+                  <div className="flex justify-between items-center bg-slate-200 border-b-2 border-slate-800 font-extrabold text-xs px-4 py-1 uppercase tracking-widest text-slate-900">
                     <span className="flex items-center gap-3">
                       <span className="bg-slate-800 text-white px-2 py-0.5 rounded-sm shadow-sm">
                         {part.toUpperCase()}
@@ -231,7 +262,7 @@ function PrintBillPage() {
                   </div>
                   <Table className="w-full text-[10px] text-center border-collapse">
                     <TableHeader className="bg-white">
-                      <TableRow className="border-b-[2px] border-slate-800 hover:bg-white">
+                      <TableRow className="border-b-2 border-slate-800 hover:bg-white">
                         <TableHead className="border-r border-slate-400 py-1 px-1 h-auto text-center font-bold text-slate-800 uppercase tracking-wider">
                           RECORD NO.
                         </TableHead>
@@ -402,11 +433,11 @@ function PrintBillPage() {
                         </TableRow>
                       ))}
                     </TableBody>
-                    <TableFooter className="bg-slate-50 border-t-[2px] border-slate-800">
+                    <TableFooter className="bg-slate-50 border-t-2 border-slate-800">
                       <TableRow className="hover:bg-transparent">
                         <TableCell
                           colSpan={9}
-                          className="border-r-[2px] border-slate-800 py-0.5 px-4 text-right font-bold text-slate-700 uppercase tracking-widest text-xs"
+                          className="border-r-2 border-slate-800 py-0.5 px-4 text-right font-bold text-slate-700 uppercase tracking-widest text-xs"
                         >
                           TOTAL AMOUNT FOR{" "}
                           <span className="font-extrabold text-slate-900 mx-1">
@@ -426,12 +457,12 @@ function PrintBillPage() {
         </div>
 
         {/* Dynamic Space Filler to push footer to bottom */}
-        <div className="flex-grow border-t-[2px] border-slate-800 bg-slate-50/10"></div>
+        <div className="grow border-t-2 border-slate-800 bg-slate-50/10"></div>
 
         {/* Footer Section */}
-        <div className="flex border-t-[2px] border-slate-800 break-inside-avoid">
+        <div className="flex border-t-2 border-slate-800 break-inside-avoid">
           {/* Left: Closing Stock & Terms */}
-          <div className="w-[55%] border-r-[2px] border-slate-800 flex flex-col bg-slate-50/30">
+          <div className="w-[55%] border-r-2 border-slate-800 flex flex-col bg-slate-50/30">
             <div className="p-1.5 flex-1 flex flex-col">
               <div className="font-extrabold text-[10px] uppercase mb-1 tracking-widest text-slate-800 text-center">
                 Closing Stock Summary
@@ -447,7 +478,7 @@ function PrintBillPage() {
                         SIZE
                       </TableHead>
                       <TableHead className="py-0.5 px-2 h-auto text-right font-extrabold text-slate-900 uppercase tracking-wider">
-                        AMOUNT
+                        COUNT
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -514,6 +545,9 @@ function PrintBillPage() {
                             <TableHead className="border-r border-slate-300 py-0.5 px-2 h-auto text-right font-bold text-slate-600 uppercase tracking-wider">
                               TRANS.
                             </TableHead>
+                            <TableHead className="border-r border-slate-300 py-0.5 px-2 h-auto text-right font-bold text-slate-600 uppercase tracking-wider">
+                              LOST
+                            </TableHead>
                             <TableHead className="py-0.5 px-2 h-auto text-right font-bold text-slate-800 uppercase tracking-wider">
                               TOTAL
                             </TableHead>
@@ -533,6 +567,9 @@ function PrintBillPage() {
                               </TableCell>
                               <TableCell className="border-r border-slate-100 py-0.5 px-2 text-right font-semibold text-slate-600">
                                 {charge.transport.toFixed(2)}
+                              </TableCell>
+                              <TableCell className="border-r border-slate-100 py-0.5 px-2 text-right font-semibold text-slate-600">
+                                {charge.lost.toFixed(2)}
                               </TableCell>
                               <TableCell className="py-0.5 px-2 text-right font-bold text-slate-900">
                                 {charge.rowTotal.toFixed(2)}
@@ -556,7 +593,7 @@ function PrintBillPage() {
             </div>
 
             <div
-              className="flex justify-between items-center p-1.5 font-black text-lg bg-slate-800 text-white border-t-[2px] border-slate-800"
+              className="flex justify-between items-center p-1.5 font-black text-lg bg-slate-800 text-white border-t-2 border-slate-800"
               style={{
                 WebkitPrintColorAdjust: "exact",
                 printColorAdjust: "exact",

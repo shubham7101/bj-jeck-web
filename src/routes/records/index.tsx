@@ -18,10 +18,12 @@ import { useEffect, useState } from "react";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { RecordDataGrid } from "@/components/RecordDataGrid";
 import { StatsCard } from "@/components/StatsCard";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 // Hooks & Services
 import { useDebounce } from "@/hooks/use-debounce";
+import { themeStyles } from "@/lib/styles";
 import {
   type RecordSearchReq,
   recordSearchReqSchema,
@@ -201,72 +203,100 @@ function RecordPage() {
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6 animate-in fade-in duration-500">
-      {/* Header Section */}
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center justify-between pb-2">
-        <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-            Records
-            <div className="h-6 w-px bg-zinc-800 ml-2 hidden sm:block" />
-            <span className="text-sm font-medium text-zinc-500 hidden sm:block mt-1">
-              Inventory
-            </span>
-          </h2>
-          <p className="text-zinc-400">
-            Manage chalans, track transactions, and view history.
-          </p>
+      {/* Glassmorphic Header Card */}
+      <div className={themeStyles.glassHeader}>
+        <div className={themeStyles.glassHeaderOverlay} />
+        <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className={themeStyles.glassHeaderIconContainer}>
+                <Database className="h-5 w-5 text-primary animate-pulse" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                Records
+              </h2>
+              <Badge
+                variant="outline"
+                className="bg-zinc-900/80 text-zinc-400 border-zinc-800 text-[10px] uppercase font-bold tracking-wider py-0.5 px-2"
+              >
+                Inventory
+              </Badge>
+            </div>
+            <p className="text-sm text-zinc-400">
+              Manage chalans, track dynamic item valuations, and view
+              transaction history.
+            </p>
+          </div>
+          <Button
+            asChild
+            className="bg-primary hover:bg-primary/95 text-primary-foreground font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-300 self-start sm:self-center px-5 h-10 rounded-xl"
+          >
+            <Link to="/records/new">
+              <Plus className="mr-2 h-4 w-4 stroke-[2.5]" /> New Record
+            </Link>
+          </Button>
         </div>
-        <Button
-          asChild
-          className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)] transition-all font-medium"
-        >
-          <Link to="/records/new">
-            <Plus className="mr-2 h-4 w-4" /> New Record
-          </Link>
-        </Button>
       </div>
 
-      <div className="h-px w-full bg-gradient-to-r from-zinc-800 to-transparent" />
-
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        {/* 1. Yearly Labour */}
         <StatsCard
           loading={isLoadingStats}
           title="Yearly Labour"
           value={`₹${stats?.year_labour.toLocaleString() ?? 0}`}
-          subText="Charges collected this year"
+          valueColor="text-emerald-400 font-mono tracking-tight font-extrabold text-2xl"
+          subText="Labour charges collected this year"
           icon={<IndianRupee className="h-4 w-4 text-emerald-500" />}
-        />
+        >
+          <div className={themeStyles.accentBarEmerald} />
+        </StatsCard>
+
+        {/* 2. Yearly Flow */}
         <StatsCard
           loading={isLoadingStats}
           title="Yearly Flow"
           value={stats?.year_records ?? 0}
+          valueColor="text-blue-400 font-mono tracking-tight font-extrabold text-2xl"
           subText={
             <span className="flex items-center gap-2">
               <span className="text-emerald-500 font-medium">
                 {stats?.year_in ?? 0} IN
               </span>
-              <span className="text-zinc-600">/</span>
+              <span className="text-zinc-650">•</span>
               <span className="text-rose-500 font-medium">
                 {stats?.year_out ?? 0} OUT
               </span>
             </span>
           }
           icon={<ArrowRightLeft className="h-4 w-4 text-blue-500" />}
-        />
+        >
+          <div className={themeStyles.accentBarBlue} />
+        </StatsCard>
+
+        {/* 3. Damaged Items */}
         <StatsCard
           loading={isLoadingStats}
           title="Damaged Items"
           value={stats?.year_broken ?? 0}
-          subText="Broken quantity this year"
+          valueColor="text-amber-400 font-mono tracking-tight font-extrabold text-2xl"
+          subText="Broken pieces reported this year"
           icon={<AlertTriangle className="h-4 w-4 text-amber-500" />}
-        />
+        >
+          <div className={themeStyles.accentBarPrimary} />
+        </StatsCard>
+
+        {/* 4. Total Records */}
         <StatsCard
           loading={isLoadingStats}
           title="Total Records"
           value={stats?.total_records ?? 0}
-          subText="All-time record count"
-          icon={<Database className="h-4 w-4 text-zinc-500" />}
-        />
+          valueColor="text-zinc-100 font-mono tracking-tight font-extrabold text-2xl"
+          subText="All-time transaction count"
+          icon={<Database className="h-4 w-4 text-zinc-400" />}
+        >
+          <div className={themeStyles.accentBarZinc} />
+        </StatsCard>
       </div>
 
       {isError && error && <ErrorAlert error={error} />}

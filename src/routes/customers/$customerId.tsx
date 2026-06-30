@@ -183,6 +183,17 @@ function CustomerHeader({ customer }: { customer: Customer }) {
               <Coins className="mr-2 h-4 w-4" /> Receive Payment
             </Button>
           </Link>
+          <Link
+            to="/customers/statement/$customerId"
+            params={{ customerId: customer.id.toString() }}
+          >
+            <Button
+              variant="outline"
+              className="border-blue-500/30 bg-blue-500/5 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 hover:border-blue-500/50 transition-all cursor-pointer"
+            >
+              <ClipboardList className="mr-2 h-4 w-4" /> Statement
+            </Button>
+          </Link>
           <Link to="/bills/new" search={{ customer_id: customer.id }}>
             <Button
               variant="outline"
@@ -231,8 +242,8 @@ function CustomerHeader({ customer }: { customer: Customer }) {
 function CustomerContactCard({ customer }: { customer: Customer }) {
   return (
     <Card className="bg-zinc-900/40 border-zinc-800 shadow-xl backdrop-blur-sm relative overflow-hidden flex flex-col justify-between h-full">
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-400/50 z-10" />
-      <div className="h-24 bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 relative border-b border-zinc-800/50">
+      <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-emerald-400/50 z-10" />
+      <div className="h-24 bg-linear-to-br from-zinc-800/80 to-zinc-900/80 relative border-b border-zinc-800/50">
         <Avatar className="absolute -bottom-10 left-6 h-20 w-20 border-4 border-zinc-950 shadow-md">
           <AvatarImage src="" />
           <AvatarFallback className="bg-zinc-800 text-xl font-bold text-zinc-300">
@@ -425,7 +436,9 @@ function CustomerStatsSection({ id }: { id: number }) {
 
   const billed = stats.bills?.total_bill_amount ?? 0;
   const paid = stats.ledger?.total_paid ?? 0;
-  const balance = billed - paid;
+  const discounted = stats.ledger?.total_discounted ?? 0;
+  const refunded = stats.ledger?.total_refunded ?? 0;
+  const balance = billed - paid - discounted + refunded;
   const recordsCount = stats.records?.total_count ?? 0;
   const billsCount = stats.bills?.total_count ?? 0;
   const ledgerPaid = stats.ledger?.total_paid ?? 0;
@@ -458,15 +471,11 @@ function CustomerStatsSection({ id }: { id: number }) {
         }
       />
       <StatsCard
-        title="Total Ledger Paid"
-        value={formatCurrency(ledgerPaid)}
+        title="Payments & Discounts"
+        value={formatCurrency(ledgerPaid + discounted)}
         valueColor="text-emerald-400"
         icon={<Coins className="h-4 w-4" />}
-        subText={
-          ledgerPaid > 0 && isValidDate(stats.ledger?.latest_date)
-            ? `Latest Payment: ${formatDate(stats.ledger?.latest_date || "")}`
-            : "No payments recorded"
-        }
+        subText={`Paid: ₹${formatCurrency(ledgerPaid)} | Discount: ₹${formatCurrency(discounted)}`}
       />
       <StatsCard
         title="Outstanding Balance"
@@ -594,24 +603,36 @@ function CustomerInventorySection({ id }: { id: number }) {
 function QuickLinks({ id }: { id: number }) {
   const LINKS = [
     {
-      to: "/records",
+      to: "/records" as const,
       search: { customer_id: id },
+      params: undefined,
       icon: History,
       title: "Record History",
       subtitle: "View In/Out transactions",
       colorClass: "text-blue-400",
     },
     {
-      to: "/ledger",
-      search: { customer_id: id },
+      to: "/customers/statement/$customerId" as const,
+      search: undefined,
+      params: { customerId: id.toString() },
       icon: ClipboardList,
+      title: "Account Statement",
+      subtitle: "Print combined ledger statement",
+      colorClass: "text-indigo-400",
+    },
+    {
+      to: "/ledger" as const,
+      search: { customer_id: id },
+      params: undefined,
+      icon: Coins,
       title: "Payment Ledger",
       subtitle: "View payment history",
       colorClass: "text-emerald-400",
     },
     {
-      to: "/bills",
+      to: "/bills" as const,
       search: { customer_id: id },
+      params: undefined,
       icon: FileText,
       title: "Generated Bills",
       subtitle: "View past bills",
@@ -626,7 +647,12 @@ function QuickLinks({ id }: { id: number }) {
       </h3>
       <div className="flex flex-col gap-3">
         {LINKS.map((link, idx) => (
-          <Link key={idx} to={link.to} search={link.search}>
+          <Link
+            key={idx}
+            to={link.to}
+            search={link.search as any}
+            params={link.params as any}
+          >
             <div className="group flex items-center justify-between p-4 rounded-xl border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-sm hover:bg-zinc-800/60 hover:border-zinc-700 transition-all cursor-pointer shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-lg bg-zinc-950/80 border border-zinc-800 group-hover:border-zinc-700 shadow-inner">

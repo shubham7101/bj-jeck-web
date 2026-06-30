@@ -2,6 +2,7 @@ import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 import {
   type CreateCustomer,
+  type Customer,
   type CustomerInventory,
   type CustomerRate,
   type CustomerSearchReq,
@@ -100,5 +101,15 @@ export const customerService = {
       `/api/customers/${id}/inventory`,
     );
     return customerInventorySchema.parse(data);
+  },
+
+  unbilled: async (date?: string) => {
+    const params = new URLSearchParams();
+    if (date) params.append("date", date);
+
+    const data = await apiClient<Customer[]>(
+      `/api/customers/unbilled?${params.toString()}`,
+    );
+    return z.array(customerSchema).parse(data);
   },
 };

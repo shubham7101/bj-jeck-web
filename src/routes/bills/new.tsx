@@ -15,7 +15,6 @@ import {
   startOfDay,
 } from "date-fns";
 import {
-  AlertCircle,
   ArrowLeft,
   Calendar as CalendarIcon,
   CheckCircle2,
@@ -36,7 +35,7 @@ import { FormBase } from "@/components/form/FormBase";
 import { useAppForm } from "@/components/form/hooks";
 import { RecordTable } from "@/components/RecordDataGrid";
 import { SuccessFeedback } from "@/components/SuccessFeedback";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -228,7 +227,7 @@ function CustomerSelectionStep({
 
   return (
     <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden animate-in fade-in duration-500">
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-400/50" />
+      <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-emerald-400/50" />
       <CardHeader className="border-b border-zinc-800/50 bg-zinc-900/50">
         <CardTitle>Find Customer</CardTitle>
         <CardDescription>
@@ -438,15 +437,9 @@ function BillEntryForm({ customer }: { customer: Customer }) {
 
       <div className="space-y-2">
         {(billParamsMutation.isError || createBillMutation.isError) && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>
-              {billParamsMutation.error?.message ||
-                createBillMutation.error?.message ||
-                "An error occurred."}
-            </AlertDescription>
-          </Alert>
+          <ErrorAlert
+            error={billParamsMutation.error || createBillMutation.error}
+          />
         )}
       </div>
 
@@ -459,7 +452,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
         className="space-y-6"
       >
         <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-400/50" />
+          <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-emerald-400/50" />
           <CardHeader className="pb-4 border-b border-zinc-800/50 bg-zinc-900/50">
             <CardTitle className="text-base font-medium flex items-center gap-2">
               <Hash className="h-4 w-4 text-emerald-500" />

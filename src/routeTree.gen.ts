@@ -9,22 +9,38 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as CustomerRatesRouteImport } from './routes/customer-rates'
+import { Route as CustomerBalancesRouteImport } from './routes/customer-balances'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RecordsIndexRouteImport } from './routes/records/index'
 import { Route as LedgerIndexRouteImport } from './routes/ledger/index'
+import { Route as InventoryIndexRouteImport } from './routes/inventory/index'
 import { Route as CustomersIndexRouteImport } from './routes/customers/index'
 import { Route as BillsIndexRouteImport } from './routes/bills/index'
 import { Route as RecordsNewRouteImport } from './routes/records/new'
 import { Route as RecordsRecordIdRouteImport } from './routes/records/$recordId'
 import { Route as LedgerNewRouteImport } from './routes/ledger/new'
+import { Route as InventoryUpdateRouteImport } from './routes/inventory/update'
+import { Route as CustomersUnbilledRouteImport } from './routes/customers/unbilled'
 import { Route as CustomersNewRouteImport } from './routes/customers/new'
 import { Route as CustomersCustomerIdRouteImport } from './routes/customers/$customerId'
 import { Route as BillsNewRouteImport } from './routes/bills/new'
 import { Route as BillsBillIdRouteImport } from './routes/bills/$billId'
 import { Route as RecordsUpdateRecordIdRouteImport } from './routes/records/update.$recordId'
 import { Route as CustomersUpdateCustomerIdRouteImport } from './routes/customers/update.$customerId'
+import { Route as CustomersStatementCustomerIdRouteImport } from './routes/customers/statement.$customerId'
 import { Route as BillsPrintBillIdRouteImport } from './routes/bills/print.$billId'
 
+const CustomerRatesRoute = CustomerRatesRouteImport.update({
+  id: '/customer-rates',
+  path: '/customer-rates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomerBalancesRoute = CustomerBalancesRouteImport.update({
+  id: '/customer-balances',
+  path: '/customer-balances',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -38,6 +54,11 @@ const RecordsIndexRoute = RecordsIndexRouteImport.update({
 const LedgerIndexRoute = LedgerIndexRouteImport.update({
   id: '/ledger/',
   path: '/ledger/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InventoryIndexRoute = InventoryIndexRouteImport.update({
+  id: '/inventory/',
+  path: '/inventory/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CustomersIndexRoute = CustomersIndexRouteImport.update({
@@ -63,6 +84,16 @@ const RecordsRecordIdRoute = RecordsRecordIdRouteImport.update({
 const LedgerNewRoute = LedgerNewRouteImport.update({
   id: '/ledger/new',
   path: '/ledger/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InventoryUpdateRoute = InventoryUpdateRouteImport.update({
+  id: '/inventory/update',
+  path: '/inventory/update',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomersUnbilledRoute = CustomersUnbilledRouteImport.update({
+  id: '/customers/unbilled',
+  path: '/customers/unbilled',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CustomersNewRoute = CustomersNewRouteImport.update({
@@ -96,6 +127,12 @@ const CustomersUpdateCustomerIdRoute =
     path: '/customers/update/$customerId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const CustomersStatementCustomerIdRoute =
+  CustomersStatementCustomerIdRouteImport.update({
+    id: '/customers/statement/$customerId',
+    path: '/customers/statement/$customerId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const BillsPrintBillIdRoute = BillsPrintBillIdRouteImport.update({
   id: '/bills/print/$billId',
   path: '/bills/print/$billId',
@@ -104,53 +141,71 @@ const BillsPrintBillIdRoute = BillsPrintBillIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/customer-balances': typeof CustomerBalancesRoute
+  '/customer-rates': typeof CustomerRatesRoute
   '/bills/$billId': typeof BillsBillIdRoute
   '/bills/new': typeof BillsNewRoute
   '/customers/$customerId': typeof CustomersCustomerIdRoute
   '/customers/new': typeof CustomersNewRoute
+  '/customers/unbilled': typeof CustomersUnbilledRoute
+  '/inventory/update': typeof InventoryUpdateRoute
   '/ledger/new': typeof LedgerNewRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/records/new': typeof RecordsNewRoute
   '/bills': typeof BillsIndexRoute
   '/customers': typeof CustomersIndexRoute
+  '/inventory': typeof InventoryIndexRoute
   '/ledger': typeof LedgerIndexRoute
   '/records': typeof RecordsIndexRoute
   '/bills/print/$billId': typeof BillsPrintBillIdRoute
+  '/customers/statement/$customerId': typeof CustomersStatementCustomerIdRoute
   '/customers/update/$customerId': typeof CustomersUpdateCustomerIdRoute
   '/records/update/$recordId': typeof RecordsUpdateRecordIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/customer-balances': typeof CustomerBalancesRoute
+  '/customer-rates': typeof CustomerRatesRoute
   '/bills/$billId': typeof BillsBillIdRoute
   '/bills/new': typeof BillsNewRoute
   '/customers/$customerId': typeof CustomersCustomerIdRoute
   '/customers/new': typeof CustomersNewRoute
+  '/customers/unbilled': typeof CustomersUnbilledRoute
+  '/inventory/update': typeof InventoryUpdateRoute
   '/ledger/new': typeof LedgerNewRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/records/new': typeof RecordsNewRoute
   '/bills': typeof BillsIndexRoute
   '/customers': typeof CustomersIndexRoute
+  '/inventory': typeof InventoryIndexRoute
   '/ledger': typeof LedgerIndexRoute
   '/records': typeof RecordsIndexRoute
   '/bills/print/$billId': typeof BillsPrintBillIdRoute
+  '/customers/statement/$customerId': typeof CustomersStatementCustomerIdRoute
   '/customers/update/$customerId': typeof CustomersUpdateCustomerIdRoute
   '/records/update/$recordId': typeof RecordsUpdateRecordIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/customer-balances': typeof CustomerBalancesRoute
+  '/customer-rates': typeof CustomerRatesRoute
   '/bills/$billId': typeof BillsBillIdRoute
   '/bills/new': typeof BillsNewRoute
   '/customers/$customerId': typeof CustomersCustomerIdRoute
   '/customers/new': typeof CustomersNewRoute
+  '/customers/unbilled': typeof CustomersUnbilledRoute
+  '/inventory/update': typeof InventoryUpdateRoute
   '/ledger/new': typeof LedgerNewRoute
   '/records/$recordId': typeof RecordsRecordIdRoute
   '/records/new': typeof RecordsNewRoute
   '/bills/': typeof BillsIndexRoute
   '/customers/': typeof CustomersIndexRoute
+  '/inventory/': typeof InventoryIndexRoute
   '/ledger/': typeof LedgerIndexRoute
   '/records/': typeof RecordsIndexRoute
   '/bills/print/$billId': typeof BillsPrintBillIdRoute
+  '/customers/statement/$customerId': typeof CustomersStatementCustomerIdRoute
   '/customers/update/$customerId': typeof CustomersUpdateCustomerIdRoute
   '/records/update/$recordId': typeof RecordsUpdateRecordIdRoute
 }
@@ -158,76 +213,114 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/customer-balances'
+    | '/customer-rates'
     | '/bills/$billId'
     | '/bills/new'
     | '/customers/$customerId'
     | '/customers/new'
+    | '/customers/unbilled'
+    | '/inventory/update'
     | '/ledger/new'
     | '/records/$recordId'
     | '/records/new'
     | '/bills'
     | '/customers'
+    | '/inventory'
     | '/ledger'
     | '/records'
     | '/bills/print/$billId'
+    | '/customers/statement/$customerId'
     | '/customers/update/$customerId'
     | '/records/update/$recordId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/customer-balances'
+    | '/customer-rates'
     | '/bills/$billId'
     | '/bills/new'
     | '/customers/$customerId'
     | '/customers/new'
+    | '/customers/unbilled'
+    | '/inventory/update'
     | '/ledger/new'
     | '/records/$recordId'
     | '/records/new'
     | '/bills'
     | '/customers'
+    | '/inventory'
     | '/ledger'
     | '/records'
     | '/bills/print/$billId'
+    | '/customers/statement/$customerId'
     | '/customers/update/$customerId'
     | '/records/update/$recordId'
   id:
     | '__root__'
     | '/'
+    | '/customer-balances'
+    | '/customer-rates'
     | '/bills/$billId'
     | '/bills/new'
     | '/customers/$customerId'
     | '/customers/new'
+    | '/customers/unbilled'
+    | '/inventory/update'
     | '/ledger/new'
     | '/records/$recordId'
     | '/records/new'
     | '/bills/'
     | '/customers/'
+    | '/inventory/'
     | '/ledger/'
     | '/records/'
     | '/bills/print/$billId'
+    | '/customers/statement/$customerId'
     | '/customers/update/$customerId'
     | '/records/update/$recordId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CustomerBalancesRoute: typeof CustomerBalancesRoute
+  CustomerRatesRoute: typeof CustomerRatesRoute
   BillsBillIdRoute: typeof BillsBillIdRoute
   BillsNewRoute: typeof BillsNewRoute
   CustomersCustomerIdRoute: typeof CustomersCustomerIdRoute
   CustomersNewRoute: typeof CustomersNewRoute
+  CustomersUnbilledRoute: typeof CustomersUnbilledRoute
+  InventoryUpdateRoute: typeof InventoryUpdateRoute
   LedgerNewRoute: typeof LedgerNewRoute
   RecordsRecordIdRoute: typeof RecordsRecordIdRoute
   RecordsNewRoute: typeof RecordsNewRoute
   BillsIndexRoute: typeof BillsIndexRoute
   CustomersIndexRoute: typeof CustomersIndexRoute
+  InventoryIndexRoute: typeof InventoryIndexRoute
   LedgerIndexRoute: typeof LedgerIndexRoute
   RecordsIndexRoute: typeof RecordsIndexRoute
   BillsPrintBillIdRoute: typeof BillsPrintBillIdRoute
+  CustomersStatementCustomerIdRoute: typeof CustomersStatementCustomerIdRoute
   CustomersUpdateCustomerIdRoute: typeof CustomersUpdateCustomerIdRoute
   RecordsUpdateRecordIdRoute: typeof RecordsUpdateRecordIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/customer-rates': {
+      id: '/customer-rates'
+      path: '/customer-rates'
+      fullPath: '/customer-rates'
+      preLoaderRoute: typeof CustomerRatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customer-balances': {
+      id: '/customer-balances'
+      path: '/customer-balances'
+      fullPath: '/customer-balances'
+      preLoaderRoute: typeof CustomerBalancesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -247,6 +340,13 @@ declare module '@tanstack/react-router' {
       path: '/ledger'
       fullPath: '/ledger'
       preLoaderRoute: typeof LedgerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inventory/': {
+      id: '/inventory/'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof InventoryIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/customers/': {
@@ -282,6 +382,20 @@ declare module '@tanstack/react-router' {
       path: '/ledger/new'
       fullPath: '/ledger/new'
       preLoaderRoute: typeof LedgerNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inventory/update': {
+      id: '/inventory/update'
+      path: '/inventory/update'
+      fullPath: '/inventory/update'
+      preLoaderRoute: typeof InventoryUpdateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customers/unbilled': {
+      id: '/customers/unbilled'
+      path: '/customers/unbilled'
+      fullPath: '/customers/unbilled'
+      preLoaderRoute: typeof CustomersUnbilledRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/customers/new': {
@@ -326,6 +440,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomersUpdateCustomerIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/customers/statement/$customerId': {
+      id: '/customers/statement/$customerId'
+      path: '/customers/statement/$customerId'
+      fullPath: '/customers/statement/$customerId'
+      preLoaderRoute: typeof CustomersStatementCustomerIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/bills/print/$billId': {
       id: '/bills/print/$billId'
       path: '/bills/print/$billId'
@@ -338,18 +459,24 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CustomerBalancesRoute: CustomerBalancesRoute,
+  CustomerRatesRoute: CustomerRatesRoute,
   BillsBillIdRoute: BillsBillIdRoute,
   BillsNewRoute: BillsNewRoute,
   CustomersCustomerIdRoute: CustomersCustomerIdRoute,
   CustomersNewRoute: CustomersNewRoute,
+  CustomersUnbilledRoute: CustomersUnbilledRoute,
+  InventoryUpdateRoute: InventoryUpdateRoute,
   LedgerNewRoute: LedgerNewRoute,
   RecordsRecordIdRoute: RecordsRecordIdRoute,
   RecordsNewRoute: RecordsNewRoute,
   BillsIndexRoute: BillsIndexRoute,
   CustomersIndexRoute: CustomersIndexRoute,
+  InventoryIndexRoute: InventoryIndexRoute,
   LedgerIndexRoute: LedgerIndexRoute,
   RecordsIndexRoute: RecordsIndexRoute,
   BillsPrintBillIdRoute: BillsPrintBillIdRoute,
+  CustomersStatementCustomerIdRoute: CustomersStatementCustomerIdRoute,
   CustomersUpdateCustomerIdRoute: CustomersUpdateCustomerIdRoute,
   RecordsUpdateRecordIdRoute: RecordsUpdateRecordIdRoute,
 }

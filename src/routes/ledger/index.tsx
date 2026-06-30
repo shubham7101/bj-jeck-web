@@ -20,6 +20,7 @@ import {
   type LedgerSearchReq,
   ledgerSearchReqSchema,
 } from "@/schemas/ledgerSchema";
+import { customerService } from "@/services/customerService";
 import { ledgerService } from "@/services/ledgerService";
 import { formatCurrency } from "@/utils";
 
@@ -93,6 +94,13 @@ function LedgerPage() {
       total_entries: 0,
     },
   });
+
+  const { data: customersData } = useQuery({
+    queryKey: ["customers", "list-all-ledger"],
+    queryFn: () => customerService.search({ page: 1, per_page: 1000 }),
+  });
+
+  const customerMap = new Map(customersData?.data.map((c) => [c.id, c]) || []);
 
   const { data, isLoading, isError, error, isPlaceholderData } = useQuery({
     queryKey: ["ledger", { ...search, page, per_page }],
@@ -194,7 +202,7 @@ function LedgerPage() {
     <div className="flex-1 space-y-6 p-8 pt-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/50 backdrop-blur-sm shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500/50" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-blue-500 to-indigo-500/50" />
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-zinc-100">
             Payment Ledger
@@ -243,6 +251,7 @@ function LedgerPage() {
         isPlaceholderData={isPlaceholderData}
         navigate={navigate}
         processingIds={processingIds}
+        customerMap={customerMap}
         filterProps={{
           filters: localFilters,
           onChange: handleFilterChange,

@@ -81,6 +81,7 @@ export const billDetailsSchema = z.object({
   items_by_size_and_part: z.record(z.string(), sizeCategorySchema),
   labour_charges: z.record(z.string(), z.number()),
   transport_charges: z.record(z.string(), z.number()),
+  lost_charges: z.record(z.string(), z.number()),
   after_inventory: z.array(billInventorySchema).nullish(),
 });
 export type BillDetails = z.infer<typeof billDetailsSchema>;

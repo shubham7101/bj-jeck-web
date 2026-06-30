@@ -17,8 +17,11 @@ import {
   Trash,
 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import type { Bill, BillSearchReq } from "@/schemas/billSchema"; // Assuming you export the schema type here
+import { formatCurrency } from "@/utils";
+import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Calendar } from "./ui/calendar";
 import {
@@ -42,7 +45,6 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { formatCurrency } from "@/utils";
 
 type BillFilterDisableFlags = {
   [K in keyof BillSearchReq]?: boolean;
@@ -134,8 +136,9 @@ function BillFilters({
   const hasActiveFilters = Object.values(filters).some((v) => v !== "");
 
   return (
-    <div className="bg-zinc-900/40 backdrop-blur-sm p-4 rounded-2xl border border-zinc-800/80 shadow-lg">
-      <div className="flex flex-col md:flex-row gap-4">
+    <div className={themeStyles.glassHeader}>
+      <div className={themeStyles.glassHeaderOverlay} />
+      <div className="relative z-10 flex flex-col md:flex-row gap-4 items-end">
         {/* Customer ID */}
         <FilterInput
           label="Customer ID"
@@ -158,23 +161,32 @@ function BillFilters({
         />
 
         {/* Date */}
-        <div className="flex flex-1 gap-2 items-end">
-          <div className="flex-1">
-            <FilterDatePicker
-              label="To Date"
-              value={filters.date}
-              onChange={(val) => onChange("date", val)}
-              placeholder="Date"
-              disabled={disabledFields?.date}
-            />
-          </div>
-          {/* Action Buttons */}
+        <div className="flex-1 w-full">
+          <FilterDatePicker
+            label="To Date"
+            value={filters.date}
+            onChange={(val) => onChange("date", val)}
+            placeholder="Date"
+            disabled={disabledFields?.date}
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3 justify-end shrink-0 h-10 pb-0.5">
+          {hasActiveFilters && (
+            <Badge
+              variant="outline"
+              className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] uppercase font-bold tracking-wider py-0.5 px-2 animate-pulse"
+            >
+              Filters Active
+            </Badge>
+          )}
           <Button
             variant="ghost"
             size="icon"
             onClick={onReset}
             disabled={!hasActiveFilters}
-            className="text-zinc-500 hover:text-rose-500 cursor-pointer shrink-0 mb-0.5"
+            className="text-zinc-500 hover:text-rose-500 hover:bg-rose-950/10 cursor-pointer shrink-0 rounded-lg transition-all"
             title="Clear filters"
           >
             <RotateCcw className="h-4 w-4" />
@@ -292,7 +304,7 @@ function BillPaginationControls({
             onFocus={(e) => e.target.select()}
             onBlur={handlePageInputCommit}
             onKeyDown={handleKeyDown}
-            className="h-8 w-12 text-center text-xs px-1 bg-zinc-950 border-zinc-800 focus:ring-zinc-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="h-8 w-12 text-center text-xs px-1 bg-zinc-950 border-zinc-800 focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
           <span className="text-xs text-zinc-500">of {totalPages}</span>
         </div>
@@ -305,7 +317,7 @@ function BillPaginationControls({
             size="icon"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage <= 1}
-            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30"
+            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-700 disabled:opacity-30 transition-all"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -314,7 +326,7 @@ function BillPaginationControls({
             size="icon"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage >= totalPages}
-            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30"
+            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-700 disabled:opacity-30 transition-all"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -387,7 +399,9 @@ function TableWrapper({ children }: { children: React.ReactNode }) {
   return (
     <div className="w-full overflow-auto">
       <Table>
-        <TableHeader className="bg-zinc-900/50 sticky top-0 z-10 backdrop-blur-sm">
+        <TableHeader
+          className={cn("sticky top-0 z-10", themeStyles.tableHeaderRow)}
+        >
           <TableRow className="border-zinc-800 hover:bg-transparent">
             <TableHead className="w-24 pl-6 h-12 text-zinc-500 uppercase text-xs font-bold text-left">
               Bill ID
@@ -430,10 +444,10 @@ function BillRow({
 }) {
   return (
     <TableRow
-      className={`
-        group border-zinc-800 transition-all duration-200 hover:bg-zinc-900/60 
-        ${isProcessing ? "opacity-50 pointer-events-none bg-zinc-900/40" : ""}
-      `}
+      className={cn(
+        themeStyles.tableRowInteractive,
+        isProcessing && "opacity-50 pointer-events-none bg-zinc-900/40",
+      )}
       onDoubleClick={() => navigate({ to: `/bills/${bill.id}` })}
     >
       {/* Bill ID */}
@@ -447,7 +461,7 @@ function BillRow({
           to={`/customers/$customerId`}
           params={{ customerId: bill.customer_id.toString() }}
           onClick={(e) => e.stopPropagation()}
-          className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-zinc-900/80 text-zinc-400 border border-zinc-800/80 text-[10px] font-medium hover:bg-zinc-800 hover:text-zinc-200 transition-colors shadow-sm"
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-950 text-zinc-450 border border-zinc-850 text-[10px] font-semibold hover:border-zinc-700 hover:text-zinc-200 transition-colors shadow-sm"
         >
           <Hash className="h-3 w-3" />
           {bill.customer_id}
@@ -496,7 +510,7 @@ function BillRow({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-8 w-8 p-0 text-zinc-600 hover:text-white"
+                className="h-8 w-8 p-0 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/80 hover:border-zinc-700 border border-transparent rounded-lg transition-all"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>

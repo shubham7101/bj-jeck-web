@@ -41,4 +41,9 @@ export const ledgerService = {
   delete: async (id: number) => {
     return apiClient<void>(`/api/ledger/${id}`, { method: "DELETE" });
   },
+
+  get: async (id: number) => {
+    const data = await apiClient(`/api/ledger/${id}`);
+    return ledgerSchema.parse(data);
+  },
 };
