@@ -109,7 +109,7 @@ function BillHeader({ bill }: { bill: BillDetails }) {
             rel="noopener noreferrer"
           >
             <Printer className="mr-2 h-4 w-4" />
-            Print Invoice
+            Download Bill
           </a>
         </Button>
         <Button

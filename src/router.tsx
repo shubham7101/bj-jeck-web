@@ -19,7 +19,6 @@ import { Route as BillsBillIdRoute } from "./routes/bills/$billId";
 import { Route as RecordsUpdateRecordIdRoute } from "./routes/records/update.$recordId";
 import { Route as CustomersUpdateCustomerIdRoute } from "./routes/customers/update.$customerId";
 import { Route as CustomersStatementCustomerIdRoute } from "./routes/customers/statement.$customerId";
-import { Route as BillsPrintBillIdRoute } from "./routes/bills/print.$billId";
 
 export const routeTree = rootRoute.addChildren([
   IndexRoute,
@@ -42,7 +41,6 @@ export const routeTree = rootRoute.addChildren([
   RecordsUpdateRecordIdRoute,
   CustomersUpdateCustomerIdRoute,
   CustomersStatementCustomerIdRoute,
-  BillsPrintBillIdRoute,
 ]);
 
 import { createRouter } from "@tanstack/react-router";
