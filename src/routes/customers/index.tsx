@@ -4,7 +4,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createRoute, Link } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import { Plus, UserCheck, Users, UserX } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
@@ -19,7 +20,9 @@ import {
 } from "@/schemas/customerSchema";
 import { customerService } from "@/services/customerService";
 
-export const Route = createFileRoute("/customers/")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/",
   component: CustomerPage,
   validateSearch: (search) => customerSearchReqSchema.parse(search),
 });

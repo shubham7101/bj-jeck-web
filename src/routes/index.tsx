@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createRoute, Link } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 
-export const Route = createFileRoute("/")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
   component: App,
 });
 

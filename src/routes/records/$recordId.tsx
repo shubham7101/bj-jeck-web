@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createRoute, Link, useRouter } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import {
   AlertCircle,
   AlertTriangle,
@@ -43,7 +44,9 @@ import { customerService } from "@/services/customerService";
 import { recordService } from "@/services/recordService";
 
 // Define the route
-export const Route = createFileRoute("/records/$recordId")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/records/$recordId",
   component: RecordDetailsPage,
 });
 

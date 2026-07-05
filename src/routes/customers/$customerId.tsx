@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  createFileRoute,
+  createRoute,
   Link,
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import {
   AlertCircle,
   ArrowLeft,
@@ -27,7 +28,7 @@ import {
   Truck,
   UserX,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { StatsCard } from "@/components/StatsCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +47,9 @@ import type { Customer } from "@/schemas/customerSchema";
 import { customerService } from "@/services/customerService";
 import { formatCurrency, formatDate, getInitials } from "@/utils";
 
-export const Route = createFileRoute("/customers/$customerId")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/$customerId",
   component: CustomerDetailsPage,
   loader: async ({ params }) => {
     const id = Number(params.customerId);
@@ -475,7 +478,7 @@ function CustomerStatsSection({ id }: { id: number }) {
         value={formatCurrency(ledgerPaid + discounted)}
         valueColor="text-emerald-400"
         icon={<Coins className="h-4 w-4" />}
-        subText={`Paid: ₹${formatCurrency(ledgerPaid)} | Discount: ₹${formatCurrency(discounted)}`}
+        subText={`Paid: ${formatCurrency(ledgerPaid)} | Discount: ${formatCurrency(discounted)}`}
       />
       <StatsCard
         title="Outstanding Balance"
@@ -489,6 +492,7 @@ function CustomerStatsSection({ id }: { id: number }) {
 }
 
 function CustomerInventorySection({ id }: { id: number }) {
+  const [combineParts, setCombineParts] = useState(false);
   const {
     data: inventory,
     isLoading,
@@ -496,27 +500,117 @@ function CustomerInventorySection({ id }: { id: number }) {
   } = useQuery({
     queryKey: ["customer", id, "inventory"],
     queryFn: () => customerService.getInventory(id),
-    // Ensures inventory is always an array to prevent crashes
     select: (data) => data || [],
   });
 
+  inventory?.sort((a, b) => {
+    if (a.part !== b.part) return a.part.localeCompare(b.part);
+    return a.size.localeCompare(b.size);
+  });
+
+  const { data: rates } = useQuery({
+    queryKey: ["customer", id, "rates"],
+    queryFn: () => customerService.getRates(id),
+  });
+
+  const getRate = (part: string, size: string) => {
+    if (!rates) return null;
+    const rateItem = rates.find(
+      (r) =>
+        r.part.toLowerCase() === part.toLowerCase() &&
+        r.size.toLowerCase() === size.toLowerCase(),
+    );
+    return rateItem ? rateItem.rate : null;
+  };
+
+  const displayInventory = useMemo(() => {
+    if (!combineParts || !inventory) return inventory || [];
+
+    const itemsBySize = new Map<string, typeof inventory>();
+    inventory.forEach((item) => {
+      if (!itemsBySize.has(item.size)) {
+        itemsBySize.set(item.size, []);
+      }
+      itemsBySize.get(item.size)!.push({ ...item });
+    });
+
+    const combined: typeof inventory = [];
+
+    itemsBySize.forEach((items, size) => {
+      const innerItem = items.find((i) => i.part.toLowerCase() === "inner");
+      const outerItem = items.find((i) => i.part.toLowerCase() === "outer");
+      let fullItem = items.find((i) => i.part.toLowerCase() === "full");
+
+      if (innerItem && outerItem) {
+        const innerQty = innerItem.item_amount;
+        const outerQty = outerItem.item_amount;
+
+        if ((innerQty > 0 && outerQty > 0) || (innerQty < 0 && outerQty < 0)) {
+          const combineQty =
+            Math.abs(innerQty) < Math.abs(outerQty) ? innerQty : outerQty;
+
+          if (combineQty !== 0) {
+            innerItem.item_amount -= combineQty;
+            outerItem.item_amount -= combineQty;
+
+            if (fullItem) {
+              fullItem.item_amount += combineQty;
+            } else {
+              fullItem = { part: "full", size, item_amount: combineQty };
+              items.push(fullItem);
+            }
+          }
+        }
+      }
+
+      items.forEach((item) => {
+        if (item.item_amount !== 0) {
+          combined.push(item);
+        }
+      });
+    });
+
+    return combined.sort((a, b) => {
+      if (a.part !== b.part) return a.part.localeCompare(b.part);
+      return a.size.localeCompare(b.size);
+    });
+  }, [inventory, combineParts]);
+
   return (
     <div className="lg:col-span-2 space-y-4">
-      <h3 className="text-lg font-semibold text-zinc-100 flex items-center gap-2 px-1">
-        Current Inventory
-      </h3>
+      <div className="flex items-center justify-between px-1">
+        <h3 className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
+          Current Inventory
+        </h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCombineParts(!combineParts)}
+          className={`h-8 text-xs cursor-pointer transition-all ${
+            combineParts
+              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+              : "text-zinc-400 border-zinc-800 bg-zinc-950 hover:text-zinc-200 hover:bg-zinc-900"
+          }`}
+        >
+          <Layers className="h-3 w-3 mr-1.5" />
+          {combineParts ? "Uncombine Parts" : "Combine Parts"}
+        </Button>
+      </div>
       <Card className="bg-zinc-900/40 border-zinc-800 shadow-xl backdrop-blur-sm overflow-hidden min-h-64">
         <CardContent className="p-0">
           <Table>
             <TableHeader className="bg-zinc-900/50 sticky top-0 z-10 border-b border-zinc-800/50">
               <TableRow className="border-zinc-800 hover:bg-transparent">
-                <TableHead className="w-1/3 pl-6 h-10 text-zinc-500 uppercase text-xs font-bold">
+                <TableHead className="w-1/4 pl-6 h-10 text-zinc-500 uppercase text-xs font-bold">
                   Part Type
                 </TableHead>
-                <TableHead className="w-1/3 h-10 text-zinc-500 uppercase text-xs font-bold">
+                <TableHead className="w-1/4 h-10 text-zinc-500 uppercase text-xs font-bold">
                   Size
                 </TableHead>
-                <TableHead className="w-1/3 text-right pr-6 h-10 text-zinc-500 uppercase text-xs font-bold">
+                <TableHead className="w-1/4 h-10 text-zinc-500 uppercase text-xs font-bold">
+                  Rate
+                </TableHead>
+                <TableHead className="w-1/4 text-right pr-6 h-10 text-zinc-500 uppercase text-xs font-bold">
                   Qty
                 </TableHead>
               </TableRow>
@@ -531,6 +625,9 @@ function CustomerInventorySection({ id }: { id: number }) {
                     <TableCell>
                       <Skeleton className="h-6 w-16 bg-zinc-900 rounded-full" />
                     </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-12 bg-zinc-900" />
+                    </TableCell>
                     <TableCell className="text-right pr-6">
                       <Skeleton className="h-4 w-8 bg-zinc-900 ml-auto" />
                     </TableCell>
@@ -538,7 +635,7 @@ function CustomerInventorySection({ id }: { id: number }) {
                 ))
               ) : isError ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="h-32 text-center">
+                  <TableCell colSpan={4} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center text-rose-500 gap-2">
                       <AlertCircle className="h-5 w-5" />
                       <span className="text-sm">
@@ -547,9 +644,9 @@ function CustomerInventorySection({ id }: { id: number }) {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : !inventory || inventory.length === 0 ? (
+              ) : !displayInventory || displayInventory.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="h-40 text-center">
+                  <TableCell colSpan={4} className="h-40 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-zinc-500">
                       <div className="h-10 w-10 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800">
                         <PackageOpen className="h-5 w-5 text-zinc-600" />
@@ -566,31 +663,43 @@ function CustomerInventorySection({ id }: { id: number }) {
                   </TableCell>
                 </TableRow>
               ) : (
-                inventory.map((item, idx) => (
-                  <TableRow
-                    key={idx}
-                    className="border-zinc-800 hover:bg-zinc-900/40 transition-colors"
-                  >
-                    <TableCell className="pl-6 font-medium text-zinc-200 capitalize">
-                      {item.part}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className="bg-zinc-900 border-zinc-700 text-zinc-400 font-normal"
-                      >
-                        {item.size}
-                      </Badge>
-                    </TableCell>
-                    <TableCell
-                      className={`text-right pr-6 font-mono font-bold ${
-                        item.item_amount < 0 ? "text-rose-500" : "text-zinc-100"
-                      }`}
+                displayInventory.map((item, idx) => {
+                  const rate = getRate(item.part, item.size);
+                  return (
+                    <TableRow
+                      key={idx}
+                      className="border-zinc-800 hover:bg-zinc-900/40 transition-colors"
                     >
-                      {item.item_amount}
-                    </TableCell>
-                  </TableRow>
-                ))
+                      <TableCell className="pl-6 font-medium text-zinc-200 capitalize">
+                        {item.part}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className="bg-zinc-900 border-zinc-700 text-zinc-400 font-normal"
+                        >
+                          {item.size}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-zinc-300 font-medium">
+                        {rate !== null ? (
+                          `₹${Number(rate).toFixed(2)}`
+                        ) : (
+                          <span className="text-zinc-600">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell
+                        className={`text-right pr-6 font-mono font-bold ${
+                          item.item_amount < 0
+                            ? "text-rose-500"
+                            : "text-zinc-100"
+                        }`}
+                      >
+                        {item.item_amount}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

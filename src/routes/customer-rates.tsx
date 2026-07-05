@@ -1,4 +1,5 @@
-import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
+import { createRoute, useRouter, Link } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import { ArrowLeft, Printer, RotateCcw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,9 @@ import {
 import type { CustomerRate } from "@/schemas/customerSchema";
 import { customerService } from "@/services/customerService";
 
-export const Route = createFileRoute("/customer-rates")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customer-rates",
   loader: async () => {
     const firstPage = await customerService.search({ page: 1, per_page: 100 });
     let customers = firstPage.data;

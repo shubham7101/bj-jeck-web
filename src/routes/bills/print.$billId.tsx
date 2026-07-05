@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createRoute } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import { format } from "date-fns";
 import { Printer } from "lucide-react";
 import { useEffect } from "react";
@@ -14,7 +15,9 @@ import {
 import { billService } from "@/services/billService";
 import { customerService } from "@/services/customerService";
 
-export const Route = createFileRoute("/bills/print/$billId")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/bills/print/$billId",
   loader: async ({ params }) => {
     const bill = await billService.get(Number(params.billId));
     const customer = await customerService.get(bill.customer_id);
@@ -27,24 +30,24 @@ function PrintBillPage() {
   const { bill: billData, customer } = Route.useLoaderData() as any;
   const navigate = Route.useNavigate();
 
-  useEffect(() => {
-    if (billData && customer) {
-      document.title = `${billData.id}-${customer.name}-${customer.id}`;
-      const timer = setTimeout(() => {
-        window.print();
-        if (window.history.length > 1) {
-          window.history.back();
-        } else {
-          navigate({
-            to: "/bills/$billId",
-            params: { billId: billData.id.toString() },
-            replace: true,
-          });
-        }
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [billData, customer, navigate]);
+  // useEffect(() => {
+  //   if (billData && customer) {
+  //     document.title = `${billData.id}-${customer.name}-${customer.id}`;
+  //     const timer = setTimeout(() => {
+  //       window.print();
+  //       if (window.history.length > 1) {
+  //         window.history.back();
+  //       } else {
+  //         navigate({
+  //           to: "/bills/$billId",
+  //           params: { billId: billData.id.toString() },
+  //           replace: true,
+  //         });
+  //       }
+  //     }, 500);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [billData, customer, navigate]);
 
   const allRecordCharges = Array.from(
     new Set([
@@ -166,13 +169,13 @@ function PrintBillPage() {
             <div className="mt-2 flex flex-col gap-0.5">
               <div className="text-[11px] font-bold flex gap-3 text-slate-800">
                 <span className="w-24 tracking-wider">CUSTOMER ID</span>
-                <span className="font-semibold text-slate-600">
+                <span className="font-semibold text-slate-600 text-xs">
                   : {customer.id}
                 </span>
               </div>
               <div className="text-[11px] font-bold flex gap-3 text-slate-800">
                 <span className="w-24 tracking-wider">MOBILE NO</span>
-                <span className="font-semibold text-slate-600">
+                <span className="text-slate-600 font-semibold text-xs">
                   : {customer.mobile_no}
                 </span>
               </div>
@@ -186,7 +189,9 @@ function PrintBillPage() {
           <div className="w-2/5 p-2.5 flex flex-col justify-center gap-1.5 text-[11px] font-bold bg-white">
             <div className="flex justify-between items-center border-b border-slate-300 pb-0.5">
               <span className="text-slate-500 tracking-wider">BILL NO</span>
-              <span className="text-slate-900">{billData.id}</span>
+              <span className="text-slate-900 font-extrabold text-sm">
+                {billData.id}
+              </span>
             </div>
             <div className="flex justify-between items-center border-b border-slate-300 pb-0.5">
               <span className="text-slate-500 tracking-wider">KHATA NO</span>

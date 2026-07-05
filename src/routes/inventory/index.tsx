@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createRoute } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import {
   AlertCircle,
   ArrowDownLeft,
@@ -36,7 +37,9 @@ import {
 } from "@/components/ui/table";
 import { inventoryService } from "@/services/inventoryService";
 
-export const Route = createFileRoute("/inventory/")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/inventory/",
   component: InventoryOverviewPage,
 });
 

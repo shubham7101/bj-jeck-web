@@ -5,7 +5,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import {
   format,
   isAfter,
@@ -79,7 +80,9 @@ const billSearchSchema = z.object({
   customer_id: z.number().optional(),
 });
 
-export const Route = createFileRoute("/bills/new")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/bills/new",
   component: NewBillPage,
   validateSearch: (search) => billSearchSchema.parse(search),
   loaderDeps: ({ search }) => ({ customer_id: search.customer_id }),

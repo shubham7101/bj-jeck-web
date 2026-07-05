@@ -4,7 +4,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createRoute, Link } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import { FileText, IndianRupee, Plus, Receipt, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BillDataGrid } from "@/components/BillDataGrid";
@@ -19,7 +20,9 @@ import { type BillSearchReq, billSearchReqSchema } from "@/schemas/billSchema";
 import { billService } from "@/services/billService";
 import { formatCurrency } from "@/utils";
 
-export const Route = createFileRoute("/bills/")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/bills/",
   component: BillsPage,
   validateSearch: (search) => billSearchReqSchema.parse(search),
 });

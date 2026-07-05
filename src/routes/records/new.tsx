@@ -5,7 +5,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import { format, isValid, parse } from "date-fns";
 import {
   AlertCircle,
@@ -84,7 +85,9 @@ const recordSearchSchema = z.object({
   customer_id: z.number().optional(),
 });
 
-export const Route = createFileRoute("/records/new")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/records/new",
   component: NewRecordPage,
   validateSearch: (search) => recordSearchSchema.parse(search),
   loaderDeps: ({ search }) => ({ customer_id: search.customer_id }),
@@ -875,7 +878,7 @@ function RecordEntryForm({
                     </TableHeader>
                     <TableBody className="divide-y divide-border/60">
                       {field.state.value.map((_, index) => {
-                        const rowPart = field.state.value[index]?.part;
+                        const rowPart = items[index]?.part;
                         const allowedSizes =
                           rowPart === "full" ||
                           rowPart === "inner" ||
@@ -890,7 +893,6 @@ function RecordEntryForm({
                                 "18x3",
                                 "21x3",
                               ];
-
                         return (
                           <TableRow
                             key={index}
@@ -1143,7 +1145,7 @@ function RecordEntryForm({
                 {/* Mobile View: Render Items as sleek Cards */}
                 <div className="block md:hidden p-4 space-y-4 bg-muted/20 border-t border-border/50">
                   {field.state.value.map((_, index) => {
-                    const mobileRowPart = field.state.value[index]?.part;
+                    const mobileRowPart = items[index]?.part;
                     const mobileAllowedSizes =
                       mobileRowPart === "full" ||
                       mobileRowPart === "inner" ||

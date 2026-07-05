@@ -1,6 +1,7 @@
 import { useStore } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createRoute, Link } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import { format, isValid, parse } from "date-fns";
 import {
   AlertTriangle,
@@ -76,7 +77,9 @@ import { formatDate, getInitials } from "@/utils";
 const DATE_FORMAT = "dd-MM-yyyy";
 
 // --- Route Definition ---
-export const Route = createFileRoute("/records/update/$recordId")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/records/update/$recordId",
   component: UpdateRecordPage,
   loader: async ({ params: { recordId } }) => {
     const record = await recordService.get(Number(recordId));
@@ -621,7 +624,23 @@ function RecordUpdateForm({
                       </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-zinc-800/60">
-                      {field.state.value.map((_, index) => (
+                      {field.state.value.map((_, index) => {
+                        const rowPart = items[index]?.part;
+                        const allowedSizes =
+                          rowPart === "full" ||
+                          rowPart === "inner" ||
+                          rowPart === "outer"
+                            ? ["1.5", "2.0", "2.5", "3.0"]
+                            : [
+                                "1x3",
+                                "2x3",
+                                "9x3",
+                                "12x3",
+                                "15x3",
+                                "18x3",
+                                "21x3",
+                              ];
+                        return (
                         <TableRow
                           key={index}
                           className="hover:bg-zinc-950/20 border-zinc-800/40 group transition-colors"
@@ -632,11 +651,13 @@ function RecordUpdateForm({
                                 <FormBase field={subField} className="mb-0">
                                   <Select
                                     value={subField.state.value}
-                                    onValueChange={(val) =>
+                                    onValueChange={(val) => {
                                       subField.handleChange(
-                                        val as "full" | "inner" | "outer",
-                                      )
-                                    }
+                                        val as "full" | "inner" | "outer" | "plate",
+                                      );
+                                      const defaultSize = val === "plate" ? "2x3" : "2.0";
+                                      form.setFieldValue(`items[${index}].size`, defaultSize);
+                                    }}
                                   >
                                     <SelectTrigger className="border-zinc-850 bg-zinc-950/50 hover:bg-zinc-900/50 focus:border-primary/50 focus:ring-primary/20 transition-all cursor-pointer h-9 text-xs">
                                       <SelectValue placeholder="Select Part" />
@@ -672,7 +693,7 @@ function RecordUpdateForm({
                                       <SelectValue placeholder="Size" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {SIZE_OPTIONS.map((size) => (
+                                      {allowedSizes.map((size) => (
                                         <SelectItem
                                           key={size}
                                           value={String(size)}
@@ -847,14 +868,24 @@ function RecordUpdateForm({
                             </Button>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
 
                 {/* Mobile View: Render Items as sleek Cards */}
                 <div className="block md:hidden p-4 space-y-4 bg-zinc-950/20 border-t border-zinc-800">
-                  {field.state.value.map((_, index) => (
+                  {field.state.value.map((_, index) => {
+                    const mobileRowPart = items[index]?.part;
+                    const mobileAllowedSizes =
+                      mobileRowPart === "full" ||
+                      mobileRowPart === "inner" ||
+                      mobileRowPart === "outer"
+                        ? ["1.5", "2.0", "2.5", "3.0"]
+                        : ["2x3", "9x3", "12x3", "15x3", "18x3", "21x3"];
+
+                    return (
                     <div
                       key={index}
                       className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl relative space-y-4 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300"
@@ -885,11 +916,13 @@ function RecordUpdateForm({
                             >
                               <Select
                                 value={subField.state.value}
-                                onValueChange={(val) =>
+                                onValueChange={(val) => {
                                   subField.handleChange(
-                                    val as "full" | "inner" | "outer",
-                                  )
-                                }
+                                    val as "full" | "inner" | "outer" | "plate",
+                                  );
+                                  const defaultSize = val === "plate" ? "2x3" : "2.0";
+                                  form.setFieldValue(`items[${index}].size`, defaultSize);
+                                }}
                               >
                                 <SelectTrigger className="border-zinc-850 bg-zinc-950/50 h-9 text-xs">
                                   <SelectValue placeholder="Select Part" />
@@ -926,7 +959,7 @@ function RecordUpdateForm({
                                   <SelectValue placeholder="Size" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {SIZE_OPTIONS.map((size) => (
+                                  {mobileAllowedSizes.map((size) => (
                                     <SelectItem
                                       key={size}
                                       value={String(size)}
@@ -1094,7 +1127,8 @@ function RecordUpdateForm({
                         </form.Field>
                       </div>
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               </CardContent>
             </>

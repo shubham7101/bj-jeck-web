@@ -4,7 +4,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createRoute, Link } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import {
   AlertTriangle,
   ArrowRightLeft,
@@ -30,7 +31,9 @@ import {
 } from "@/schemas/recordSchema";
 import { recordService } from "@/services/recordService";
 
-export const Route = createFileRoute("/records/")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/records/",
   component: RecordPage,
   validateSearch: (search) => recordSearchReqSchema.parse(search),
 });

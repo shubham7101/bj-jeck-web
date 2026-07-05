@@ -1,25 +1,24 @@
-import { defineConfig } from 'vite'
-import { devtools } from '@tanstack/devtools-vite'
-import viteReact from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from "vite";
+import { devtools } from "@tanstack/devtools-vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
-import { tanstackRouter } from '@tanstack/router-plugin/vite'
-import { fileURLToPath, URL } from 'node:url'
+import path from "node:path";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     devtools(),
-    tanstackRouter({
-      target: 'react',
-      autoCodeSplitting: true,
+    react({
+      babel: {
+        plugins: [["babel-plugin-react-compiler", {}]],
+      },
     }),
-    viteReact(),
     tailwindcss(),
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   server: {
@@ -27,8 +26,7 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:8080",
         changeOrigin: true,
-        secure: false,
       },
     },
   },
-})
+});

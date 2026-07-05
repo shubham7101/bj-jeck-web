@@ -27,7 +27,7 @@ export const STANDARD_RATES_SETUP: CustomerRate[] = [
   { part: "full", size: "2.0", rate: 1.5 },
   { part: "full", size: "2.5", rate: 1.75 },
   { part: "full", size: "3.0", rate: 2.0 },
-  { part: "plate", size: "2x3", rate: 1.0 },
+  { part: "plate", size: "2x3", rate: 1.2 },
 ];
 
 export const customerSchema = z.object({

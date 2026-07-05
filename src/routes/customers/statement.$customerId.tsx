@@ -1,4 +1,5 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createRoute, useRouter } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import { format, isValid, parse } from "date-fns";
 import {
   ArrowLeft,
@@ -27,7 +28,9 @@ import { billService } from "@/services/billService";
 import { customerService } from "@/services/customerService";
 import { ledgerService } from "@/services/ledgerService";
 
-export const Route = createFileRoute("/customers/statement/$customerId")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/statement/$customerId",
   loader: async ({ params }) => {
     const customerId = Number(params.customerId);
     const customer = await customerService.get(customerId);
@@ -104,7 +107,7 @@ function StatementPage() {
     return {
       date,
       dateStr: format(date, "dd/MM/yy"),
-      remarks: `REF NO. ${pay.id} | ${pay.notes}`,
+      remarks: `REF NO. ${pay.id} | ${pay.type ? pay.type.toUpperCase() : "PAYMENT"} | ${pay.notes}`,
       billAmount: 0,
       credit: pay.amount,
     };

@@ -4,7 +4,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createRoute, Link } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import { History, IndianRupee, Plus, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -24,7 +25,9 @@ import { customerService } from "@/services/customerService";
 import { ledgerService } from "@/services/ledgerService";
 import { formatCurrency } from "@/utils";
 
-export const Route = createFileRoute("/ledger/")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/ledger/",
   component: LedgerPage,
   validateSearch: (search) => ledgerSearchReqSchema.parse(search),
 });

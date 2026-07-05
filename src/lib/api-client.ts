@@ -1,5 +1,3 @@
-const BASE_URL = import.meta.env.VITE_API_URL;
-
 export class ApiError extends Error {
   code?: number;
   type?: string;
@@ -29,7 +27,7 @@ export const apiClient = async <T>(
   options: RequestInit = {},
 ): Promise<T> => {
   // await new Promise((resolve) => setTimeout(resolve, 1500));
-  const response = await fetch(BASE_URL + endpoint, {
+  const response = await fetch(endpoint, {
     ...options,
     headers: {
       "Content-Type": "application/json",

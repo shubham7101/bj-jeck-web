@@ -5,7 +5,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import { format, isValid, parse } from "date-fns";
 import {
   ArrowLeft,
@@ -66,7 +67,9 @@ const ledgerSearchSchema = z.object({
   customer_id: z.number().optional(),
 });
 
-export const Route = createFileRoute("/ledger/new")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/ledger/new",
   component: NewLedgerPage,
   validateSearch: (search) => ledgerSearchSchema.parse(search),
   loaderDeps: ({ search }) => ({ customer_id: search.customer_id }),

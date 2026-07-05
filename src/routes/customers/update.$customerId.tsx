@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createRoute, Link, useRouter } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import {
   Activity,
   ArrowLeft,
@@ -55,7 +56,9 @@ import {
 import { customerService } from "@/services/customerService";
 
 // --- Route Definition ---
-export const Route = createFileRoute("/customers/update/$customerId")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/update/$customerId",
   component: UpdateCustomerRouteWrapper, // 1. Point to the wrapper
   loader: async ({ params }) => {
     const id = Number(params.customerId);

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createRoute, Link } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import { format, parse } from "date-fns";
 import {
   ArrowLeft,
@@ -28,7 +29,9 @@ const unbilledSearchSchema = z.object({
   date: z.string().optional(),
 });
 
-export const Route = createFileRoute("/customers/unbilled")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/unbilled",
   component: RouteComponent,
   validateSearch: (search) => unbilledSearchSchema.parse(search),
 });

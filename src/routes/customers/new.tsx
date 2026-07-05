@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createRoute, Link } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import {
   ArrowLeft,
   Contact,
@@ -49,7 +50,9 @@ import {
 } from "@/schemas/customerSchema";
 import { customerService } from "@/services/customerService";
 
-export const Route = createFileRoute("/customers/new")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/customers/new",
   component: NewCustomerPage,
 });
 

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createRoute, Link, useRouter } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import { format } from "date-fns";
 import {
   ArrowDownLeft,
@@ -45,7 +46,9 @@ import { customerService } from "@/services/customerService";
 import { formatCurrency } from "@/utils";
 
 // Define the route
-export const Route = createFileRoute("/bills/$billId")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/bills/$billId",
   component: BillDetailsPage,
 });
 
@@ -100,13 +103,14 @@ function BillHeader({ bill }: { bill: BillDetails }) {
           asChild
           className="h-9 border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:text-white hover:bg-zinc-700 hover:border-zinc-600 transition-all cursor-pointer"
         >
-          <Link
-            to="/bills/print/$billId"
-            params={{ billId: bill.id.toString() }}
+          <a
+            href={`/api/generate/bill-pdf/${bill.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             <Printer className="mr-2 h-4 w-4" />
             Print Invoice
-          </Link>
+          </a>
         </Button>
         <Button
           variant="ghost"

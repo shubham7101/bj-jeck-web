@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createRoute, Link } from "@tanstack/react-router";
+import { Route as rootRoute } from "@/routes/__root";
 import {
   ArrowLeft,
   ArrowRight,
@@ -27,7 +28,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { inventoryService } from "@/services/inventoryService";
 import { ErrorAlert } from "@/components/ErrorAlert";
 
-export const Route = createFileRoute("/inventory/update")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/inventory/update",
   component: UpdateInventoryPage,
 });
 
