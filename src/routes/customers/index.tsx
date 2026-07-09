@@ -1,9 +1,4 @@
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
 import { Route as rootRoute } from "@/routes/__root";
 import { Plus, UserCheck, Users, UserX } from "lucide-react";
@@ -14,10 +9,7 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
 import { useDebounce } from "@/hooks/use-debounce";
-import {
-  type Customer,
-  customerSearchReqSchema,
-} from "@/schemas/customerSchema";
+import { customerSearchReqSchema } from "@/schemas/customerSchema";
 import { customerService } from "@/services/customerService";
 
 export const Route = createRoute({
@@ -35,12 +27,9 @@ type CustomerFiltersState = Pick<
 function CustomerPage() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
-  const queryClient = useQueryClient();
 
   const page = search.page ?? 1;
   const per_page = search.per_page ?? 25;
-
-  const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
 
   const [localFilters, setLocalFilters] = useState<CustomerFiltersState>({
     name: search.name || "",
@@ -88,50 +77,6 @@ function CustomerPage() {
     placeholderData: keepPreviousData,
   });
 
-  // --- Helpers & Mutations ---
-
-  const toggleProcessing = (id: number, isProcessing: boolean) => {
-    setProcessingIds((prev) => {
-      const next = new Set(prev);
-      if (isProcessing) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  };
-
-  const toggleStatusMutation = useMutation({
-    mutationFn: ({ id, active }: { id: number; active: boolean }) =>
-      customerService.setActive(id, active),
-    onMutate: ({ id }) => toggleProcessing(id, true),
-    onSettled: (_data, _error, { id }) => {
-      toggleProcessing(id, false);
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
-    },
-    onError: (err) => {
-      console.error("Status update failed", err);
-      alert("Failed to update status. Please try again.");
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => customerService.delete(id),
-    onMutate: (id) => toggleProcessing(id, true),
-    onSuccess: () => {
-      const currentCount = data?.data.length || 0;
-      if (currentCount === 1 && page > 1) {
-        navigate({ search: (prev) => ({ ...prev, page: page - 1 }) });
-      }
-    },
-    onSettled: (_data, _error, id) => {
-      toggleProcessing(id, false);
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
-    },
-    onError: (err) => {
-      console.error("Delete failed", err);
-      alert("Failed to delete customer. Please try again.");
-    },
-  });
-
   // --- Handlers ---
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,18 +111,8 @@ function CustomerPage() {
     });
   };
 
-  const handleToggleStatus = (customer: Customer) => {
-    toggleStatusMutation.mutate({ id: customer.id, active: !customer.active });
-  };
-
-  const handleDelete = (customer: Customer) => {
-    if (confirm(`Are you sure you want to delete ${customer.name}?`)) {
-      deleteMutation.mutate(customer.id);
-    }
-  };
-
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6 animate-in fade-in duration-500">
+    <div className="flex-1 space-y-6 px-2 py-6 sm:p-6 md:p-8 md:pt-6 animate-in fade-in duration-500 overflow-x-hidden">
       {/* Header Section */}
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center justify-between pb-2">
         <div className="space-y-1">
@@ -206,14 +141,14 @@ function CustomerPage() {
       <div className="h-px w-full bg-linear-to-r from-zinc-800 to-transparent" />
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-3">
         <StatsCard
           loading={isLoadingStats}
           title="Total Customers"
           value={stats?.total ?? 0}
           subText="Recorded in system"
           icon={<Users className="h-4 w-4 text-emerald-400" />}
-          className="bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
+          className="col-span-2 md:col-span-1 bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
         />
         <StatsCard
           loading={isLoadingStats}
@@ -240,8 +175,6 @@ function CustomerPage() {
         data={data?.data || []}
         isLoading={isLoading}
         isPlaceholderData={isPlaceholderData}
-        navigate={navigate}
-        processingIds={processingIds}
         filterProps={{
           filters: localFilters,
           onChange: handleFilterChange,
@@ -255,8 +188,6 @@ function CustomerPage() {
           onPageChange: handlePageChange,
           onPerPageChange: handlePerPageChange,
         }}
-        onDelete={handleDelete}
-        onToggleStatus={handleToggleStatus}
       />
     </div>
   );

@@ -1,18 +1,14 @@
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
 import { Route as rootRoute } from "@/routes/__root";
-import { FileText, IndianRupee, Plus, Receipt, TrendingUp } from "lucide-react";
+import { FileText, IndianRupee, Plus, Receipt, TrendingUp, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BillDataGrid } from "@/components/BillDataGrid";
 // Components
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // Hooks & Services
 import { useDebounce } from "@/hooks/use-debounce";
@@ -30,12 +26,9 @@ export const Route = createRoute({
 function BillsPage() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
-  const queryClient = useQueryClient();
 
   const page = search.page ?? 1;
   const per_page = search.per_page ?? 25;
-
-  const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
 
   // Local state for filters to allow typing before debouncing
   const [localFilters, setLocalFilters] = useState<{
@@ -100,37 +93,6 @@ function BillsPage() {
     placeholderData: keepPreviousData,
   });
 
-  // --- Mutations ---
-
-  const toggleProcessing = (id: number, isProcessing: boolean) => {
-    setProcessingIds((prev) => {
-      const next = new Set(prev);
-      if (isProcessing) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  };
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => billService.delete(id),
-    onMutate: (id) => toggleProcessing(id, true),
-    onSuccess: () => {
-      const currentCount = data?.data.length || 0;
-      if (currentCount === 1 && page > 1) {
-        navigate({ search: (prev) => ({ ...prev, page: page - 1 }) });
-      }
-    },
-    onSettled: (_data, _error, id) => {
-      toggleProcessing(id, false);
-      queryClient.invalidateQueries({ queryKey: ["bills"] });
-      queryClient.invalidateQueries({ queryKey: ["records"] }); // Deleting a bill unlocks records
-    },
-    onError: (err) => {
-      console.error("Delete failed", err);
-      alert("Failed to delete bill.");
-    },
-  });
-
   // --- Handlers ---
 
   const handleFilterChange = (key: keyof BillSearchReq, value: string) => {
@@ -171,14 +133,8 @@ function BillsPage() {
     });
   };
 
-  const handleDelete = (bill: any) => {
-    if (confirm(`Are you sure you want to delete Bill #${bill.id}?`)) {
-      deleteMutation.mutate(bill.id);
-    }
-  };
-
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6 animate-in fade-in duration-500">
+    <div className="flex-1 space-y-6 px-2 py-6 sm:p-6 md:p-8 md:pt-6 animate-in fade-in duration-500 overflow-x-hidden">
       {/* Header Section */}
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center justify-between pb-2">
         <div className="space-y-1">
@@ -193,26 +149,50 @@ function BillsPage() {
             View generated bills, track payments, and manage history.
           </p>
         </div>
-        <Button
-          asChild
-          className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)] transition-all font-medium"
-        >
-          <Link to="/bills/new">
-            <Plus className="mr-2 h-4 w-4" /> Generate Bill
-          </Link>
-        </Button>
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const id = formData.get("bill_id");
+              if (id) {
+                navigate({ to: `/bills/${id}` });
+              }
+            }}
+            className="relative flex items-center w-full sm:w-auto"
+          >
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-zinc-500" />
+            </div>
+            <Input 
+              type="number"
+              name="bill_id"
+              placeholder="Find Bill ID..."
+              className="pl-9 bg-zinc-950 border-zinc-800 text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50 w-full sm:w-48 h-10 shadow-sm shadow-black/20 font-mono text-sm"
+            />
+          </form>
+          <Button
+            asChild
+            className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)] transition-all font-medium shrink-0 h-10 w-full sm:w-auto"
+          >
+            <Link to="/bills/new">
+              <Plus className="mr-2 h-4 w-4" /> Generate Bill
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="h-px w-full bg-linear-to-r from-zinc-800 to-transparent" />
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 min-w-0">
         <StatsCard
           loading={isLoadingStats}
           title="Yearly Revenue"
           value={formatCurrency(stats?.year_total || 0)}
           subText="Billed amount this year"
           icon={<IndianRupee className="h-4 w-4 text-emerald-500" />}
+          className="bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
         />
         <StatsCard
           loading={isLoadingStats}
@@ -220,6 +200,7 @@ function BillsPage() {
           value={stats?.year_bills || 0}
           subText="Invoices created this year"
           icon={<Receipt className="h-4 w-4 text-blue-500" />}
+          className="bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
         />
         <StatsCard
           loading={isLoadingStats}
@@ -227,6 +208,7 @@ function BillsPage() {
           value={stats?.total_bills || 0}
           subText="All-time bill count"
           icon={<FileText className="h-4 w-4 text-zinc-500" />}
+          className="bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
         />
         <StatsCard
           loading={isLoadingStats}
@@ -236,6 +218,7 @@ function BillsPage() {
           )}
           subText="Average invoice size"
           icon={<TrendingUp className="h-4 w-4 text-amber-500" />}
+          className="bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
         />
       </div>
 
@@ -245,8 +228,6 @@ function BillsPage() {
         data={data?.data || []}
         isLoading={isLoading}
         isPlaceholderData={isPlaceholderData}
-        navigate={navigate}
-        processingIds={processingIds}
         filterProps={{
           filters: localFilters,
           onChange: handleFilterChange,
@@ -260,7 +241,6 @@ function BillsPage() {
           onPageChange: handlePageChange,
           onPerPageChange: handlePerPageChange,
         }}
-        onDelete={handleDelete}
       />
     </div>
   );

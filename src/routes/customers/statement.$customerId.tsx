@@ -184,7 +184,7 @@ function StatementPage() {
   };
 
   return (
-    <div className="bg-slate-100 text-slate-900 min-h-screen p-4 sm:p-8 font-sans print:p-0 print:bg-white print:min-h-0 print:h-auto">
+    <div className="bg-slate-100 text-slate-900 min-h-screen p-2 sm:p-4 md:p-8 font-sans print:p-0 print:bg-white print:min-h-0 print:h-auto">
       <style>
         {`
           @page {
@@ -201,40 +201,40 @@ function StatementPage() {
       </style>
 
       {/* Control Panel (Screen only) */}
-      <div className="max-w-[1000px] mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm print:hidden">
-        <div className="flex items-center gap-3">
+      <div className="max-w-[1000px] mx-auto mb-4 sm:mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm print:hidden">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <Button
             variant="outline"
             size="icon"
             onClick={() => router.history.go(-1)}
-            className="h-9 w-9 border-slate-300 text-slate-600 hover:text-slate-900 cursor-pointer"
+            className="h-9 w-9 border-slate-300 text-slate-600 hover:text-slate-900 cursor-pointer shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-bold text-slate-800">
+          <div className="flex flex-col min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-slate-800 truncate">
               Ledger Statement
             </h1>
-            <p className="text-xs text-slate-500">{customer.name}</p>
+            <p className="text-xs text-slate-500 truncate">{customer.name}</p>
           </div>
         </div>
 
         {/* Date Filters */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">From:</span>
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap w-full sm:w-auto">
+          <div className="flex items-center gap-2 flex-1 sm:flex-none">
+            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">From:</span>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "w-36 justify-start text-left font-normal border-slate-300",
+                    "w-full sm:w-32 md:w-36 justify-start text-left font-normal border-slate-300 px-2 sm:px-3",
                     !fromDateStr && "text-slate-400",
                   )}
                 >
-                  <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-slate-400" />
-                  {fromDateStr ? fromDateStr : "Pick date"}
+                  <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                  <span className="truncate">{fromDateStr ? fromDateStr : "From Date"}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -250,20 +250,20 @@ function StatementPage() {
             </Popover>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">To:</span>
+          <div className="flex items-center gap-2 flex-1 sm:flex-none">
+            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">To:</span>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "w-36 justify-start text-left font-normal border-slate-300",
+                    "w-full sm:w-32 md:w-36 justify-start text-left font-normal border-slate-300 px-2 sm:px-3",
                     !toDateStr && "text-slate-400",
                   )}
                 >
-                  <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-slate-400" />
-                  {toDateStr ? toDateStr : "Pick date"}
+                  <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                  <span className="truncate">{toDateStr ? toDateStr : "To Date"}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -279,53 +279,54 @@ function StatementPage() {
             </Popover>
           </div>
 
-          {(fromDateStr || toDateStr) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleReset}
-              className="h-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50/50 cursor-pointer"
-            >
-              <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Reset
-            </Button>
-          )}
+          <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+            {(fromDateStr || toDateStr) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleReset}
+                className="flex-1 sm:flex-none h-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50/50 cursor-pointer"
+              >
+                <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Reset
+              </Button>
+            )}
 
-          <Button
-            onClick={() => window.print()}
-            size="sm"
-            className="bg-slate-800 text-white hover:bg-slate-700 font-semibold cursor-pointer"
-          >
-            <Printer className="mr-1.5 h-3.5 w-3.5" /> Print Ledger
-          </Button>
+            <Button
+              onClick={() => window.print()}
+              size="sm"
+              className="flex-1 sm:flex-none bg-slate-800 text-white hover:bg-slate-700 font-semibold cursor-pointer"
+            >
+              <Printer className="mr-1.5 h-3.5 w-3.5" /> Print
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Main Printable Ledger Document */}
-      <div className="max-w-[1000px] mx-auto border-2 border-slate-800 bg-white shadow-2xl print:shadow-none flex flex-col print:min-h-[277mm] leading-normal">
+      <div className="max-w-[1000px] mx-auto border sm:border-2 border-slate-800 bg-white shadow-xl sm:shadow-2xl print:border-0 print:shadow-none flex flex-col print:min-h-[277mm] leading-normal rounded-lg sm:rounded-none overflow-hidden sm:overflow-visible">
         {/* Header Section */}
-        <div className="flex justify-between items-start border-b-2 border-slate-800 p-3">
-          <div className="flex items-center justify-start">
+        <div className="flex flex-col sm:flex-row justify-between items-start border-b sm:border-b-2 border-slate-800 p-3 sm:p-4 gap-4 sm:gap-0 bg-slate-50 print:bg-transparent sm:bg-transparent">
+          <div className="flex items-center justify-start w-full sm:w-auto">
             {/* Logo area */}
-            <div className="h-14 w-14 flex flex-col items-center justify-center font-extrabold text-slate-800 border-2 border-slate-800 rounded-lg overflow-hidden bg-slate-50">
-              <span className="text-xl tracking-tighter leading-none">BG</span>
-              <span className="text-[6px] tracking-widest uppercase mt-0.5 leading-none">
+            <div className="h-12 w-12 sm:h-14 sm:w-14 flex flex-col items-center justify-center font-extrabold text-slate-800 border-2 border-slate-800 rounded-lg overflow-hidden bg-white sm:bg-slate-50 shrink-0">
+              <span className="text-lg sm:text-xl tracking-tighter leading-none">BG</span>
+              <span className="text-[5px] sm:text-[6px] tracking-widest uppercase mt-0.5 leading-none">
                 JECK
               </span>
             </div>
           </div>
 
-          <table className="ml-auto text-[10px] text-left">
+          <table className="w-full sm:w-auto text-[10px] sm:text-[11px] md:text-[10px] text-left sm:ml-auto">
             <tbody>
               <tr>
                 <td className="font-bold text-slate-800 tracking-widest uppercase pr-2 py-0.5 whitespace-nowrap">
                   Mobile No :
                 </td>
                 <td className="font-semibold text-slate-600 tracking-wide py-0.5">
-                  <div className="flex gap-2 whitespace-nowrap">
+                  <div className="flex flex-wrap sm:flex-nowrap gap-x-2 gap-y-0">
                     <span>+91-9727710022,</span>
-                    <span>+91-9904515022,</span>
-                    <span>+91-7383073894,</span>
-                    <span>+91-8200951702</span>
+                    <span className="hidden sm:inline">+91-9904515022,</span>
+                    <span className="hidden md:inline">+91-7383073894</span>
                   </div>
                 </td>
               </tr>
@@ -341,7 +342,7 @@ function StatementPage() {
                 <td className="font-bold text-slate-800 tracking-widest uppercase pr-2 py-0.5 whitespace-nowrap">
                   E-mail :
                 </td>
-                <td className="font-semibold text-slate-600 tracking-wider py-0.5">
+                <td className="font-semibold text-slate-600 tracking-wider py-0.5 break-all sm:break-normal">
                   manishdhameliya21031978@gmail.com
                 </td>
               </tr>
@@ -350,87 +351,87 @@ function StatementPage() {
         </div>
 
         {/* Info Details Section */}
-        <div className="flex border-b-2 border-slate-800">
+        <div className="flex flex-col sm:flex-row border-b sm:border-b-2 border-slate-800">
           {/* Customer Left */}
-          <div className="w-3/5 border-r-2 border-slate-800 p-2.5 flex flex-col justify-between bg-slate-50/50">
+          <div className="w-full sm:w-3/5 border-b sm:border-b-0 sm:border-r-2 border-slate-800 p-3 sm:p-4 flex flex-col justify-between bg-slate-50/50">
             <div className="flex flex-col gap-1">
-              <div className="font-extrabold text-sm uppercase text-slate-900 tracking-wide leading-none">
+              <div className="font-extrabold text-xs sm:text-sm uppercase text-slate-900 tracking-wide leading-none">
                 NAME : {customer.name}
               </div>
-              <div className="text-[11px] font-bold uppercase leading-snug max-w-[90%] text-slate-700">
+              <div className="text-[10px] sm:text-[11px] font-bold uppercase leading-snug text-slate-700">
                 ADDRESS : {customer.address}
               </div>
             </div>
-            <div className="mt-2 flex flex-col gap-0.5">
-              <div className="text-[11px] font-bold flex gap-3 text-slate-800">
-                <span className="w-24 tracking-wider">CUSTOMER ID</span>
-                <span className="font-semibold text-slate-600">
+            <div className="mt-3 sm:mt-2 flex flex-col gap-0.5">
+              <div className="text-[10px] sm:text-[11px] font-bold flex gap-2 sm:gap-3 text-slate-800">
+                <span className="w-20 sm:w-24 tracking-wider shrink-0">CUSTOMER ID</span>
+                <span className="font-semibold text-slate-600 truncate">
                   : {customer.id}
                 </span>
               </div>
-              <div className="text-[11px] font-bold flex gap-3 text-slate-800">
-                <span className="w-24 tracking-wider">MOBILE NO</span>
-                <span className="font-semibold text-slate-600">
+              <div className="text-[10px] sm:text-[11px] font-bold flex gap-2 sm:gap-3 text-slate-800">
+                <span className="w-20 sm:w-24 tracking-wider shrink-0">MOBILE NO</span>
+                <span className="font-semibold text-slate-600 truncate">
                   : {customer.mobile_no}
                 </span>
               </div>
-              <div className="text-[11px] font-bold flex gap-3 text-slate-800">
-                <span className="w-24 tracking-wider">GSTIN</span>
+              <div className="text-[10px] sm:text-[11px] font-bold flex gap-2 sm:gap-3 text-slate-800">
+                <span className="w-20 sm:w-24 tracking-wider shrink-0">GSTIN</span>
                 <span className="font-semibold text-slate-600">:</span>
               </div>
             </div>
           </div>
 
           {/* Bill Info Right */}
-          <div className="w-2/5 p-2.5 flex flex-col justify-center gap-1.5 text-[11px] font-bold bg-white">
-            <div className="flex justify-between items-center border-b border-slate-300 pb-0.5">
+          <div className="w-full sm:w-2/5 p-3 sm:p-4 flex flex-col justify-center gap-2 text-[10px] sm:text-[11px] font-bold bg-white">
+            <div className="flex justify-between items-center border-b border-slate-200 sm:border-slate-300 pb-1">
               <span className="text-slate-500 tracking-wider">DOCUMENT</span>
-              <span className="text-slate-900">ACCOUNT STATEMENT</span>
+              <span className="text-slate-900 text-right">ACCOUNT STATEMENT</span>
             </div>
-            <div className="flex justify-between items-center border-b border-slate-300 pb-0.5">
+            <div className="flex justify-between items-center border-b border-slate-200 sm:border-slate-300 pb-1">
               <span className="text-slate-500 tracking-wider">FROM DATE</span>
               <span className="text-slate-900">{displayFromDate}</span>
             </div>
-            <div className="flex justify-between items-center border-b border-slate-300 pb-0.5">
+            <div className="flex justify-between items-center border-b border-slate-200 sm:border-slate-300 pb-1">
               <span className="text-slate-500 tracking-wider">TO DATE</span>
               <span className="text-slate-900">{displayToDate}</span>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center pb-1">
               <span className="text-slate-500 tracking-wider">
                 GENERATED ON
               </span>
               <span className="text-slate-900">
-                {format(new Date(), "dd-MM-yyyy HH:mm:ss")}
+                {format(new Date(), "dd-MM-yy HH:mm")}
               </span>
             </div>
           </div>
         </div>
 
         {/* Ledger Head title */}
-        <div className="bg-slate-200 border-b-2 border-slate-800 font-extrabold text-xs px-4 py-2 uppercase tracking-widest text-slate-900 flex justify-between items-center">
-          <span>Ledger Statement: {customer.name}</span>
-          <span className="text-[10px] text-slate-600">
+        <div className="bg-slate-200 border-b sm:border-b-2 border-slate-800 font-extrabold text-[10px] sm:text-xs px-3 sm:px-4 py-2 uppercase tracking-widest text-slate-900 flex justify-between items-center">
+          <span className="truncate pr-2">Ledger: {customer.name}</span>
+          <span className="text-[9px] sm:text-[10px] text-slate-600 whitespace-nowrap shrink-0">
             {fromDateStr && toDateStr
               ? `${fromDateStr} to ${toDateStr}`
               : "All Records"}
           </span>
         </div>
 
-        {/* Table Area */}
-        <div className="grow">
-          <Table className="w-full text-[10px] text-center border-collapse">
+        {/* Table Area (Scrollable on Mobile) */}
+        <div className="grow overflow-x-auto print:overflow-visible">
+          <Table className="w-full text-[10px] sm:text-[11px] md:text-[10px] text-center border-collapse min-w-[500px]">
             <TableHeader className="bg-white">
-              <TableRow className="border-b-2 border-slate-800 hover:bg-white">
-                <TableHead className="border-r border-slate-400 py-1.5 px-2 h-auto text-center font-bold text-slate-800 uppercase tracking-wider w-[12%]">
+              <TableRow className="border-b sm:border-b-2 border-slate-800 hover:bg-white">
+                <TableHead className="border-r border-slate-300 sm:border-slate-400 py-1.5 px-2 h-auto text-center font-bold text-slate-800 uppercase tracking-wider w-[12%]">
                   Date
                 </TableHead>
-                <TableHead className="border-r border-slate-400 py-1.5 px-3 h-auto text-left font-bold text-slate-800 uppercase tracking-wider w-[50%]">
+                <TableHead className="border-r border-slate-300 sm:border-slate-400 py-1.5 px-3 h-auto text-left font-bold text-slate-800 uppercase tracking-wider w-[50%]">
                   Remarks
                 </TableHead>
-                <TableHead className="border-r border-slate-400 py-1.5 px-2 h-auto text-right font-bold text-slate-800 uppercase tracking-wider w-[12%]">
-                  Bill Amount
+                <TableHead className="border-r border-slate-300 sm:border-slate-400 py-1.5 px-2 h-auto text-right font-bold text-slate-800 uppercase tracking-wider w-[12%]">
+                  Bill Amt
                 </TableHead>
-                <TableHead className="border-r border-slate-400 py-1.5 px-2 h-auto text-right font-bold text-slate-800 uppercase tracking-wider w-[12%]">
+                <TableHead className="border-r border-slate-300 sm:border-slate-400 py-1.5 px-2 h-auto text-right font-bold text-slate-800 uppercase tracking-wider w-[12%]">
                   Credit
                 </TableHead>
                 <TableHead className="py-1.5 px-3 h-auto text-right font-extrabold text-slate-950 uppercase tracking-wider w-[14%] bg-slate-50/50">
@@ -443,21 +444,21 @@ function StatementPage() {
               {rows.map((row, i) => (
                 <TableRow
                   key={i}
-                  className="border-b border-slate-300 hover:bg-transparent transition-colors last:border-b-0"
+                  className="border-b border-slate-200 sm:border-slate-300 hover:bg-transparent transition-colors last:border-b-0"
                 >
-                  <TableCell className="border-r border-slate-300 py-1 px-2 font-semibold text-slate-600">
+                  <TableCell className="border-r border-slate-200 sm:border-slate-300 py-1.5 sm:py-1 px-2 font-semibold text-slate-600 whitespace-nowrap">
                     {format(row.date, "dd/MM/yy")}
                   </TableCell>
-                  <TableCell className="border-r border-slate-300 py-1 px-3 text-left whitespace-pre-line font-medium text-slate-800">
+                  <TableCell className="border-r border-slate-200 sm:border-slate-300 py-1.5 sm:py-1 px-3 text-left whitespace-pre-line font-medium text-slate-800">
                     {row.remarks}
                   </TableCell>
-                  <TableCell className="border-r border-slate-300 py-1 px-2 text-right font-bold text-indigo-900">
+                  <TableCell className="border-r border-slate-200 sm:border-slate-300 py-1.5 sm:py-1 px-2 text-right font-bold text-indigo-900">
                     {formatLedgerAmount(row.billAmount)}
                   </TableCell>
-                  <TableCell className="border-r border-slate-300 py-1 px-2 text-right font-bold text-emerald-700">
+                  <TableCell className="border-r border-slate-200 sm:border-slate-300 py-1.5 sm:py-1 px-2 text-right font-bold text-emerald-700">
                     {formatLedgerAmount(row.credit)}
                   </TableCell>
-                  <TableCell className="py-1 px-3 text-right font-bold text-slate-950 bg-slate-50/50">
+                  <TableCell className="py-1.5 sm:py-1 px-3 text-right font-bold text-slate-950 bg-slate-50/50">
                     {formatBalance(row.balance)}
                   </TableCell>
                 </TableRow>
@@ -467,10 +468,10 @@ function StatementPage() {
         </div>
 
         {/* Footer Totals */}
-        <div className="flex border-t-2 border-slate-800 break-inside-avoid">
+        <div className="flex flex-col sm:flex-row border-t sm:border-t-2 border-slate-800 break-inside-avoid">
           {/* Signatures */}
-          <div className="w-[50%] border-r-2 border-slate-800 flex flex-col justify-between p-3 bg-slate-50/20">
-            <div className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">
+          <div className="w-full sm:w-[50%] border-b sm:border-b-0 sm:border-r-2 border-slate-800 flex-col justify-between p-4 bg-slate-50/20 hidden sm:flex">
+            <div className="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-widest">
               Terms & Verification
             </div>
             <div className="mt-8 flex justify-between px-2 text-[9px] font-extrabold text-slate-700">
@@ -484,8 +485,8 @@ function StatementPage() {
           </div>
 
           {/* Totals Summary */}
-          <div className="w-[50%] flex flex-col bg-white text-[10px] font-bold">
-            <div className="flex justify-between items-center p-2 border-b border-slate-300">
+          <div className="w-full sm:w-[50%] flex flex-col bg-white text-[11px] sm:text-[12px] font-bold">
+            <div className="flex justify-between items-center p-3 sm:p-2 border-b border-slate-200 sm:border-slate-300">
               <span className="text-slate-500 tracking-wider">
                 TOTAL BILL AMOUNT
               </span>
@@ -493,7 +494,7 @@ function StatementPage() {
                 ₹ {totalBillAmount.toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between items-center p-2 border-b border-slate-300">
+            <div className="flex justify-between items-center p-3 sm:p-2 border-b border-slate-200 sm:border-slate-300">
               <span className="text-slate-500 tracking-wider">
                 TOTAL CREDITED
               </span>
@@ -502,15 +503,15 @@ function StatementPage() {
               </span>
             </div>
             <div
-              className="flex justify-between items-center p-2 font-black text-sm bg-slate-800 text-white"
+              className="flex justify-between items-center p-3 sm:p-2 font-black text-sm sm:text-base bg-slate-800 text-white"
               style={{
                 WebkitPrintColorAdjust: "exact",
                 printColorAdjust: "exact",
               }}
             >
               <span className="tracking-widest uppercase">CLOSING BALANCE</span>
-              <span className="text-base font-black">
-                {formatBalance(closingBalance)}
+              <span className="font-black">
+                ₹ {formatBalance(closingBalance)}
               </span>
             </div>
           </div>

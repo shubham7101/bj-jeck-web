@@ -1,6 +1,6 @@
 // import { TanStackDevtools } from "@tanstack/react-devtools";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createRootRoute, Outlet } from "@tanstack/react-router";
+import { createRootRoute, Outlet, ScrollRestoration } from "@tanstack/react-router";
 // import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { StrictMode } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -29,6 +29,7 @@ export const Route = createRootRoute({
             </SidebarProvider>
           </ThemeProvider>
         </QueryClientProvider>
+        <ScrollRestoration />
         {/* <TanStackDevtools
           config={{
             position: "bottom-right",

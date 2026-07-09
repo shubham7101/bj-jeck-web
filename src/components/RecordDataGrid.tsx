@@ -1,45 +1,28 @@
-import { Link, type useNavigate } from "@tanstack/react-router";
-import { format, isValid, parse } from "date-fns";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  CalendarIcon,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Edit,
-  Eye,
   Hash,
-  Loader2,
   type LucideIcon,
-  MoreHorizontal,
   Package,
   RotateCcw,
   Search,
   Smartphone,
-  Trash,
   Truck,
 } from "lucide-react";
-import { useEffect, useId, useState } from "react";
+import { useId } from "react";
 import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import type { Record, RecordSearchReq } from "@/schemas/recordSchema";
 import { formatCurrency, formatDate } from "@/utils";
+import { FilterDatePicker } from "./FilterDatePicker";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Calendar } from "./ui/calendar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 import { Input } from "./ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import {
+  PaginationControls,
+  type PaginationControlsProps,
+} from "./PaginationControls";
 import { Skeleton } from "./ui/skeleton";
 import {
   Table,
@@ -50,34 +33,10 @@ import {
   TableRow,
 } from "./ui/table";
 
-type RecordFilterDisableFlags = {
-  [K in keyof RecordSearchReq]?: boolean;
-};
-
-// We use string for values here because HTML inputs work with strings.
-// The parent handles parsing before sending to API.
 type RecordFiltersProps = {
   filters: { [K in keyof RecordSearchReq]: string };
-  disabledFields?: RecordFilterDisableFlags;
   onChange: (key: keyof RecordSearchReq, value: string) => void;
   onReset: () => void;
-};
-
-type RecordPaginationProps = {
-  currentPage: number;
-  totalPages: number;
-  perPage: number;
-  totalCount: number;
-  onPageChange: (page: number) => void;
-  onPerPageChange: (perPage: number) => void;
-  className?: string;
-};
-
-type RecordTableActions = {
-  processingIds?: Set<number>;
-  isRecordDisabled?: (r: Record) => boolean;
-  onDelete?: (r: Record) => void;
-  navigate: ReturnType<typeof useNavigate>;
 };
 
 type RecordDataGridProps = {
@@ -85,12 +44,8 @@ type RecordDataGridProps = {
   isLoading: boolean;
   isPlaceholderData: boolean;
   filterProps: RecordFiltersProps;
-  paginationProps: RecordPaginationProps;
-} & Partial<RecordTableActions>;
-
-const DATE_FORMAT = "dd-MM-yyyy";
-
-// --- Main Component ---
+  paginationProps: PaginationControlsProps;
+};
 
 export function RecordDataGrid({
   data,
@@ -98,10 +53,6 @@ export function RecordDataGrid({
   isPlaceholderData,
   filterProps,
   paginationProps,
-  processingIds,
-  isRecordDisabled,
-  onDelete,
-  navigate,
 }: RecordDataGridProps) {
   return (
     <div
@@ -113,19 +64,12 @@ export function RecordDataGrid({
       <RecordFilters {...filterProps} />
 
       <div className="flex flex-col rounded-xl border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-sm shadow-2xl shadow-black/40 overflow-hidden">
-        <RecordPaginationControls
+        <PaginationControls
           {...paginationProps}
           className="border-b border-zinc-800/80"
         />
-        <RecordTable
-          data={data}
-          isLoading={isLoading}
-          navigate={navigate!}
-          processingIds={processingIds}
-          isRecordDisabled={isRecordDisabled}
-          onDelete={onDelete}
-        />
-        <RecordPaginationControls
+        <RecordTable data={data} isLoading={isLoading} />
+        <PaginationControls
           {...paginationProps}
           className="border-t border-zinc-800"
         />
@@ -134,12 +78,7 @@ export function RecordDataGrid({
   );
 }
 
-function RecordFilters({
-  filters,
-  disabledFields,
-  onChange,
-  onReset,
-}: RecordFiltersProps) {
+function RecordFilters({ filters, onChange, onReset }: RecordFiltersProps) {
   const hasActiveFilters = Object.values(filters).some((v) => v !== "");
 
   return (
@@ -153,7 +92,6 @@ function RecordFilters({
           placeholder="e.g. 55"
           value={filters.customer_id}
           onChange={(e) => onChange("customer_id", e.target.value)}
-          disabled={disabledFields?.customer_id}
           type="number"
         />
 
@@ -164,7 +102,6 @@ function RecordFilters({
           placeholder="e.g. GJ-05..."
           value={filters.vehicle_no}
           onChange={(e) => onChange("vehicle_no", e.target.value)}
-          disabled={disabledFields?.vehicle_no}
         />
 
         {/* Mobile */}
@@ -174,7 +111,6 @@ function RecordFilters({
           placeholder="e.g. 98765..."
           value={filters.vehicle_mobile_no}
           onChange={(e) => onChange("vehicle_mobile_no", e.target.value)}
-          disabled={disabledFields?.vehicle_mobile_no}
         />
 
         {/* Exact Date */}
@@ -182,7 +118,6 @@ function RecordFilters({
           label="Exact Date"
           value={filters.date}
           onChange={(val) => onChange("date", val)}
-          disabled={disabledFields?.date}
         />
 
         {/* From Date */}
@@ -191,7 +126,6 @@ function RecordFilters({
           value={filters.from_date}
           onChange={(val) => onChange("from_date", val)}
           placeholder="Start date"
-          disabled={disabledFields?.from_date}
         />
 
         {/* To Date */}
@@ -200,7 +134,6 @@ function RecordFilters({
           value={filters.to_date}
           onChange={(val) => onChange("to_date", val)}
           placeholder="End date"
-          disabled={disabledFields?.to_date}
         />
 
         {/* Bill ID */}
@@ -210,7 +143,6 @@ function RecordFilters({
           placeholder="e.g. 1024"
           value={filters.bill_id}
           onChange={(e) => onChange("bill_id", e.target.value)}
-          disabled={disabledFields?.bill_id}
           type="number"
         />
 
@@ -240,159 +172,12 @@ function RecordFilters({
   );
 }
 
-function RecordPaginationControls({
-  currentPage,
-  totalPages,
-  perPage,
-  totalCount,
-  onPageChange,
-  onPerPageChange,
-  className,
-}: RecordPaginationProps) {
-  const [pageInput, setPageInput] = useState(currentPage.toString());
-
-  // Fix: Sync local input state if currentPage changes externally (e.g. deletion causing page drop)
-  useEffect(() => {
-    setPageInput(currentPage.toString());
-  }, [currentPage]);
-
-  const handlePageInputCommit = () => {
-    let p = parseInt(pageInput, 10);
-    if (Number.isNaN(p)) {
-      setPageInput(currentPage.toString());
-      return;
-    }
-    // Clamp between 1 and totalPages
-    p = Math.max(1, Math.min(p, totalPages || 1));
-
-    if (p !== currentPage) {
-      onPageChange(p);
-    } else {
-      setPageInput(p.toString());
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handlePageInputCommit();
-  };
-
-  const startRecord = totalCount === 0 ? 0 : (currentPage - 1) * perPage + 1;
-  const endRecord = Math.min(currentPage * perPage, totalCount);
-
-  return (
-    <div
-      className={cn(
-        "bg-zinc-900/30 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 select-none",
-        className,
-      )}
-    >
-      {/* Left Side: Rows Per Page & Info */}
-      <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-2 border-zinc-800 bg-zinc-950 text-zinc-400 text-xs"
-            >
-              <span>
-                Rows: <span className="text-zinc-200">{perPage}</span>
-              </span>
-              <ChevronDown className="h-3 w-3 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="start"
-            className="bg-zinc-950 border-zinc-800"
-          >
-            <DropdownMenuLabel className="text-zinc-500 text-xs">
-              Rows per page
-            </DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              value={perPage.toString()}
-              onValueChange={(val) => onPerPageChange(Number(val))}
-            >
-              {[5, 10, 20, 25, 50, 100].map((size) => (
-                <DropdownMenuRadioItem
-                  key={size}
-                  value={size.toString()}
-                  className="text-zinc-400 text-xs cursor-pointer focus:bg-zinc-900 focus:text-zinc-200"
-                >
-                  {size}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <div className="text-xs text-zinc-500">
-          <span className="hidden sm:inline">Showing </span>
-          <span className="text-zinc-300 font-medium">
-            {startRecord}-{endRecord}
-          </span>
-          <span> of </span>
-          <span className="text-zinc-300 font-medium">{totalCount}</span>
-        </div>
-      </div>
-
-      {/* Right Side: Navigation */}
-      <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-center sm:justify-end">
-        {/* Page Input */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-zinc-500">Page</span>
-          <Input
-            type="number"
-            min={1}
-            max={totalPages}
-            value={pageInput}
-            onChange={(e) => setPageInput(e.target.value)}
-            onFocus={(e) => e.target.select()}
-            onBlur={handlePageInputCommit}
-            onKeyDown={handleKeyDown}
-            className="h-8 w-12 text-center text-xs px-1 bg-zinc-950 border-zinc-800 focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
-          <span className="text-xs text-zinc-500">of {totalPages}</span>
-        </div>
-
-        <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
-
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage <= 1}
-            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-700 disabled:opacity-30 transition-all"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage >= totalPages}
-            className="h-8 w-8 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-700 disabled:opacity-30 transition-all"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export type RecordTableProps = {
   data: Record[];
   isLoading: boolean;
-} & RecordTableActions;
+};
 
-export function RecordTable({
-  data,
-  isLoading,
-  processingIds = new Set(),
-  onDelete,
-  navigate,
-}: RecordTableProps) {
+export function RecordTable({ data, isLoading }: RecordTableProps) {
   if (isLoading) {
     return (
       <TableWrapper>
@@ -426,13 +211,7 @@ export function RecordTable({
   return (
     <TableWrapper>
       {data.map((record) => (
-        <RecordRow
-          key={record.id}
-          record={record}
-          isProcessing={processingIds.has(record.id)}
-          onDelete={onDelete}
-          navigate={navigate}
-        />
+        <RecordRow key={record.id} record={record} />
       ))}
     </TableWrapper>
   );
@@ -461,11 +240,8 @@ function TableWrapper({ children }: { children: React.ReactNode }) {
             <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-center">
               Items
             </TableHead>
-            <TableHead className="hidden md:table-cell h-12 text-zinc-500 uppercase text-xs font-bold text-center">
+            <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-center">
               Bill Status
-            </TableHead>
-            <TableHead className="text-right pr-6 h-12 text-zinc-500 uppercase text-xs font-bold">
-              Actions
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -475,32 +251,15 @@ function TableWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-function RecordRow({
-  record,
-  isProcessing,
-  onDelete,
-  navigate,
-}: {
-  record: Record;
-  isProcessing: boolean;
-  onDelete?: (r: Record) => void;
-  navigate: ReturnType<typeof useNavigate>;
-}) {
+function RecordRow({ record }: { record: Record }) {
+  const navigate = useNavigate();
   const isTypeIn = record.transaction_type === "IN";
-
-  // check if record is billed
-  const isBilled = !!record.bill_id;
 
   return (
     <TableRow
-      className={cn(
-        themeStyles.tableRowInteractive,
-        isProcessing && "opacity-50 pointer-events-none bg-zinc-900/40",
-      )}
-      onDoubleClick={() => navigate({ to: `/records/${record.id}` })}
+      className={cn(themeStyles.tableRowInteractive)}
+      onClick={() => navigate({ to: `/records/${record.id}` })}
     >
-      {/* ... (Previous cells remain exactly the same: ID, Date, Type, Vehicle, Items, Bill Status) ... */}
-
       <TableCell className="pl-6 font-mono text-xs text-left text-zinc-400 group-hover:text-zinc-200">
         #{record.id.toString().padStart(4, "0")}
       </TableCell>
@@ -572,7 +331,7 @@ function RecordRow({
         </div>
       </TableCell>
 
-      <TableCell className="hidden md:table-cell text-center">
+      <TableCell className="text-center">
         {record.bill_id ? (
           <Link
             to={`/bills/$billId`}
@@ -586,72 +345,6 @@ function RecordRow({
           <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider bg-zinc-950/60 px-2 py-0.5 rounded border border-zinc-800 border-dashed">
             Unbilled
           </span>
-        )}
-      </TableCell>
-
-      {/* --- Updated Actions Cell --- */}
-      <TableCell className="text-right pr-6">
-        {isProcessing ? (
-          <div className="flex justify-end pr-2">
-            <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
-          </div>
-        ) : (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="h-8 w-8 p-0 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/80 hover:border-zinc-700 border border-transparent rounded-lg transition-all"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-48 bg-zinc-950 border-zinc-800 text-zinc-400"
-            >
-              <DropdownMenuItem asChild>
-                <Link
-                  to="/records/$recordId"
-                  params={{ recordId: record.id.toString() }}
-                  className="cursor-pointer focus:bg-zinc-900 focus:text-zinc-200"
-                >
-                  <Eye className="mr-2 h-4 w-4" /> View Details
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link
-                  to="/records/update/$recordId"
-                  params={{ recordId: record.id.toString() }}
-                  className="cursor-pointer focus:bg-zinc-900 focus:text-zinc-200"
-                >
-                  <Edit className="mr-2 h-4 w-4" /> Edit
-                </Link>
-              </DropdownMenuItem>
-
-              {onDelete && (
-                <>
-                  <DropdownMenuSeparator className="bg-zinc-800" />
-                  <DropdownMenuItem
-                    disabled={isBilled} // Disable interaction
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isBilled) onDelete(record);
-                    }}
-                    // Conditionally style the button
-                    className={cn(
-                      "cursor-pointer",
-                      isBilled
-                        ? "text-zinc-600 opacity-50 cursor-not-allowed pointer-events-none"
-                        : "text-rose-500 focus:bg-rose-950/20 focus:text-rose-400",
-                    )}
-                  >
-                    <Trash className="mr-2 h-4 w-4" />
-                    {isBilled ? "Billed (Locked)" : "Delete"}
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
         )}
       </TableCell>
     </TableRow>
@@ -694,78 +387,6 @@ function FilterInput({
           )}
         />
       </div>
-    </div>
-  );
-}
-
-interface FilterDatePickerProps {
-  label: string;
-  value?: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  disabled?: boolean;
-}
-
-function FilterDatePicker({
-  label,
-  value,
-  onChange,
-  placeholder = "Pick a date",
-  disabled = false,
-}: FilterDatePickerProps) {
-  const [open, setOpen] = useState(false);
-  const buttonId = useId();
-  const dateValue =
-    value && isValid(parse(value, DATE_FORMAT, new Date()))
-      ? parse(value, DATE_FORMAT, new Date())
-      : undefined;
-
-  return (
-    <div className="space-y-1.5">
-      <label
-        htmlFor={buttonId}
-        className="text-xs text-zinc-500 font-medium ml-1"
-      >
-        {label}
-      </label>
-      <Popover open={open && !disabled} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            id={buttonId}
-            variant="outline"
-            disabled={disabled}
-            className={cn(
-              "w-full pl-3 text-left font-normal bg-zinc-950 border-zinc-800 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed",
-              !dateValue && "text-muted-foreground",
-            )}
-          >
-            {dateValue ? (
-              format(dateValue, DATE_FORMAT)
-            ) : (
-              <span>{placeholder}</span>
-            )}
-            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-auto p-0 bg-zinc-950 border-zinc-800"
-          align="start"
-        >
-          <Calendar
-            mode="single"
-            selected={dateValue}
-            onSelect={(date) => {
-              onChange(date ? format(date, DATE_FORMAT) : "");
-              setOpen(false);
-            }}
-            disabled={(date) =>
-              date > new Date() || date < new Date("1900-01-01")
-            }
-            initialFocus
-            className="bg-zinc-950 text-zinc-200 rounded-md border-zinc-800"
-          />
-        </PopoverContent>
-      </Popover>
     </div>
   );
 }

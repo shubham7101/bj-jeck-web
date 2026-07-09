@@ -202,33 +202,42 @@ function LedgerPage() {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6 animate-in fade-in duration-500">
+    <div className="flex-1 space-y-6 px-2 py-6 sm:p-6 md:p-8 md:pt-6 animate-in fade-in duration-500 overflow-x-hidden">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/50 backdrop-blur-sm shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-blue-500 to-indigo-500/50" />
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-zinc-100">
-            Payment Ledger
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center justify-between pb-2">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+            Ledger
+            <div className="h-6 w-px bg-zinc-800 ml-2 hidden sm:block" />
+            <span className="text-sm font-medium text-zinc-500 hidden sm:block mt-1">
+              Payments
+            </span>
           </h2>
-          <p className="text-zinc-400 mt-1">
+          <p className="text-zinc-400">
             Track incoming payments and manage transaction history.
           </p>
         </div>
-        <Link to={`/ledger/new`}>
-          <Button className="bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-lg shadow-blue-900/20 transition-all cursor-pointer border-none">
+        <Button
+          asChild
+          className="bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_-5px_rgba(37,99,235,0.3)] transition-all font-medium"
+        >
+          <Link to="/ledger/new">
             <Plus className="mr-2 h-4 w-4" /> New Payment
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
+      <div className="h-px w-full bg-linear-to-r from-zinc-800 to-transparent" />
+
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 min-w-0">
         <StatsCard
           loading={isLoadingStats}
           title="Total Collected"
           value={formatCurrency(stats?.total_received || 0)}
           subText="All-time revenue collected"
           icon={<Wallet className="h-4 w-4 text-emerald-500" />}
+          className="col-span-2 lg:col-span-1"
         />
         <StatsCard
           loading={isLoadingStats}

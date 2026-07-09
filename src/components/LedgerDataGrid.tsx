@@ -166,7 +166,7 @@ function LedgerFilters({
   return (
     <div className={themeStyles.glassHeader}>
       <div className={themeStyles.glassHeaderOverlay} />
-      <div className="relative z-10 flex flex-col md:flex-row gap-4 items-end">
+      <div className="relative z-10 flex flex-col md:flex-row gap-4 items-stretch md:items-end">
         {/* Customer ID Filter */}
         <FilterInput
           label="Customer ID"
@@ -437,8 +437,8 @@ export function LedgerTable({
 
 function TableWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-full overflow-auto">
-      <Table>
+    <div className="w-full overflow-x-auto">
+      <Table className="min-w-[800px]">
         <TableHeader
           className={cn("sticky top-0 z-10", themeStyles.tableHeaderRow)}
         >

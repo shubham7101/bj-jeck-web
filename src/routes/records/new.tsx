@@ -10,7 +10,6 @@ import { Route as rootRoute } from "@/routes/__root";
 import { format, isValid, parse } from "date-fns";
 import {
   AlertCircle,
-  AlertTriangle,
   ArrowLeft,
   Calendar as CalendarIcon,
   Check,
@@ -25,7 +24,6 @@ import {
   Truck,
   User,
   Wrench,
-  Zap,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
@@ -69,7 +67,11 @@ import {
 } from "@/components/ui/table";
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
-import { type Customer, PART_OPTIONS } from "@/schemas/customerSchema";
+import {
+  type Customer,
+  PART_OPTIONS,
+  getSizesForPart,
+} from "@/schemas/customerSchema";
 import {
   type CreateRecord,
   createRecordSchema,
@@ -133,57 +135,65 @@ const DEFAULT_FORM_VALUES: Partial<CreateRecord> = {
 
 function FormProgressStepper({ currentStep }: { currentStep: number }) {
   return (
-    <div className="w-full py-4 mb-6">
-      <div className="flex items-center justify-center max-w-md mx-auto">
+    <div className="w-full py-2 mb-6">
+      <div className="flex items-start justify-center max-w-sm mx-auto px-2">
         {/* Step 1 */}
-        <div className="flex flex-col items-center relative">
+        <div className="flex flex-col items-center relative w-28 sm:w-32 shrink-0">
           <div
             className={cn(
-              "rounded-full transition-all duration-500 flex items-center justify-center h-10 w-10 border-2 font-bold text-sm z-10",
+              "rounded-full transition-all duration-500 flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 border-2 font-bold text-xs sm:text-sm z-10 bg-background",
               currentStep >= 1
-                ? "bg-primary border-primary text-primary-foreground shadow-md shadow-primary/20"
-                : "bg-background border-muted-foreground/30 text-muted-foreground",
+                ? currentStep > 1
+                  ? "bg-primary border-primary text-primary-foreground"
+                  : "border-primary text-primary shadow-md shadow-primary/20"
+                : "border-muted-foreground/30 text-muted-foreground",
             )}
           >
-            {currentStep > 1 ? <Check className="h-5 w-5 stroke-[2.5]" /> : "1"}
+            {currentStep > 1 ? (
+              <Check className="h-4 w-4 sm:h-5 sm:w-5 stroke-[2.5]" />
+            ) : (
+              "1"
+            )}
           </div>
           <span
             className={cn(
-              "text-[10px] font-semibold uppercase tracking-wider mt-2.5 transition-colors absolute -bottom-6 w-max",
+              "text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider mt-2 sm:mt-2.5 text-center transition-colors leading-tight",
               currentStep >= 1 ? "text-foreground" : "text-muted-foreground",
             )}
           >
-            Select Customer
+            Select
+            <br className="sm:hidden" /> Customer
           </span>
         </div>
 
         {/* Divider */}
         <div
           className={cn(
-            "flex-1 border-t-2 transition-all duration-500 mx-4",
+            "flex-1 border-t-2 transition-all duration-500 mt-4 sm:mt-5 -mx-6 sm:-mx-8 z-0",
             currentStep >= 2 ? "border-primary" : "border-border",
           )}
         />
 
         {/* Step 2 */}
-        <div className="flex flex-col items-center relative">
+        <div className="flex flex-col items-center relative w-28 sm:w-32 shrink-0">
           <div
             className={cn(
-              "rounded-full transition-all duration-500 flex items-center justify-center h-10 w-10 border-2 font-bold text-sm z-10",
+              "rounded-full transition-all duration-500 flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 border-2 font-bold text-xs sm:text-sm z-10 bg-background",
               currentStep >= 2
                 ? "bg-primary border-primary text-primary-foreground shadow-md shadow-primary/20"
-                : "bg-background border-muted-foreground/30 text-muted-foreground",
+                : "border-muted-foreground/30 text-muted-foreground",
             )}
           >
-            "2"
+            2
           </div>
           <span
             className={cn(
-              "text-[10px] font-semibold uppercase tracking-wider mt-2.5 transition-colors absolute -bottom-6 w-max",
+              "text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider mt-2 sm:mt-2.5 text-center transition-colors leading-tight",
               currentStep >= 2 ? "text-foreground" : "text-muted-foreground",
             )}
           >
-            Record & Items Details
+            Record
+            <br className="sm:hidden" /> Details
           </span>
         </div>
       </div>
@@ -226,7 +236,7 @@ export default function NewRecordPage() {
   };
 
   return (
-    <div className="flex-1 p-4 sm:p-6 md:p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500 pb-24">
+    <div className="flex-1 w-full max-w-[100vw] lg:max-w-6xl lg:mx-auto px-2 py-6 sm:p-6 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500 pb-24 overflow-x-hidden min-w-0">
       <Header
         step={customer ? 2 : 1}
         hasCustomer={!!customer}
@@ -286,18 +296,18 @@ function Header({
           <Button
             variant="outline"
             onClick={onChangeCustomer}
-            className="cursor-pointer border-border hover:bg-muted text-foreground/80 h-9 text-xs px-3"
+            className="hidden sm:flex cursor-pointer border-border hover:bg-muted text-foreground/80 h-9 px-4"
           >
-            <User className="mr-1.5 h-3.5 w-3.5" /> Change Customer
+            <User className="mr-2 h-4 w-4" /> Change Customer
           </Button>
         )}
         <Button
           variant="ghost"
           asChild
-          className="hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer h-9 text-xs px-3"
+          className="hidden sm:flex hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer h-9 px-4"
         >
           <Link to="/records">
-            <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Back to List
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
           </Link>
         </Button>
       </div>
@@ -344,52 +354,40 @@ function CustomerSelectionStep({
     setPage(1);
   };
 
-  const mockNavigate = (options: any) => {
-    if (typeof options.search === "function") {
-      const currentParams = { page, per_page: perPage };
-      const newParams = options.search(currentParams);
-      if (newParams.page !== undefined) setPage(newParams.page);
-      if (newParams.per_page !== undefined) setPerPage(newParams.per_page);
-    }
-  };
-
   return (
-    <Card className="bg-card/60 border-border/80 shadow-xl relative overflow-hidden animate-in fade-in duration-500 rounded-xl backdrop-blur-md">
-      <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-primary to-primary/50" />
-      <CardHeader className="border-b border-border/40 bg-muted/30 pb-4">
-        <CardTitle className="text-xl font-bold text-foreground">
+    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500">
+      <div className="space-y-1 px-1 sm:px-0">
+        <h3 className="text-lg sm:text-xl font-bold text-foreground">
           Find Customer
-        </CardTitle>
-        <CardDescription className="text-muted-foreground">
+        </h3>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Search for an existing customer to register an inventory movement.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pt-6">
-        <CustomerDataGrid
-          data={data?.data || []}
-          isLoading={isLoading}
-          isPlaceholderData={isPlaceholderData}
-          navigate={mockNavigate as any}
-          processingIds={new Set()}
-          filterProps={{
-            filters: filters,
-            onChange: handleFilterChange,
-            onReset: handleReset,
-          }}
-          paginationProps={{
-            currentPage: page,
-            totalPages: data?.pagination.total_pages || 0,
-            perPage: perPage,
-            totalCount: data?.pagination.total_count || 0,
-            onPageChange: setPage,
-            onPerPageChange: setPerPage,
-          }}
-          onSelect={onSelect}
-          onDelete={undefined}
-          onToggleStatus={undefined}
-        />
-      </CardContent>
-    </Card>
+        </p>
+      </div>
+      <div className="bg-background sm:bg-card/60 sm:border border-border/80 sm:shadow-xl relative overflow-hidden animate-in fade-in duration-500 sm:rounded-xl sm:backdrop-blur-md min-w-0">
+        <div className="py-2 sm:p-6 min-w-0 w-full">
+          <CustomerDataGrid
+            data={data?.data || []}
+            isLoading={isLoading}
+            isPlaceholderData={isPlaceholderData}
+            filterProps={{
+              filters: filters,
+              onChange: handleFilterChange,
+              onReset: handleReset,
+            }}
+            paginationProps={{
+              currentPage: page,
+              totalPages: data?.pagination.total_pages || 0,
+              perPage: perPage,
+              totalCount: data?.pagination.total_count || 0,
+              onPageChange: setPage,
+              onPerPageChange: setPerPage,
+            }}
+            onSelect={onSelect}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -452,22 +450,6 @@ function RecordEntryForm({
         : 0),
     0,
   );
-  const calculatedBrokenQty = items.reduce(
-    (acc: number, item: any) => acc + (item.broken_amount || 0),
-    0,
-  );
-  const calculatedBrokenCharges = items.reduce(
-    (acc: number, item: any) => acc + (item.broken_charge || 0),
-    0,
-  );
-  const calculatedServiceCharges = items.reduce(
-    (acc: number, item: any) => acc + (item.service_charge || 0),
-    0,
-  );
-  const calculatedLostCharges = items.reduce(
-    (acc: number, item: any) => acc + (item.lost_charge || 0),
-    0,
-  );
 
   const calculatedLabourCharge = items.reduce((acc: number, item: any) => {
     const totalQty = (item.item_amount || 0) + (item.broken_amount || 0);
@@ -496,13 +478,6 @@ function RecordEntryForm({
     }
   }, [calculatedTotalItems, calculatedLabourCharge, form]);
 
-  const grandTotalAmount =
-    calculatedBrokenCharges +
-    calculatedServiceCharges +
-    calculatedLostCharges +
-    (formValues.labour_charge || 0) +
-    (formValues.transport_charge || 0);
-
   return (
     <form
       onSubmit={(e) => {
@@ -510,7 +485,7 @@ function RecordEntryForm({
         e.stopPropagation();
         form.handleSubmit();
       }}
-      className="space-y-6 animate-in slide-in-from-right-4 duration-300"
+      className="space-y-6 animate-in slide-in-from-right-4 duration-300 min-w-0 w-full"
     >
       <form.Field name="customer_id">
         {(field) => (
@@ -519,20 +494,20 @@ function RecordEntryForm({
       </form.Field>
 
       {/* Customer Header Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-card/60 border border-border/80 p-5 rounded-xl shadow-md gap-4 backdrop-blur-md">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-12 w-12 border-2 border-primary/20 shadow-inner">
+      <div className="flex items-center justify-between bg-card/60 border border-border/80 p-4 rounded-xl shadow-md backdrop-blur-md min-w-0">
+        <div className="flex items-center gap-4 min-w-0">
+          <Avatar className="h-10 w-10 border border-border shrink-0">
             <AvatarImage
               src={customer.avatar || undefined}
               alt={customer.name}
             />
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+            <AvatarFallback className="bg-muted text-xs text-muted-foreground">
               {getInitials(customer.name)}
             </AvatarFallback>
           </Avatar>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="text-base font-bold text-foreground hover:underline">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-foreground hover:underline truncate">
                 <Link
                   to="/customers/$customerId"
                   params={{ customerId: customer.id.toString() }}
@@ -540,45 +515,39 @@ function RecordEntryForm({
                   {customer.name}
                 </Link>
               </h4>
-              <Badge
-                variant="outline"
-                className={cn(
-                  "pl-1.5 pr-2 py-0.5 rounded-full border text-[10px] font-semibold tracking-wider uppercase",
-                  customer.active
-                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
-                    : "bg-muted text-muted-foreground border-border",
-                )}
-              >
-                <span
-                  className={cn(
-                    "mr-1.5 h-1.5 w-1.5 rounded-full",
-                    customer.active
-                      ? "bg-emerald-500 animate-pulse"
-                      : "bg-muted-foreground",
-                  )}
-                />
-                {customer.active ? "Active" : "Inactive"}
-              </Badge>
             </div>
-            <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-foreground/80">
-                ID: #{customer.id}
-              </span>
-              <span>•</span>
-              <span>{customer.mobile_no}</span>
-              <span>•</span>
-              <span className="italic">{customer.address}</span>
+            <p className="text-xs text-muted-foreground truncate">
+              ID: #{customer.id} • {customer.mobile_no}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 self-end sm:self-center">
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          <Badge
+            variant="outline"
+            className={cn(
+              "hidden sm:flex pl-1.5 pr-2 py-0.5 rounded-full border text-[10px] font-semibold tracking-wider uppercase",
+              customer.active
+                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
+                : "bg-muted text-muted-foreground border-border",
+            )}
+          >
+            <span
+              className={cn(
+                "mr-1.5 h-1.5 w-1.5 rounded-full",
+                customer.active
+                  ? "bg-emerald-500 animate-pulse"
+                  : "bg-muted-foreground",
+              )}
+            />
+            {customer.active ? "Active" : "Inactive"}
+          </Badge>
           <Button
             type="button"
             variant="outline"
             onClick={handleResetForm}
             className="sm:hidden w-full cursor-pointer border-border hover:bg-muted text-foreground text-xs h-9 px-3"
           >
-            <User className="mr-1.5 h-3.5 w-3.5" /> Change Customer
+            <User className="mr-1.5 h-3.5 w-3.5" /> Change
           </Button>
           <Button
             type="button"
@@ -594,9 +563,8 @@ function RecordEntryForm({
       {mutation.isError && <ErrorAlert error={mutation.error} />}
 
       {/* Transaction Details */}
-      <Card className="bg-card/40 border-border/80 backdrop-blur-md shadow-xl relative overflow-hidden rounded-xl">
-        <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-primary to-primary/50" />
-        <CardHeader className="pb-4 border-b border-border/50 bg-muted/40">
+      <Card className="bg-card/40 border-border/80 backdrop-blur-md shadow-xl relative overflow-hidden rounded-xl min-w-0">
+        <CardHeader className="pb-4 border-b border-border/50">
           <CardTitle className="text-base font-bold flex items-center gap-2 text-foreground">
             <Hash className="h-4 w-4 text-primary" />
             Record Info & Type
@@ -804,12 +772,11 @@ function RecordEntryForm({
       </Card>
 
       {/* Items Section */}
-      <Card className="bg-card/40 border-border/80 backdrop-blur-md shadow-xl flex flex-col relative overflow-hidden rounded-xl">
-        <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-muted-foreground/30 to-muted-foreground/10" />
+      <Card className="bg-card/40 border-border/80 backdrop-blur-md shadow-xl flex flex-col relative overflow-hidden rounded-xl min-w-0">
         <form.Field name="items" mode="array">
           {(field) => (
             <>
-              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border/50 bg-muted/40 gap-4">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 gap-4">
                 <div className="space-y-1">
                   <CardTitle className="text-lg font-bold text-foreground">
                     Items List
@@ -878,21 +845,8 @@ function RecordEntryForm({
                     </TableHeader>
                     <TableBody className="divide-y divide-border/60">
                       {field.state.value.map((_, index) => {
-                        const rowPart = items[index]?.part;
-                        const allowedSizes =
-                          rowPart === "full" ||
-                          rowPart === "inner" ||
-                          rowPart === "outer"
-                            ? ["1.5", "2.0", "2.5", "3.0"]
-                            : [
-                                "1x3",
-                                "2x3",
-                                "9x3",
-                                "12x3",
-                                "15x3",
-                                "18x3",
-                                "21x3",
-                              ];
+                        const rowPart = items[index]?.part || "full";
+                        const allowedSizes = getSizesForPart(rowPart);
                         return (
                           <TableRow
                             key={index}
@@ -1145,13 +1099,8 @@ function RecordEntryForm({
                 {/* Mobile View: Render Items as sleek Cards */}
                 <div className="block md:hidden p-4 space-y-4 bg-muted/20 border-t border-border/50">
                   {field.state.value.map((_, index) => {
-                    const mobileRowPart = items[index]?.part;
-                    const mobileAllowedSizes =
-                      mobileRowPart === "full" ||
-                      mobileRowPart === "inner" ||
-                      mobileRowPart === "outer"
-                        ? ["1.5", "2.0", "2.5", "3.0"]
-                        : ["2x3", "9x3", "12x3", "15x3", "18x3", "21x3"];
+                    const mobileRowPart = items[index]?.part || "full";
+                    const mobileAllowedSizes = getSizesForPart(mobileRowPart);
 
                     return (
                       <div
@@ -1416,9 +1365,8 @@ function RecordEntryForm({
       </Card>
 
       {/* Overrides & Additional Charges */}
-      <Card className="bg-card/40 border-border/80 backdrop-blur-md shadow-xl relative overflow-hidden rounded-xl">
-        <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500/30 to-purple-500/30" />
-        <CardHeader className="pb-4 border-b border-border/50 bg-muted/40">
+      <Card className="bg-card/40 border-border/80 backdrop-blur-md shadow-xl relative overflow-hidden rounded-xl min-w-0">
+        <CardHeader className="pb-4">
           <CardTitle className="text-base font-bold flex items-center gap-2 text-foreground">
             <Wrench className="h-4 w-4 text-emerald-500" />
             Overrides & Additional Charges
@@ -1510,25 +1458,25 @@ function RecordEntryForm({
         </CardContent>
       </Card>
 
-      {/* Live Chalan Receipt Card */}
-      <Card className="bg-card/40 border-border/80 backdrop-blur-md shadow-xl relative overflow-hidden rounded-xl">
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-linear-to-r from-primary via-emerald-500 to-purple-500" />
-
-        <CardHeader className="pb-4 border-b border-border/50 bg-muted/40">
+      {/* Chalan Receipt Card */}
+      <Card className="bg-card/40 border-border/80 backdrop-blur-md shadow-xl relative overflow-hidden rounded-xl min-w-0">
+        <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <CardTitle className="text-base font-bold flex items-center gap-2 text-foreground">
-                <FileText className="h-4 w-4 text-primary animate-pulse" />
-                Live Chalan Receipt
+                <FileText className="h-4 w-4 text-primary" />
+                Chalan Receipt
               </CardTitle>
-              <CardDescription className="text-muted-foreground flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
-                Real-time calculations based on active form inputs
-              </CardDescription>
             </div>
             <div className="text-left sm:text-right font-mono text-[10px] text-muted-foreground space-y-0.5">
               <div>
-                Date: {formValues.date || format(new Date(), "dd-MM-yyyy")}
+                Chalan No:{" "}
+                <span className="font-bold text-foreground">
+                  #{formValues.id || "TBD"}
+                </span>
+              </div>
+              <div>
+                Date: {formValues.date || format(new Date(), "yyyy-MM-dd")}
               </div>
               <div>
                 Type:{" "}
@@ -1547,135 +1495,90 @@ function RecordEntryForm({
           </div>
         </CardHeader>
 
-        <CardContent className="p-6 space-y-6">
-          {/* 6-Column Responsive Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-            {/* 1. Total Quantity */}
-            <div className="p-4 bg-background/30 rounded-xl border border-border/50 hover:border-primary/20 transition-all flex flex-col justify-between h-24 shadow-inner">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Total Qty
-                </span>
-                <Hash className="h-4 w-4 text-primary" />
-              </div>
-              <div className="space-y-0.5">
-                <div className="text-lg font-black text-foreground">
-                  {formValues.total || 0}
-                </div>
-                <div className="text-[9px] text-muted-foreground">pieces</div>
-              </div>
-            </div>
-
-            {/* 2. Labour Charge */}
-            <div className="p-4 bg-background/30 rounded-xl border border-border/50 hover:border-emerald-500/20 transition-all flex flex-col justify-between h-24 shadow-inner">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Labour
-                </span>
-                <Wrench className="h-4 w-4 text-emerald-500" />
-              </div>
-              <div className="space-y-0.5">
-                <div className="text-lg font-black text-emerald-600 dark:text-emerald-400">
-                  ₹{(formValues.labour_charge || 0).toLocaleString("en-IN")}
-                </div>
-                <div className="text-[9px] text-muted-foreground">
-                  calculated
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Transport Charge */}
-            <div className="p-4 bg-background/30 rounded-xl border border-border/50 hover:border-purple-500/20 transition-all flex flex-col justify-between h-24 shadow-inner">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Transport
-                </span>
-                <Truck className="h-4 w-4 text-purple-500" />
-              </div>
-              <div className="space-y-0.5">
-                <div className="text-lg font-black text-purple-600 dark:text-purple-400">
-                  ₹{(formValues.transport_charge || 0).toLocaleString("en-IN")}
-                </div>
-                <div className="text-[9px] text-muted-foreground">
-                  additional
-                </div>
-              </div>
-            </div>
-
-            {/* 4. Broken Charge */}
-            <div className="p-4 bg-background/30 rounded-xl border border-border/50 hover:border-rose-500/20 transition-all flex flex-col justify-between h-24 shadow-inner">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Broken
-                </span>
-                <AlertTriangle className="h-4 w-4 text-rose-500" />
-              </div>
-              <div className="space-y-0.5">
-                <div className="text-sm font-black text-rose-600 dark:text-rose-400 truncate">
-                  ₹{calculatedBrokenCharges.toLocaleString("en-IN")}
-                </div>
-                <div className="text-[9px] text-muted-foreground font-semibold">
-                  {calculatedBrokenQty} broken pcs
-                </div>
-              </div>
-            </div>
-
-            {/* 5. Service Charge */}
-            <div className="p-4 bg-background/30 rounded-xl border border-border/50 hover:border-amber-500/20 transition-all flex flex-col justify-between h-24 shadow-inner">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Service
-                </span>
-                <Zap className="h-4 w-4 text-amber-500" />
-              </div>
-              <div className="space-y-0.5">
-                <div className="text-lg font-black text-amber-600 dark:text-amber-400">
-                  ₹{calculatedServiceCharges.toLocaleString("en-IN")}
-                </div>
-                <div className="text-[9px] text-muted-foreground">
-                  maintenance
-                </div>
-              </div>
-            </div>
-
-            {/* 6. Lost Charge */}
-            <div className="p-4 bg-background/30 rounded-xl border border-border/50 hover:border-rose-600/20 transition-all flex flex-col justify-between h-24 shadow-inner">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Lost
-                </span>
-                <Trash2 className="h-4 w-4 text-rose-500" />
-              </div>
-              <div className="space-y-0.5">
-                <div className="text-lg font-black text-rose-600 dark:text-rose-400">
-                  ₹{calculatedLostCharges.toLocaleString("en-IN")}
-                </div>
-                <div className="text-[9px] text-muted-foreground">
-                  missing items
-                </div>
-              </div>
-            </div>
+        <CardContent className="p-0 sm:p-6 sm:pt-0 space-y-6">
+          {/* Items Table */}
+          <div className="rounded-xl border border-border/50 overflow-hidden bg-card shadow-sm m-4 sm:m-0">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow>
+                  <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                    Part
+                  </TableHead>
+                  <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                    Size
+                  </TableHead>
+                  <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground text-right">
+                    Qty
+                  </TableHead>
+                  <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground text-right">
+                    Broken
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {formValues.items &&
+                formValues.items.filter((i: any) => i.part).length > 0 ? (
+                  formValues.items
+                    .filter((i: any) => i.part)
+                    .map((item: any, idx: number) => (
+                      <TableRow key={idx}>
+                        <TableCell className="font-medium text-sm">
+                          {PART_OPTIONS.find(
+                            (p) => p.value === String(item.part),
+                          )?.label ||
+                            item.part ||
+                            "-"}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {item.size || "-"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm">
+                          {item.item_amount || 0}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm text-rose-500">
+                          {item.broken_amount || 0}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="text-center text-muted-foreground py-6 text-sm"
+                    >
+                      No items added yet.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
 
-          {/* Grand Total Area */}
-          <div className="border-t-2 border-dashed border-border/80 pt-4 flex flex-col sm:flex-row justify-between items-center gap-4 bg-muted/20 p-4 rounded-xl">
-            <div className="space-y-1 text-center sm:text-left">
-              <span className="font-bold text-foreground text-xs uppercase tracking-wider">
-                Total Chalan Valuation
+          {/* Summary Section */}
+          <div className="flex flex-col items-end gap-2 pt-2 px-4 sm:px-2">
+            <div className="flex justify-between items-center w-full sm:w-64 text-sm border-b border-border/30 pb-1">
+              <span className="text-muted-foreground font-medium">
+                Total Qty
               </span>
-              <p className="text-[10px] text-muted-foreground">
-                Sum of labour, transport, damages, lost and service charges
-              </p>
+              <span className="font-bold text-foreground font-mono">
+                {formValues.total || 0}
+              </span>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end">
-                <span className="font-extrabold text-2xl text-primary tracking-tight">
-                  ₹{grandTotalAmount.toLocaleString("en-IN")}
-                </span>
-                <span className="text-[9px] text-muted-foreground uppercase font-semibold">
-                  dynamic estimation
-                </span>
-              </div>
+            <div className="flex justify-between items-center w-full sm:w-64 text-sm border-b border-border/30 pb-1">
+              <span className="text-muted-foreground font-medium">
+                Labour Charge
+              </span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                ₹{(formValues.labour_charge || 0).toLocaleString("en-IN")}
+              </span>
+            </div>
+            <div className="flex justify-between items-center w-full sm:w-64 text-sm">
+              <span className="text-muted-foreground font-medium">
+                Transport Charge
+              </span>
+              <span className="font-bold text-purple-600 dark:text-purple-400 font-mono">
+                ₹{(formValues.transport_charge || 0).toLocaleString("en-IN")}
+              </span>
             </div>
           </div>
         </CardContent>

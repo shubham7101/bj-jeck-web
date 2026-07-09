@@ -32,6 +32,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { CustomerDataGrid } from "@/components/CustomerDataGrid";
+import { FilterDatePicker } from "@/components/FilterDatePicker";
 import { FormBase } from "@/components/form/FormBase";
 import { useAppForm } from "@/components/form/hooks";
 import { RecordTable } from "@/components/RecordDataGrid";
@@ -40,20 +41,8 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
@@ -119,7 +108,7 @@ export default function NewBillPage() {
   };
 
   return (
-    <div className="flex-1 p-6 md:p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-24">
+    <div className="flex-1 w-full max-w-[100vw] lg:max-w-6xl lg:mx-auto px-2 py-4 sm:py-6 sm:p-6 md:p-8 space-y-4 sm:space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-24 overflow-x-hidden min-w-0">
       <Header
         step={customer ? 2 : 1}
         hasCustomer={!!customer}
@@ -219,50 +208,41 @@ function CustomerSelectionStep({
     setPage(1);
   };
 
-  const mockNavigate = (options: any) => {
-    if (typeof options.search === "function") {
-      const currentParams = { page, per_page: perPage };
-      const newParams = options.search(currentParams);
-      if (newParams.page !== undefined) setPage(newParams.page);
-      if (newParams.per_page !== undefined) setPerPage(newParams.per_page);
-    }
-  };
-
   return (
-    <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden animate-in fade-in duration-500">
-      <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-emerald-400/50" />
-      <CardHeader className="border-b border-zinc-800/50 bg-zinc-900/50">
-        <CardTitle>Find Customer</CardTitle>
-        <CardDescription>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="space-y-1">
+        <h3 className="text-xl font-bold text-zinc-100">Find Customer</h3>
+        <p className="text-zinc-400">
           Search for an existing customer to generate a bill for.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <CustomerDataGrid
-          data={data?.data || []}
-          isLoading={isLoading}
-          isPlaceholderData={isPlaceholderData}
-          navigate={mockNavigate as any}
-          processingIds={new Set()}
-          filterProps={{
-            filters: filters,
-            onChange: handleFilterChange,
-            onReset: handleReset,
-          }}
-          paginationProps={{
-            currentPage: page,
-            totalPages: data?.pagination.total_pages || 0,
-            perPage: perPage,
-            totalCount: data?.pagination.total_count || 0,
-            onPageChange: setPage,
-            onPerPageChange: setPerPage,
-          }}
-          onSelect={onSelect}
-          onDelete={undefined}
-          onToggleStatus={undefined}
-        />
-      </CardContent>
-    </Card>
+        </p>
+      </div>
+      <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden min-w-0">
+        <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-emerald-400/50" />
+        <CardContent className="p-2 sm:p-6 pt-4 sm:pt-6 min-w-0">
+          <div className="min-w-0 w-full">
+            <CustomerDataGrid
+              data={data?.data || []}
+              isLoading={isLoading}
+              isPlaceholderData={isPlaceholderData}
+              filterProps={{
+                filters: filters,
+                onChange: handleFilterChange,
+                onReset: handleReset,
+              }}
+              paginationProps={{
+                currentPage: page,
+                totalPages: data?.pagination.total_pages || 0,
+                perPage: perPage,
+                totalCount: data?.pagination.total_count || 0,
+                onPageChange: setPage,
+                onPerPageChange: setPerPage,
+              }}
+              onSelect={onSelect}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -394,11 +374,8 @@ function BillEntryForm({ customer }: { customer: Customer }) {
   const filteredRecords =
     recordsData?.data.filter((record) => !record.bill_id) || [];
 
-  // Derived Constraints
-  const defaultMonth = parsedFrom || new Date();
-
   return (
-    <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+    <div className="space-y-4 sm:space-y-6 animate-in slide-in-from-right-4 duration-300">
       {/* Customer Header Info */}
       <div className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 p-4 rounded-lg shadow-sm">
         <div className="flex items-center gap-4">
@@ -452,18 +429,17 @@ function BillEntryForm({ customer }: { customer: Customer }) {
           e.stopPropagation();
           form.handleSubmit();
         }}
-        className="space-y-6"
+        className="space-y-4 sm:space-y-6"
       >
-        <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-emerald-400/50" />
-          <CardHeader className="pb-4 border-b border-zinc-800/50 bg-zinc-900/50">
+        <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden min-w-0">
+          <CardHeader className="border-b">
             <CardTitle className="text-base font-medium flex items-center gap-2">
               <Hash className="h-4 w-4 text-emerald-500" />
               Bill Configuration
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+          <CardContent className="p-4 sm:px-6 sm:pt-6 min-w-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 items-start min-w-0">
               {/* Bill ID */}
               <form.Field name="bill_id">
                 {(field) => (
@@ -535,55 +511,21 @@ function BillEntryForm({ customer }: { customer: Customer }) {
                       </span>
                     }
                   >
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          disabled={
-                            !parsedFrom ||
-                            billParamsMutation.isPending ||
-                            !!successBill
-                          }
-                          className={cn(
-                            "w-full pl-3 text-left font-normal bg-zinc-950/50 border-zinc-700 hover:bg-zinc-900 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors",
-                            !field.state.value && "text-muted-foreground",
-                            field.state.meta.errors.length > 0 &&
-                              "border-rose-500 text-rose-500",
-                          )}
-                        >
-                          {field.state.value ? (
-                            field.state.value
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-auto p-0 bg-zinc-900 border-zinc-800"
-                        align="start"
-                      >
-                        <Calendar
-                          mode="single"
-                          defaultMonth={defaultMonth}
-                          selected={
-                            parseDateSafe(field.state.value) || undefined
-                          }
-                          onSelect={(date) => {
-                            if (date)
-                              field.handleChange(format(date, DATE_FORMAT));
-                          }}
-                          // disabled={(date) => {
-                          //   if (date < minToDate) return true;
-                          //   if (maxToDate && isAfter(date, maxToDate))
-                          //     return true;
-                          //   return false;
-                          // }}
-                          initialFocus
-                          className="text-zinc-100"
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FilterDatePicker
+                      value={field.state.value}
+                      min={
+                        parsedFrom
+                          ? format(parsedFrom, "yyyy-MM-dd")
+                          : undefined
+                      }
+                      max={format(new Date(), "yyyy-MM-dd")}
+                      onChange={(val) => field.handleChange(val)}
+                      disabled={
+                        !parsedFrom ||
+                        billParamsMutation.isPending ||
+                        !!successBill
+                      }
+                    />
                   </FormBase>
                 )}
               </form.Field>
@@ -620,7 +562,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
             </Badge>
           </h3>
 
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm shadow-xl overflow-hidden">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm shadow-xl overflow-hidden min-w-0 w-full">
             <RecordTable
               data={filteredRecords}
               isLoading={isRecordsLoading}

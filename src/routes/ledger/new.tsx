@@ -144,7 +144,7 @@ export default function NewLedgerPage() {
   };
 
   return (
-    <div className="flex-1 p-6 md:p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-24">
+    <div className="flex-1 w-full max-w-[100vw] lg:max-w-6xl lg:mx-auto px-2 py-6 sm:p-6 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-24 overflow-x-hidden min-w-0">
       <Header
         step={customer ? 2 : 1}
         hasCustomer={!!customer}
@@ -159,6 +159,7 @@ export default function NewLedgerPage() {
           customer={customer}
           onSuccess={setCreatedEntry}
           onReset={() => setCreatedEntry(null)}
+          onChangeCustomer={handleChangeCustomer}
         />
       )}
 
@@ -298,40 +299,39 @@ function CustomerSelectionStep({
   };
 
   return (
-    <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl animate-in fade-in duration-500 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-blue-500 to-indigo-500/50" />
-      <CardHeader className="bg-zinc-900/50 border-b border-zinc-800/50 pb-4">
-        <CardTitle>Find Customer</CardTitle>
-        <CardDescription>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="space-y-1">
+        <h3 className="text-xl font-bold text-zinc-100">Find Customer</h3>
+        <p className="text-zinc-400">
           Select the customer who made the payment.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pt-6">
-        <CustomerDataGrid
-          data={data?.data || []}
-          isLoading={isLoading}
-          isPlaceholderData={isPlaceholderData}
-          navigate={mockNavigate as any}
-          processingIds={new Set()}
-          filterProps={{
-            filters: filters,
-            onChange: handleFilterChange,
-            onReset: handleReset,
-          }}
-          paginationProps={{
-            currentPage: page,
-            totalPages: data?.pagination.total_pages || 0,
-            perPage: perPage,
-            totalCount: data?.pagination.total_count || 0,
-            onPageChange: setPage,
-            onPerPageChange: setPerPage,
-          }}
-          onSelect={onSelect}
-          onDelete={undefined}
-          onToggleStatus={undefined}
-        />
-      </CardContent>
-    </Card>
+        </p>
+      </div>
+      <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl animate-in fade-in duration-500 relative overflow-hidden min-w-0">
+        <CardContent className="p-2 sm:p-6 pt-4 sm:pt-6 min-w-0">
+          <div className="min-w-0 w-full">
+            <CustomerDataGrid
+              data={data?.data || []}
+              isLoading={isLoading}
+              isPlaceholderData={isPlaceholderData}
+              filterProps={{
+                filters: filters,
+                onChange: handleFilterChange,
+                onReset: handleReset,
+              }}
+              paginationProps={{
+                currentPage: page,
+                totalPages: data?.pagination.total_pages || 0,
+                perPage: perPage,
+                totalCount: data?.pagination.total_count || 0,
+                onPageChange: setPage,
+                onPerPageChange: setPerPage,
+              }}
+              onSelect={onSelect}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -341,10 +341,12 @@ function LedgerEntryForm({
   customer,
   onSuccess,
   onReset,
+  onChangeCustomer,
 }: {
   customer: Customer;
   onSuccess: (data: any) => void;
   onReset: () => void;
+  onChangeCustomer: () => void;
 }) {
   const queryClient = useQueryClient();
 
@@ -405,51 +407,79 @@ function LedgerEntryForm({
         )}
       </form.Field>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start min-w-0">
         {/* Left Column: Input Form fields */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="lg:col-span-7 space-y-6 min-w-0">
           {/* Customer Header Info */}
-          <div className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800/80 p-4 rounded-xl shadow-sm">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-10 w-10 border border-zinc-800">
+          <div className="flex items-center justify-between bg-card/60 border border-border/80 p-4 rounded-xl shadow-md backdrop-blur-md min-w-0">
+            <div className="flex items-center gap-4 min-w-0">
+              <Avatar className="h-10 w-10 border border-border shrink-0">
                 <AvatarImage
                   src={customer.avatar || undefined}
                   alt={customer.name}
                 />
-                <AvatarFallback className="bg-zinc-850 text-xs text-zinc-350">
+                <AvatarFallback className="bg-muted text-xs text-muted-foreground">
                   {getInitials(customer.name)}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h4 className="text-sm font-semibold text-zinc-100 hover:underline">
-                  <Link
-                    to="/customers/$customerId"
-                    params={{ customerId: customer.id.toString() }}
-                  >
-                    {customer.name}
-                  </Link>
-                </h4>
-                <p className="text-xs text-zinc-400">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-foreground hover:underline truncate">
+                    <Link
+                      to="/customers/$customerId"
+                      params={{ customerId: customer.id.toString() }}
+                    >
+                      {customer.name}
+                    </Link>
+                  </h4>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">
                   ID: #{customer.id} • {customer.mobile_no}
                 </p>
               </div>
             </div>
-            <Badge
-              variant="outline"
-              className={cn(
-                "pl-2 pr-2.5 py-1 rounded-full border",
-                customer.active
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                  : "bg-zinc-800 text-zinc-400 border-zinc-700",
-              )}
-            >
-              {customer.active ? "Active" : "Inactive"}
-            </Badge>
+            <div className="flex items-center gap-2 shrink-0 ml-2">
+              <Badge
+                variant="outline"
+                className={cn(
+                  "hidden sm:flex pl-1.5 pr-2 py-0.5 rounded-full border text-[10px] font-semibold tracking-wider uppercase",
+                  customer.active
+                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
+                    : "bg-muted text-muted-foreground border-border",
+                )}
+              >
+                <span
+                  className={cn(
+                    "mr-1.5 h-1.5 w-1.5 rounded-full",
+                    customer.active
+                      ? "bg-emerald-500 animate-pulse"
+                      : "bg-muted-foreground",
+                  )}
+                />
+                {customer.active ? "Active" : "Inactive"}
+              </Badge>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onChangeCustomer}
+                className="sm:hidden w-full cursor-pointer border-border hover:bg-muted text-foreground text-xs h-9 px-3"
+              >
+                <User className="mr-1.5 h-3.5 w-3.5" /> Change
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onChangeCustomer}
+                className="hidden sm:flex cursor-pointer border-border hover:bg-muted text-foreground h-10 px-4"
+              >
+                <User className="mr-2 h-4 w-4" /> Change Customer
+              </Button>
+            </div>
           </div>
 
           {mutation.isError && <ErrorAlert error={mutation.error} />}
 
-          <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden">
+          <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl animate-in fade-in duration-500 relative overflow-hidden min-w-0">
             <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-emerald-400/50" />
             <CardHeader className="pb-4 border-b border-zinc-800/50 bg-zinc-900/30">
               <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -510,7 +540,6 @@ function LedgerEntryForm({
                             )
                           }
                           onWheel={(e) => e.currentTarget.blur()}
-                          autoFocus
                         />
                       </div>
                       <p className="text-[10px] text-zinc-500 mt-1.5 ml-1">
@@ -632,7 +661,7 @@ function LedgerEntryForm({
         </div>
 
         {/* Right Column: Dynamic Live Receipt Preview */}
-        <div className="lg:col-span-5 lg:sticky lg:top-8 space-y-4">
+        <div className="lg:col-span-5 lg:sticky lg:top-8 space-y-4 min-w-0">
           <div className="flex items-center gap-2 ml-1">
             <Sparkles className="h-4 w-4 text-emerald-450 animate-pulse" />
             <span className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">

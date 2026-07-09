@@ -128,7 +128,7 @@ function RecordHeader({ record }: { record: RecordDetails }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
         <Button
           variant="outline"
           onClick={() => window.print()}
@@ -542,10 +542,10 @@ function RecordItemsTable({ items }: { items: RecordItem[] }) {
           {items.length} {items.length === 1 ? "Item" : "Items"}
         </Badge>
       </h3>
-      <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl overflow-hidden print:bg-white print:border-zinc-300 print:shadow-none rounded-xl">
+      <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl overflow-hidden print:bg-white print:border-zinc-300 print:shadow-none rounded-xl min-w-0 w-full">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto w-full">
+            <Table className="min-w-[800px] sm:min-w-full">
               <TableHeader className="bg-zinc-950/50 print:bg-zinc-100">
                 <TableRow className="border-zinc-800/80 hover:bg-transparent print:border-zinc-300">
                   <TableHead className="w-[16%] pl-6 text-zinc-400 uppercase text-[10px] font-bold tracking-wider print:text-black">
@@ -686,7 +686,7 @@ function RecordDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 space-y-6 p-8 pt-6 max-w-6xl mx-auto">
+      <div className="flex-1 space-y-6 px-2 py-6 sm:p-6 md:p-8 md:pt-6 max-w-6xl mx-auto min-w-0">
         <div className="flex items-center justify-between">
           <div className="flex gap-4">
             <Skeleton className="h-9 w-9 bg-zinc-800" />
@@ -735,17 +735,16 @@ function RecordDetailsPage() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6 max-w-6xl mx-auto pb-20 animate-in fade-in duration-500 print:p-0 print:max-w-none">
+    <div className="flex-1 space-y-6 px-2 py-6 sm:p-6 md:p-8 md:pt-6 w-full max-w-[100vw] lg:max-w-6xl lg:mx-auto pb-20 animate-in fade-in duration-500 print:p-0 print:max-w-none overflow-x-hidden min-w-0">
       <RecordHeader record={record} />
 
       <CustomerInfoBar record={record} customer={customer} />
 
+      <RecordItemsTable items={record.items} />
       <div className="grid gap-6 md:grid-cols-2 print:grid-cols-2">
         <GeneralInfoCard record={record} />
         <FinancialInfoCard record={record} />
       </div>
-
-      <RecordItemsTable items={record.items} />
     </div>
   );
 }

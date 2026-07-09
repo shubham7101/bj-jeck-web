@@ -115,7 +115,7 @@ function CustomersBalancesPage() {
   };
 
   return (
-    <div className="bg-slate-100 text-slate-900 min-h-screen p-4 sm:p-8 font-sans print:p-0 print:bg-white print:min-h-0 print:h-auto">
+    <div className="bg-slate-100 text-slate-900 min-h-screen p-2 sm:p-4 md:p-8 font-sans print:p-0 print:bg-white print:min-h-0 print:h-auto">
       <style>
         {`
           @page {
@@ -141,54 +141,54 @@ function CustomersBalancesPage() {
       </style>
 
       {/* Control Panel */}
-      <div className="max-w-[1200px] mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm print:hidden">
-        <div className="flex items-center gap-3">
+      <div className="max-w-[1200px] mx-auto mb-4 sm:mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm print:hidden">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <Button
             variant="outline"
             size="icon"
             onClick={() => router.history.go(-1)}
-            className="h-9 w-9 border-slate-300 text-slate-600 hover:text-slate-900 cursor-pointer"
+            className="h-9 w-9 border-slate-300 text-slate-600 hover:text-slate-900 cursor-pointer shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-bold text-slate-800">
+          <div className="flex flex-col min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-slate-800 truncate">
               Customer Balances
             </h1>
-            <p className="text-xs text-slate-500">View outstandings</p>
+            <p className="text-xs text-slate-500 truncate">View outstandings</p>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap w-full sm:w-auto">
+          <div className="flex items-center gap-2 flex-1 sm:flex-none">
+            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">
               From ID:
             </span>
             <Input
               type="number"
               value={fromId}
               onChange={(e) => setFromId(e.target.value)}
-              className="w-24 h-8 text-sm"
-              placeholder="e.g. 1"
+              className="w-full sm:w-20 h-8 text-sm"
+              placeholder="From"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">To ID:</span>
+          <div className="flex items-center gap-2 flex-1 sm:flex-none">
+            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">To ID:</span>
             <Input
               type="number"
               value={toId}
               onChange={(e) => setToId(e.target.value)}
-              className="w-24 h-8 text-sm"
-              placeholder="e.g. 100"
+              className="w-full sm:w-20 h-8 text-sm"
+              placeholder="To"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">
+          <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">
               Status:
             </span>
             <Select value={activeFilter} onValueChange={setActiveFilter}>
-              <SelectTrigger className="w-28 h-8 text-sm">
+              <SelectTrigger className="w-full sm:w-28 h-8 text-sm">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -199,59 +199,61 @@ function CustomersBalancesPage() {
             </Select>
           </div>
 
-          {(fromId || toId || activeFilter !== "all") && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleReset}
-              className="h-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50/50 cursor-pointer"
-            >
-              <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Reset
-            </Button>
-          )}
+          <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+            {(fromId || toId || activeFilter !== "all") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleReset}
+                className="flex-1 sm:flex-none h-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50/50 cursor-pointer"
+              >
+                <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Reset
+              </Button>
+            )}
 
-          <Button
-            onClick={() => window.print()}
-            size="sm"
-            className="bg-slate-800 text-white hover:bg-slate-700 font-semibold cursor-pointer"
-          >
-            <Printer className="mr-1.5 h-3.5 w-3.5" /> Print
-          </Button>
+            <Button
+              onClick={() => window.print()}
+              size="sm"
+              className="flex-1 sm:flex-none bg-slate-800 text-white hover:bg-slate-700 font-semibold cursor-pointer"
+            >
+              <Printer className="mr-1.5 h-3.5 w-3.5" /> Print
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Main Printable Area */}
-      <div className="max-w-[1200px] mx-auto border-2 border-slate-800 bg-white shadow-2xl print:shadow-none flex flex-col leading-normal print:min-h-[190mm]">
-        <div className="bg-slate-200 border-b-2 border-slate-800 font-extrabold text-sm px-4 py-3 uppercase tracking-widest text-slate-900 flex justify-between items-center">
-          <span>Customer Balances</span>
-          <span className="text-[10px] text-slate-600">
+      <div className="max-w-[1200px] mx-auto border sm:border-2 border-slate-800 bg-white shadow-xl sm:shadow-2xl print:border-0 print:shadow-none flex flex-col leading-normal print:min-h-[190mm] rounded-lg sm:rounded-none overflow-hidden sm:overflow-visible">
+        <div className="bg-slate-200 border-b sm:border-b-2 border-slate-800 font-extrabold text-[10px] sm:text-sm px-3 sm:px-4 py-2 sm:py-3 uppercase tracking-widest text-slate-900 flex justify-between items-center">
+          <span className="truncate pr-2">Customer Balances</span>
+          <span className="text-[9px] sm:text-[10px] text-slate-600 shrink-0">
             {activeFilter === "all"
               ? "All Customers"
-              : `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Customers`}
+              : `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}`}
             {fromId || toId ? ` | ID: ${fromId || "*"} to ${toId || "*"}` : ""}
           </span>
         </div>
 
-        <div className="grow">
-          <Table className="w-full text-xs text-center border-collapse">
+        <div className="grow overflow-x-auto print:overflow-visible">
+          <Table className="w-full text-xs text-center border-collapse min-w-[700px]">
             <TableHeader className="bg-slate-50">
-              <TableRow className="border-b-2 border-slate-800 hover:bg-slate-50">
-                <TableHead className="border-r border-slate-400 py-3 px-3 text-center font-bold text-slate-800 uppercase w-16">
+              <TableRow className="border-b sm:border-b-2 border-slate-800 hover:bg-slate-50">
+                <TableHead className="border-r border-slate-300 sm:border-slate-400 py-3 px-3 text-center font-bold text-slate-800 uppercase w-12 sm:w-16">
                   ID
                 </TableHead>
-                <TableHead className="border-r border-slate-400 py-3 px-4 text-left font-bold text-slate-800 uppercase w-64">
+                <TableHead className="border-r border-slate-300 sm:border-slate-400 py-3 px-4 text-left font-bold text-slate-800 uppercase w-40 sm:w-64">
                   Name
                 </TableHead>
-                <TableHead className="border-r border-slate-400 py-3 px-4 text-left font-bold text-slate-800 uppercase w-32">
+                <TableHead className="border-r border-slate-300 sm:border-slate-400 py-3 px-4 text-left font-bold text-slate-800 uppercase w-32">
                   Mobile No
                 </TableHead>
-                <TableHead className="border-r border-slate-400 py-3 px-3 text-right font-bold text-indigo-900 uppercase">
+                <TableHead className="border-r border-slate-300 sm:border-slate-400 py-3 px-3 text-right font-bold text-indigo-900 uppercase">
                   Total Bill
                 </TableHead>
-                <TableHead className="border-r border-slate-400 py-3 px-3 text-right font-bold text-emerald-700 uppercase">
+                <TableHead className="border-r border-slate-300 sm:border-slate-400 py-3 px-3 text-right font-bold text-emerald-700 uppercase">
                   Total Paid
                 </TableHead>
-                <TableHead className="border-r border-slate-400 py-3 px-3 text-right font-bold text-amber-600 uppercase">
+                <TableHead className="border-r border-slate-300 sm:border-slate-400 py-3 px-3 text-right font-bold text-amber-600 uppercase">
                   Total Discount
                 </TableHead>
                 <TableHead className="py-3 px-4 text-right font-bold text-rose-700 uppercase">
@@ -270,9 +272,9 @@ function CustomersBalancesPage() {
                 return (
                   <TableRow
                     key={customer.id}
-                    className="border-b border-slate-300 hover:bg-slate-50/50 transition-colors last:border-b-0"
+                    className="border-b border-slate-200 sm:border-slate-300 hover:bg-slate-50/50 transition-colors last:border-b-0"
                   >
-                    <TableCell className="border-r border-slate-300 py-2 px-3 font-bold text-slate-700 text-center">
+                    <TableCell className="border-r border-slate-200 sm:border-slate-300 py-2 px-3 font-bold text-slate-700 text-center">
                       <Link
                         to="/customers/$customerId"
                         params={{ customerId: customer.id.toString() }}
@@ -281,7 +283,7 @@ function CustomersBalancesPage() {
                         {customer.id}
                       </Link>
                     </TableCell>
-                    <TableCell className="border-r border-slate-300 py-2 px-4 text-left font-bold text-slate-900">
+                    <TableCell className="border-r border-slate-200 sm:border-slate-300 py-2 px-4 text-left font-bold text-slate-900">
                       <Link
                         to="/customers/$customerId"
                         params={{ customerId: customer.id.toString() }}
@@ -290,16 +292,16 @@ function CustomersBalancesPage() {
                         {customer.name}
                       </Link>
                     </TableCell>
-                    <TableCell className="border-r border-slate-300 py-2 px-4 text-left text-slate-600">
+                    <TableCell className="border-r border-slate-200 sm:border-slate-300 py-2 px-4 text-left text-slate-600 whitespace-nowrap">
                       {customer.mobile_no || "-"}
                     </TableCell>
-                    <TableCell className="border-r border-slate-300 py-2 px-3 text-right font-semibold text-indigo-700">
+                    <TableCell className="border-r border-slate-200 sm:border-slate-300 py-2 px-3 text-right font-semibold text-indigo-700">
                       {formatMoney(totalBill)}
                     </TableCell>
-                    <TableCell className="border-r border-slate-300 py-2 px-3 text-right font-semibold text-emerald-700">
+                    <TableCell className="border-r border-slate-200 sm:border-slate-300 py-2 px-3 text-right font-semibold text-emerald-700">
                       {formatMoney(totalPaid)}
                     </TableCell>
-                    <TableCell className="border-r border-slate-300 py-2 px-3 text-right font-medium text-amber-600">
+                    <TableCell className="border-r border-slate-200 sm:border-slate-300 py-2 px-3 text-right font-medium text-amber-600">
                       {formatMoney(totalDiscount)}
                     </TableCell>
                     <TableCell className="py-2 px-4 text-right font-bold text-rose-700">

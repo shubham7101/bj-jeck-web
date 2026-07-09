@@ -46,6 +46,7 @@ import {
 import type { Customer } from "@/schemas/customerSchema";
 import { customerService } from "@/services/customerService";
 import { formatCurrency, formatDate, getInitials } from "@/utils";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -68,7 +69,7 @@ function CustomerDetailsPage() {
   const customer = Route.useLoaderData();
 
   return (
-    <div className="flex-1 space-y-8 p-8 pt-6 animate-in fade-in duration-500">
+    <div className="flex-1 space-y-6 md:space-y-8 px-2 py-6 sm:p-6 md:p-8 md:pt-6 animate-in fade-in duration-500 overflow-x-hidden">
       <CustomerHeader customer={customer} />
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -92,6 +93,8 @@ function CustomerHeader({ customer }: { customer: Customer }) {
   const navigate = useNavigate();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
 
   const toggleMutation = useMutation({
     mutationFn: () => customerService.setActive(customer.id, !customer.active),
@@ -110,14 +113,18 @@ function CustomerHeader({ customer }: { customer: Customer }) {
       });
     },
     onError: () => {
-      alert("Failed to delete. Ensure all related records are cleared first.");
+      setDeleteError(true);
+      setShowConfirm(false);
+      setTimeout(() => setDeleteError(false), 5000);
     },
   });
 
   const handleDelete = () => {
-    if (confirm(`Are you sure you want to delete ${customer.name}?`)) {
-      deleteMutation.mutate();
+    if (!showConfirm) {
+      setShowConfirm(true);
+      return;
     }
+    deleteMutation.mutate();
   };
 
   return (
@@ -170,10 +177,10 @@ function CustomerHeader({ customer }: { customer: Customer }) {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center gap-3">
-        <div className="hidden md:flex gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
+        <div className="grid grid-cols-2 lg:flex gap-2 w-full lg:w-auto">
           <Link to="/records/new" search={{ customer_id: customer.id }}>
-            <Button className="bg-white text-zinc-950 hover:bg-zinc-200 font-semibold shadow-lg shadow-zinc-950/20 transition-all cursor-pointer">
+            <Button className="w-full bg-white text-zinc-950 hover:bg-zinc-200 font-semibold shadow-lg shadow-zinc-950/20 transition-all cursor-pointer">
               <Truck className="mr-2 h-4 w-4" /> New Record
             </Button>
           </Link>
@@ -181,7 +188,7 @@ function CustomerHeader({ customer }: { customer: Customer }) {
           <Link to="/ledger/new" search={{ customer_id: customer.id }}>
             <Button
               variant="outline"
-              className="border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 hover:border-emerald-500/50 transition-all cursor-pointer"
+              className="w-full border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 hover:border-emerald-500/50 transition-all cursor-pointer"
             >
               <Coins className="mr-2 h-4 w-4" /> Receive Payment
             </Button>
@@ -192,7 +199,7 @@ function CustomerHeader({ customer }: { customer: Customer }) {
           >
             <Button
               variant="outline"
-              className="border-blue-500/30 bg-blue-500/5 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 hover:border-blue-500/50 transition-all cursor-pointer"
+              className="w-full border-blue-500/30 bg-blue-500/5 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 hover:border-blue-500/50 transition-all cursor-pointer"
             >
               <ClipboardList className="mr-2 h-4 w-4" /> Statement
             </Button>
@@ -200,7 +207,7 @@ function CustomerHeader({ customer }: { customer: Customer }) {
           <Link to="/bills/new" search={{ customer_id: customer.id }}>
             <Button
               variant="outline"
-              className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer"
+              className="w-full border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer"
             >
               <FileText className="mr-2 h-4 w-4" /> Bill
             </Button>
@@ -208,7 +215,7 @@ function CustomerHeader({ customer }: { customer: Customer }) {
         </div>
 
         {/* Edit & Delete Group */}
-        <div className="flex items-center gap-1 pl-1">
+        <div className="flex items-center justify-end gap-1 border-t border-zinc-800/50 sm:border-none pt-3 sm:pt-0 sm:pl-1">
           <Link
             to="/customers/update/$customerId"
             params={{ customerId: customer.id.toString() }}
@@ -226,16 +233,30 @@ function CustomerHeader({ customer }: { customer: Customer }) {
             variant="ghost"
             size="icon"
             onClick={handleDelete}
-            disabled={deleteMutation.isPending}
-            className="text-zinc-500 hover:text-rose-500 hover:bg-rose-950/20 transition-colors cursor-pointer"
-            title="Delete Customer"
+            className={`transition-colors cursor-pointer ${
+              deleteError
+                ? "text-rose-500 bg-rose-950/40 border border-rose-900/50"
+                : "text-zinc-500 hover:text-rose-500 hover:bg-rose-950/20"
+            }`}
+            title={deleteError ? "Failed to delete" : "Delete Customer"}
           >
-            {deleteMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+            {deleteError ? (
+              <AlertCircle className="h-4 w-4" />
             ) : (
               <Trash className="h-4 w-4" />
             )}
           </Button>
+
+          <ConfirmDialog
+            isOpen={showConfirm}
+            onClose={() => setShowConfirm(false)}
+            onConfirm={() => deleteMutation.mutate()}
+            title="Delete Customer"
+            description={`Are you sure you want to permanently delete ${customer.name}? This action cannot be undone and will fail if they have active records.`}
+            confirmText="Delete Customer"
+            isPending={deleteMutation.isPending}
+            isDestructive={true}
+          />
         </div>
       </div>
     </div>
@@ -248,28 +269,61 @@ function CustomerContactCard({ customer }: { customer: Customer }) {
       <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-emerald-400/50 z-10" />
       <div className="h-24 bg-linear-to-br from-zinc-800/80 to-zinc-900/80 relative border-b border-zinc-800/50">
         <Avatar className="absolute -bottom-10 left-6 h-20 w-20 border-4 border-zinc-950 shadow-md">
-          <AvatarImage src="" />
+          <AvatarImage src={customer.avatar || ""} />
           <AvatarFallback className="bg-zinc-800 text-xl font-bold text-zinc-300">
             {getInitials(customer.name)}
           </AvatarFallback>
         </Avatar>
       </div>
-      <CardContent className="pt-12 pb-6 px-6 relative z-10">
+      <CardContent className="pt-12 pb-6 px-4 sm:px-6 relative z-10">
         <div className="space-y-4">
           <h3 className="text-xl font-bold tracking-tight text-zinc-100">
             {customer.name}
           </h3>
-          <div className="flex gap-6">
-            <div className="flex items-center gap-2 text-sm text-zinc-400">
-              <Phone className="h-4 w-4 text-emerald-500" />
-              <span className="text-zinc-200 font-medium">
-                {customer.mobile_no}
-              </span>
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-6">
+              <div className="flex items-center gap-2 text-sm text-zinc-400">
+                <Phone className="h-4 w-4 text-emerald-500" />
+                <span className="text-zinc-200 font-medium">
+                  {customer.mobile_no}
+                  {customer.mobile_no_2 && (
+                    <span className="text-zinc-500 ml-1 font-normal">
+                      {" "}
+                      / {customer.mobile_no_2}
+                    </span>
+                  )}
+                </span>
+              </div>
+              <div className="flex items-start gap-2 text-sm text-zinc-400">
+                <MapPin className="h-4 w-4 text-zinc-500 mt-0.5 shrink-0" />
+                <span className="leading-tight">{customer.address}</span>
+              </div>
             </div>
-            <div className="flex items-start gap-2 text-sm text-zinc-400">
-              <MapPin className="h-4 w-4 text-zinc-500 mt-0.5 shrink-0" />
-              <span className="leading-tight">{customer.address}</span>
-            </div>
+
+            {(customer.aadhar_card_no || customer.reference_name) && (
+              <div className="flex gap-6 pt-2 border-t border-zinc-800/50 mt-1">
+                {customer.aadhar_card_no && (
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-0.5">
+                      Aadhar No
+                    </span>
+                    <span className="text-sm text-zinc-300 font-mono">
+                      {customer.aadhar_card_no}
+                    </span>
+                  </div>
+                )}
+                {customer.reference_name && (
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-0.5">
+                      Reference
+                    </span>
+                    <span className="text-sm text-zinc-300">
+                      {customer.reference_name}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
@@ -406,7 +460,7 @@ function CustomerStatsSection({ id }: { id: number }) {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
           <Skeleton
             key={i}
@@ -447,7 +501,7 @@ function CustomerStatsSection({ id }: { id: number }) {
   const ledgerPaid = stats.ledger?.total_paid ?? 0;
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-4">
       <StatsCard
         title="Total Records"
         value={recordsCount}
@@ -787,7 +841,7 @@ function QuickLinks({ id }: { id: number }) {
 
 function CustomerSkeleton() {
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6">
+    <div className="flex-1 space-y-6 px-2 py-6 sm:p-6 md:p-8 md:pt-6">
       <div className="flex items-center justify-between">
         <div className="flex gap-4">
           <Skeleton className="h-9 w-9 bg-zinc-800" />
@@ -802,7 +856,7 @@ function CustomerSkeleton() {
         <Skeleton className="h-52 w-full bg-zinc-900 border border-zinc-800 rounded-xl" />
         <Skeleton className="h-52 w-full bg-zinc-900 border border-zinc-800 rounded-xl" />
       </div>
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
           <Skeleton
             key={i}

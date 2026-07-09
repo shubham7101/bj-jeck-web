@@ -1,40 +1,36 @@
 import z from "zod";
 import { inventorySchema, paginationSchema } from "@/schemas/common";
 
-export const PART_OPTIONS = [
-  { label: "Full Jack", value: "full" },
-  { label: "Inner", value: "inner" },
-  { label: "Outer", value: "outer" },
-  { label: "Plate", value: "plate" },
-] as const;
-
-export const SIZE_OPTIONS = [
-  "1.5",
-  "2.0",
-  "2.5",
-  "3.0",
-  "1x3",
-  "2x3",
-  "9x3",
-  "12x3",
-  "15x3",
-  "18x3",
-  "21x3",
-] as const;
-
-export const STANDARD_RATES_SETUP: CustomerRate[] = [
-  { part: "full", size: "1.5", rate: 1.5 },
-  { part: "full", size: "2.0", rate: 1.5 },
-  { part: "full", size: "2.5", rate: 1.75 },
-  { part: "full", size: "3.0", rate: 2.0 },
-  { part: "plate", size: "2x3", rate: 1.2 },
-];
+export { PART_OPTIONS, SIZE_OPTIONS, STANDARD_RATES_SETUP, getSizesForPart } from "./common";
 
 export const customerSchema = z.object({
   id: z.number().gt(0),
   name: z.string().min(2).max(100),
   address: z.string().min(3).max(255),
-  mobile_no: z.string().length(10),
+
+  mobile_no: z
+    .string()
+    .length(10, "Mobile number must be exactly 10 digits")
+    .regex(/^\d+$/, "Mobile number must contain only digits"),
+
+  mobile_no_2: z
+    .string()
+    .length(10, "Alternate mobile must be exactly 10 digits")
+    .regex(/^\d+$/, "Alternate mobile must contain only digits")
+    .nullish(),
+
+  aadhar_card_no: z
+    .string()
+    .length(12, "Aadhar card must be exactly 12 digits")
+    .regex(/^\d+$/, "Aadhar card must contain only digits")
+    .nullish(),
+
+  reference_name: z
+    .string()
+    .min(2, "Reference name must be at least 2 characters")
+    .max(100, "Reference name must be at most 100 characters")
+    .nullish(),
+
   avatar: z.string().nullish(),
   joined_date: z.string(),
   active: z.boolean(),
@@ -47,22 +43,6 @@ export const customerRateSchema = z.object({
   rate: z.number().gt(0),
 });
 export type CustomerRate = z.infer<typeof customerRateSchema>;
-
-export const customerDetailsSchema = customerSchema.extend({
-  rates: z.array(customerRateSchema),
-});
-export type CustomerDetails = z.infer<typeof customerDetailsSchema>;
-
-export const createCustomerSchema = customerSchema
-  .pick({
-    name: true,
-    address: true,
-    mobile_no: true,
-  })
-  .extend({
-    rates: z.array(customerRateSchema).min(5),
-  });
-export type CreateCustomer = z.infer<typeof createCustomerSchema>;
 
 export const customerSearchReqSchema = z.object({
   page: z.number().min(1).optional().catch(1),
@@ -82,6 +62,9 @@ export type CustomerSearchRes = z.infer<typeof customerSearchResSchema>;
 export const updateCustomerSchema = customerSchema.pick({
   name: true,
   mobile_no: true,
+  mobile_no_2: true,
+  aadhar_card_no: true,
+  reference_name: true,
   address: true,
   active: true,
 });

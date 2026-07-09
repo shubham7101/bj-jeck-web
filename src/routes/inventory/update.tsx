@@ -172,7 +172,7 @@ function UpdateInventoryPage() {
   if (isSuccessOverlay && lastUpdatedItem) {
     const meta = getPartMeta(lastUpdatedItem.part);
     return (
-      <div className="flex-1 max-w-lg mx-auto flex flex-col items-center justify-center p-6 md:p-8 pt-20 animate-in zoom-in duration-300">
+      <div className="flex-1 max-w-lg mx-auto flex flex-col items-center justify-center px-2 py-6 sm:p-6 md:p-8 pt-20 animate-in zoom-in duration-300">
         <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-md shadow-2xl relative overflow-hidden w-full text-center">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-linear-to-r from-emerald-500/80 to-blue-500/50" />
 
@@ -189,7 +189,7 @@ function UpdateInventoryPage() {
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-6 px-8">
+          <CardContent className="space-y-6 px-4 sm:px-8">
             {/* Stock Summary Card */}
             <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800 flex flex-col gap-4 text-left">
               <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
@@ -221,7 +221,7 @@ function UpdateInventoryPage() {
             </div>
           </CardContent>
 
-          <CardFooter className="flex flex-col gap-3 px-8 pb-8 pt-2">
+          <CardFooter className="flex flex-col gap-3 px-4 sm:px-8 pb-6 sm:pb-8 pt-2">
             <Button
               onClick={handleResetForm}
               className="w-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold py-2.5 rounded-xl cursor-pointer"
@@ -243,7 +243,7 @@ function UpdateInventoryPage() {
   }
 
   return (
-    <div className="flex-1 space-y-8 p-6 md:p-8 pt-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24">
+    <div className="flex-1 space-y-8 px-2 py-6 sm:p-6 md:p-8 pt-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24 overflow-x-hidden">
       {/* Back link & Header */}
       <div className="space-y-4">
         <Link
@@ -285,7 +285,7 @@ function UpdateInventoryPage() {
       {/* Split Form & Preview Card Layout */}
       <div className="grid gap-8 lg:grid-cols-5">
         {/* Left Column: Form (spans 3 columns) */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-3 space-y-6 min-w-0">
           <Card className="bg-zinc-900/40 border-zinc-800 shadow-xl backdrop-blur-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-[2px] bg-linear-to-r from-emerald-500/80 to-blue-500/50" />
 
@@ -420,7 +420,7 @@ function UpdateInventoryPage() {
         </div>
 
         {/* Right Column: Live PO Stock Card Preview (spans 2 columns) */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 min-w-0">
           <Card className="bg-zinc-900/40 border-zinc-800 shadow-xl backdrop-blur-sm relative overflow-hidden flex flex-col min-h-[420px]">
             <div className="absolute top-0 left-0 w-full h-[2px] bg-linear-to-r from-emerald-500/80 to-blue-500/50" />
 

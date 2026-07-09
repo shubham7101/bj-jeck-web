@@ -147,7 +147,7 @@ function RouteComponent() {
   const inactiveCount = data?.filter((c) => !c.active).length ?? 0;
 
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6 animate-in fade-in duration-500">
+    <div className="flex-1 space-y-6 px-2 py-6 sm:p-6 md:p-8 md:pt-6 animate-in fade-in duration-500 overflow-x-hidden">
       {/* Header Section */}
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center justify-between pb-2">
         <div className="space-y-1">
@@ -177,14 +177,14 @@ function RouteComponent() {
       <div className="h-px w-full bg-linear-to-r from-zinc-800 to-transparent" />
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-3">
         <StatsCard
           loading={isLoading}
           title="Total Unbilled Customers"
           value={totalCount}
           subText="With pending records"
           icon={<Users className="h-4 w-4 text-amber-400" />}
-          className="bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
+          className="col-span-2 md:col-span-1 bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
         />
         <StatsCard
           loading={isLoading}
@@ -207,8 +207,8 @@ function RouteComponent() {
       </div>
 
       {/* Date Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800/60 shadow-lg backdrop-blur-xl">
-        <div className="flex flex-col gap-1">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800/60 shadow-lg backdrop-blur-xl">
+        <div className="flex flex-col gap-1 text-center sm:text-left">
           <span className="text-sm font-semibold text-zinc-300">
             As of Date
           </span>
@@ -216,25 +216,27 @@ function RouteComponent() {
             Show customers with unbilled records on or before this date
           </span>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
-                  "w-full sm:w-60 justify-start text-left font-normal bg-zinc-950/50 border-zinc-800 hover:bg-zinc-900/50 focus:ring-1 focus:ring-emerald-500/50 rounded-xl transition-all",
+                  "w-full sm:w-60 justify-start text-left font-normal bg-zinc-950/50 border-zinc-800 hover:bg-zinc-900/50 focus:ring-1 focus:ring-emerald-500/50 rounded-xl transition-all cursor-pointer",
                   !dateParam && "text-zinc-500",
                 )}
               >
-                <CalendarIcon className="mr-2 h-4 w-4 text-zinc-500" />
-                {dateParam ? (
-                  format(
-                    parse(dateParam, "yyyy-MM-dd", new Date()),
-                    "dd MMM yyyy",
-                  )
-                ) : (
-                  <span>All Dates</span>
-                )}
+                <CalendarIcon className="mr-2 h-4 w-4 text-zinc-500 shrink-0" />
+                <span className="truncate">
+                  {dateParam ? (
+                    format(
+                      parse(dateParam, "yyyy-MM-dd", new Date()),
+                      "dd MMM yyyy",
+                    )
+                  ) : (
+                    "All Dates"
+                  )}
+                </span>
               </Button>
             </PopoverTrigger>
             <PopoverContent
@@ -270,7 +272,7 @@ function RouteComponent() {
                   replace: true,
                 })
               }
-              className="text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 hover:text-rose-300 border border-rose-500/20 rounded-xl px-3 h-10 cursor-pointer"
+              className="w-full sm:w-auto text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 hover:text-rose-300 border border-rose-500/20 rounded-xl px-3 h-10 cursor-pointer"
             >
               Reset Date
             </Button>
@@ -284,15 +286,11 @@ function RouteComponent() {
         data={filteredData}
         isLoading={isLoading}
         isPlaceholderData={false}
-        navigate={navigate}
-        processingIds={processingIds}
         filterProps={{
           filters: localFilters,
           onChange: handleFilterChange,
           onReset: handleReset,
         }}
-        onDelete={handleDelete}
-        onToggleStatus={handleToggleStatus}
       />
     </div>
   );

@@ -196,7 +196,7 @@ function InventoryOverviewPage() {
   };
 
   return (
-    <div className="flex-1 space-y-8 p-6 md:p-8 pt-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24">
+    <div className="flex-1 space-y-8 px-2 py-6 sm:p-6 md:p-8 pt-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24 overflow-x-hidden">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="space-y-1">
@@ -233,7 +233,7 @@ function InventoryOverviewPage() {
 
       {/* Aggregate Stats Cards */}
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton
               key={i}
@@ -242,7 +242,7 @@ function InventoryOverviewPage() {
           ))}
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
           <StatsCard
             title="In-House Stock"
             value={stats.inHouse}
@@ -277,7 +277,7 @@ function InventoryOverviewPage() {
       {/* 2-Column Split Layout for Registry & Assembly Planner */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left Column: Stock Registry */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 min-w-0">
           <Card className="bg-zinc-900/40 border-zinc-800 shadow-xl backdrop-blur-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-[2px] bg-linear-to-r from-emerald-500/80 to-blue-500/50" />
 
@@ -374,7 +374,8 @@ function InventoryOverviewPage() {
             </CardHeader>
 
             <CardContent className="p-0">
-              <Table>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[600px]">
                 <TableHeader className="bg-zinc-950/40 border-b border-zinc-800/80 sticky top-0 z-10">
                   <TableRow className="border-zinc-800 hover:bg-transparent">
                     <TableHead className="w-1/4 pl-6 h-12 text-zinc-400 uppercase text-[10px] font-black tracking-wider">
@@ -523,12 +524,13 @@ function InventoryOverviewPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Right Column: Intelligent Assembly Suggester */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           <Card className="bg-zinc-900/40 border-zinc-800 shadow-xl backdrop-blur-sm relative overflow-hidden flex flex-col h-full min-h-[300px]">
             <div className="absolute top-0 left-0 w-full h-[2px] bg-linear-to-r from-emerald-500/80 to-blue-500/50" />
 
