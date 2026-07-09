@@ -38,9 +38,9 @@ import {
 } from "@/components/ui/table";
 import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import type { Customer } from "@/schemas/customerSchema";
+import type { Site } from "@/schemas/siteSchema";
 import type { RecordDetails, RecordItem } from "@/schemas/recordSchema";
-import { customerService } from "@/services/customerService";
+import { siteService } from "@/services/siteService";
 import { recordService } from "@/services/recordService";
 
 // Define the route
@@ -185,44 +185,44 @@ function RecordHeader({ record }: { record: RecordDetails }) {
   );
 }
 
-function CustomerInfoBar({
+function SiteInfoBar({
   record,
-  customer,
+  site,
 }: {
   record: RecordDetails;
-  customer: Customer | undefined;
+  site: Site | undefined;
 }) {
   return (
     <div className={themeStyles.customerInfoBar}>
       <div className="flex items-center gap-4">
         <Avatar className="h-12 w-12 border-2 border-primary/20 shadow-inner print:hidden">
           <AvatarImage
-            src={customer?.avatar || undefined}
-            alt={customer?.name || "Customer"}
+            src={undefined}
+            alt={site?.contractor_name || "Site"}
           />
           <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
-            {customer ? getInitials(customer.name) : "CU"}
+            {site ? getInitials(site.contractor_name) : "SI"}
           </AvatarFallback>
         </Avatar>
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h4 className="text-base font-bold text-zinc-100 hover:underline print:text-black">
-              {customer ? (
+              {site ? (
                 <Link
-                  to="/customers/$customerId"
-                  params={{ customerId: customer.id.toString() }}
+                  to="/sites/$siteId"
+                  params={{ siteId: site.id.toString() }}
                 >
-                  {customer.name}
+                  {site.contractor_name}
                 </Link>
               ) : (
-                <span>Customer #{record.customer_id}</span>
+                <span>Site #{record.site_id}</span>
               )}
             </h4>
-            {customer && (
+            {site && (
               <Badge
                 variant="outline"
                 className={cn(
-                  customer.active
+                  site.active
                     ? themeStyles.activeBadge
                     : themeStyles.inactiveBadge,
                 )}
@@ -230,25 +230,25 @@ function CustomerInfoBar({
                 <span
                   className={cn(
                     "mr-1.5 h-1.5 w-1.5 rounded-full print:hidden",
-                    customer.active
+                    site.active
                       ? "bg-emerald-500 animate-pulse"
                       : "bg-zinc-500",
                   )}
                 />
-                {customer.active ? "Active" : "Inactive"}
+                {site.active ? "Active" : "Inactive"}
               </Badge>
             )}
           </div>
           <p className="text-xs text-zinc-400 flex items-center gap-2 flex-wrap print:text-zinc-700">
             <span className="font-semibold text-zinc-200 print:text-black">
-              ID: #{record.customer_id}
+              ID: #{record.site_id}
             </span>
-            {customer && (
+            {site && (
               <>
                 <span>•</span>
-                <span>{customer.mobile_no}</span>
+                <span>{site.mobile_no}</span>
                 <span>•</span>
-                <span className="italic">{customer.address}</span>
+                <span className="italic">{site.address}</span>
               </>
             )}
           </p>
@@ -259,7 +259,7 @@ function CustomerInfoBar({
           variant="outline"
           className="bg-primary/10 text-primary border-primary/20 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm"
         >
-          Customer Profile
+          Site Profile
         </Badge>
       </div>
     </div>
@@ -678,10 +678,10 @@ function RecordDetailsPage() {
     queryFn: () => recordService.get(Number(recordId)),
   });
 
-  const { data: customer } = useQuery({
-    queryKey: ["customers", record?.customer_id],
-    queryFn: () => customerService.get(record?.customer_id as number),
-    enabled: !!record?.customer_id, // Dependent query flag
+  const { data: site } = useQuery({
+    queryKey: ["sites", record?.site_id],
+    queryFn: () => siteService.get(record?.site_id as number),
+    enabled: !!record?.site_id, // Dependent query flag
   });
 
   if (isLoading) {
@@ -738,7 +738,7 @@ function RecordDetailsPage() {
     <div className="flex-1 space-y-6 px-2 py-6 sm:p-6 md:p-8 md:pt-6 w-full max-w-[100vw] lg:max-w-6xl lg:mx-auto pb-20 animate-in fade-in duration-500 print:p-0 print:max-w-none overflow-x-hidden min-w-0">
       <RecordHeader record={record} />
 
-      <CustomerInfoBar record={record} customer={customer} />
+      <SiteInfoBar record={record} site={site} />
 
       <RecordItemsTable items={record.items} />
       <div className="grid gap-6 md:grid-cols-2 print:grid-cols-2">

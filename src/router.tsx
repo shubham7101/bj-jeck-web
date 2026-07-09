@@ -5,20 +5,20 @@ import { Route as IndexRoute } from "./routes/index";
 import { Route as RecordsIndexRoute } from "./routes/records/index";
 import { Route as LedgerIndexRoute } from "./routes/ledger/index";
 import { Route as InventoryIndexRoute } from "./routes/inventory/index";
-import { Route as CustomersIndexRoute } from "./routes/customers/index";
+import { Route as CustomersIndexRoute } from "./routes/sites/index";
 import { Route as BillsIndexRoute } from "./routes/bills/index";
 import { Route as RecordsNewRoute } from "./routes/records/new";
 import { Route as RecordsRecordIdRoute } from "./routes/records/$recordId";
 import { Route as LedgerNewRoute } from "./routes/ledger/new";
 import { Route as InventoryUpdateRoute } from "./routes/inventory/update";
-import { Route as CustomersUnbilledRoute } from "./routes/customers/unbilled";
+import { Route as SitesUnbilledRoute } from "./routes/sites/unbilled";
 import { Route as CustomersNewRoute } from "./routes/customers/new";
 import { Route as CustomersCustomerIdRoute } from "./routes/customers/$customerId";
 import { Route as BillsNewRoute } from "./routes/bills/new";
 import { Route as BillsBillIdRoute } from "./routes/bills/$billId";
 import { Route as RecordsUpdateRecordIdRoute } from "./routes/records/update.$recordId";
 import { Route as CustomersUpdateCustomerIdRoute } from "./routes/customers/update.$customerId";
-import { Route as CustomersStatementCustomerIdRoute } from "./routes/customers/statement.$customerId";
+import { Route as SitesStatementSiteIdRoute } from "./routes/sites/statement.$siteId";
 
 export const routeTree = rootRoute.addChildren([
   IndexRoute,
@@ -33,14 +33,14 @@ export const routeTree = rootRoute.addChildren([
   RecordsRecordIdRoute,
   LedgerNewRoute,
   InventoryUpdateRoute,
-  CustomersUnbilledRoute,
+  SitesUnbilledRoute,
   CustomersNewRoute,
   CustomersCustomerIdRoute,
   BillsNewRoute,
   BillsBillIdRoute,
   RecordsUpdateRecordIdRoute,
   CustomersUpdateCustomerIdRoute,
-  CustomersStatementCustomerIdRoute,
+  SitesStatementSiteIdRoute,
 ]);
 
 import { createRouter } from "@tanstack/react-router";

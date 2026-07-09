@@ -87,13 +87,13 @@ function BillFilters({ filters, onChange, onReset }: BillFiltersProps) {
     <div className={themeStyles.glassHeader}>
       <div className={themeStyles.glassHeaderOverlay} />
       <div className="relative z-10 flex flex-col md:flex-row gap-4 items-stretch md:items-end">
-        {/* Customer ID */}
+        {/* Site ID */}
         <FilterInput
-          label="Customer ID"
+          label="Site ID"
           icon={Hash}
           placeholder="e.g. 55"
-          value={filters.customer_id}
-          onChange={(e) => onChange("customer_id", e.target.value)}
+          value={filters.site_id}
+          onChange={(e) => onChange("site_id", e.target.value)}
           type="number"
         />
 
@@ -201,7 +201,7 @@ function TableWrapper({ children }: { children: React.ReactNode }) {
               Bill ID
             </TableHead>
             <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-center w-32">
-              Customer ID
+              Site ID
             </TableHead>
             <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-left pl-6 min-w-[180px]">
               Billing Period
@@ -236,16 +236,16 @@ function BillRow({ bill }: { bill: Bill }) {
         #{bill.id.toString()}
       </TableCell>
 
-      {/* Customer Link */}
+      {/* Site Link */}
       <TableCell className="text-center py-4">
         <Link
-          to={`/customers/$customerId`}
-          params={{ customerId: bill.customer_id.toString() }}
+          to={`/sites/$siteId`}
+          params={{ siteId: bill.site_id.toString() }}
           onClick={(e) => e.stopPropagation()}
           className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-950 text-zinc-450 border border-zinc-850 text-[10px] font-semibold hover:border-zinc-700 hover:text-zinc-200 transition-colors shadow-sm"
         >
           <Hash className="h-3 w-3" />
-          {bill.customer_id}
+          {bill.site_id}
         </Link>
       </TableCell>
 

@@ -3,7 +3,7 @@ import { paginationSchema } from "./common";
 
 export const ledgerSchema = z.object({
   id: z.number().gt(0),
-  customer_id: z.number().gt(0),
+  site_id: z.number().gt(0),
   date: z.string(),
   amount: z.number().gt(0),
   notes: z.string(),
@@ -12,7 +12,7 @@ export const ledgerSchema = z.object({
 export type Ledger = z.infer<typeof ledgerSchema>;
 
 export const createLedgerSchema = z.object({
-  customer_id: z.number().min(1, "Customer is required"),
+  site_id: z.number().min(1, "Site is required"),
   amount: z.number().min(1, "Amount must be greater than 0"),
   date: z.string().regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY"),
   notes: z.string().optional(),
@@ -23,7 +23,7 @@ export type CreateLedger = z.infer<typeof createLedgerSchema>;
 export const ledgerSearchReqSchema = z.object({
   page: z.number().optional(),
   per_page: z.number().optional(),
-  customer_id: z.number().optional(),
+  site_id: z.number().optional(),
   date: z
     .string()
     .regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY")

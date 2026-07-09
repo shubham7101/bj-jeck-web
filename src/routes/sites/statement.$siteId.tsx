@@ -25,28 +25,28 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { billService } from "@/services/billService";
-import { customerService } from "@/services/customerService";
+import { siteService } from "@/services/siteService";
 import { ledgerService } from "@/services/ledgerService";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/customers/statement/$customerId",
+  path: "/sites/statement/$siteId",
   loader: async ({ params }) => {
-    const customerId = Number(params.customerId);
-    const customer = await customerService.get(customerId);
+    const siteId = Number(params.siteId);
+    const site = await siteService.get(siteId);
 
     // Fetch all bills and payment ledger entries (large per_page to ensure we load history)
     const billsRes = await billService.search({
-      customer_id: customerId,
+      site_id: siteId,
       per_page: 100,
     });
     const paymentsRes = await ledgerService.search({
-      customer_id: customerId,
+      site_id: siteId,
       per_page: 100,
     });
 
     return {
-      customer,
+      site,
       bills: billsRes.data || [],
       payments: paymentsRes.data || [],
     };
@@ -65,7 +65,7 @@ type TransactionItem = {
 const DATE_FORMAT = "dd-MM-yyyy";
 
 function StatementPage() {
-  const { customer, bills, payments } = Route.useLoaderData();
+  const { site, bills, payments } = Route.useLoaderData();
   const router = useRouter();
 
   // Local filter states
@@ -84,10 +84,10 @@ function StatementPage() {
 
   // Set document title for printing filenames
   useEffect(() => {
-    if (customer) {
-      document.title = `ledger-${customer.id}-${customer.name}`;
+    if (site) {
+      document.title = `ledger-${site.id}-${site.contractor_name}`;
     }
-  }, [customer]);
+  }, [site]);
 
   // Transform bills into transaction items (Bills represent receivables/credits)
   const billItems: TransactionItem[] = bills.map((bill) => {
@@ -155,8 +155,8 @@ function StatementPage() {
   const firstTxDate =
     allItems.length > 0
       ? allItems[0].date
-      : customer.joined_date
-        ? new Date(customer.joined_date)
+      : site.joined_date
+        ? new Date(site.joined_date)
         : new Date();
   const lastTxDate =
     allItems.length > 0 ? allItems[allItems.length - 1].date : new Date();
@@ -215,7 +215,7 @@ function StatementPage() {
             <h1 className="text-base sm:text-lg font-bold text-slate-800 truncate">
               Ledger Statement
             </h1>
-            <p className="text-xs text-slate-500 truncate">{customer.name}</p>
+            <p className="text-xs text-slate-500 truncate">{site.contractor_name}</p>
           </div>
         </div>
 
@@ -356,23 +356,23 @@ function StatementPage() {
           <div className="w-full sm:w-3/5 border-b sm:border-b-0 sm:border-r-2 border-slate-800 p-3 sm:p-4 flex flex-col justify-between bg-slate-50/50">
             <div className="flex flex-col gap-1">
               <div className="font-extrabold text-xs sm:text-sm uppercase text-slate-900 tracking-wide leading-none">
-                NAME : {customer.name}
+                NAME : {site.contractor_name}
               </div>
               <div className="text-[10px] sm:text-[11px] font-bold uppercase leading-snug text-slate-700">
-                ADDRESS : {customer.address}
+                ADDRESS : {site.address}
               </div>
             </div>
             <div className="mt-3 sm:mt-2 flex flex-col gap-0.5">
               <div className="text-[10px] sm:text-[11px] font-bold flex gap-2 sm:gap-3 text-slate-800">
-                <span className="w-20 sm:w-24 tracking-wider shrink-0">CUSTOMER ID</span>
+                <span className="w-20 sm:w-24 tracking-wider shrink-0">SITE ID</span>
                 <span className="font-semibold text-slate-600 truncate">
-                  : {customer.id}
+                  : {site.id}
                 </span>
               </div>
               <div className="text-[10px] sm:text-[11px] font-bold flex gap-2 sm:gap-3 text-slate-800">
                 <span className="w-20 sm:w-24 tracking-wider shrink-0">MOBILE NO</span>
                 <span className="font-semibold text-slate-600 truncate">
-                  : {customer.mobile_no}
+                  : {site.mobile_no}
                 </span>
               </div>
               <div className="text-[10px] sm:text-[11px] font-bold flex gap-2 sm:gap-3 text-slate-800">
@@ -409,7 +409,7 @@ function StatementPage() {
 
         {/* Ledger Head title */}
         <div className="bg-slate-200 border-b sm:border-b-2 border-slate-800 font-extrabold text-[10px] sm:text-xs px-3 sm:px-4 py-2 uppercase tracking-widest text-slate-900 flex justify-between items-center">
-          <span className="truncate pr-2">Ledger: {customer.name}</span>
+          <span className="truncate pr-2">Ledger: {site.contractor_name}</span>
           <span className="text-[9px] sm:text-[10px] text-slate-600 whitespace-nowrap shrink-0">
             {fromDateStr && toDateStr
               ? `${fromDateStr} to ${toDateStr}`

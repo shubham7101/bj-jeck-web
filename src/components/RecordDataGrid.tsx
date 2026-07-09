@@ -85,13 +85,13 @@ function RecordFilters({ filters, onChange, onReset }: RecordFiltersProps) {
     <div className={themeStyles.glassHeader}>
       <div className={themeStyles.glassHeaderOverlay} />
       <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-        {/* Customer ID */}
+        {/* Site ID */}
         <FilterInput
-          label="Customer ID"
+          label="Site ID"
           icon={Hash}
           placeholder="e.g. 55"
-          value={filters.customer_id}
-          onChange={(e) => onChange("customer_id", e.target.value)}
+          value={filters.site_id}
+          onChange={(e) => onChange("site_id", e.target.value)}
           type="number"
         />
 

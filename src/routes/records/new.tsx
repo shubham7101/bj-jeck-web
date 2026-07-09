@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
-import { CustomerDataGrid } from "@/components/CustomerDataGrid";
+import { SiteDataGrid } from "@/components/SiteDataGrid";
 import { FormBase } from "@/components/form/FormBase";
 import { useAppForm } from "@/components/form/hooks";
 import { SuccessFeedback } from "@/components/SuccessFeedback";
@@ -68,23 +68,25 @@ import {
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
 import {
-  type Customer,
+  type Site,
+} from "@/schemas/siteSchema";
+import {
   PART_OPTIONS,
   getSizesForPart,
-} from "@/schemas/customerSchema";
+} from "@/schemas/common";
 import {
   type CreateRecord,
   createRecordSchema,
   type Record,
 } from "@/schemas/recordSchema";
-import { customerService } from "@/services/customerService";
+import { siteService } from "@/services/siteService";
 import { recordService } from "@/services/recordService";
 import { formatDate, getInitials } from "@/utils";
 
 // --- Route Definition ---
 
 const recordSearchSchema = z.object({
-  customer_id: z.number().optional(),
+  site_id: z.number().optional(),
 });
 
 export const Route = createRoute({
@@ -92,15 +94,15 @@ export const Route = createRoute({
   path: "/records/new",
   component: NewRecordPage,
   validateSearch: (search) => recordSearchSchema.parse(search),
-  loaderDeps: ({ search }) => ({ customer_id: search.customer_id }),
-  loader: async ({ deps: { customer_id } }) => {
-    if (!customer_id) return { customer: null };
+  loaderDeps: ({ search }) => ({ site_id: search.site_id }),
+  loader: async ({ deps: { site_id } }) => {
+    if (!site_id) return { site: null };
     try {
-      const customer = await customerService.get(customer_id);
-      return { customer };
+      const site = await siteService.get(site_id);
+      return { site };
     } catch (_e) {
       // If ID is invalid, return null so we can show selection screen
-      return { customer: null };
+      return { site: null };
     }
   },
   pendingComponent: RecordLoadingSkeleton,
@@ -110,7 +112,7 @@ export const Route = createRoute({
 const DATE_FORMAT = "dd-MM-yyyy";
 
 const DEFAULT_FORM_VALUES: Partial<CreateRecord> = {
-  customer_id: 0,
+  site_id: 0,
   date: format(new Date(), DATE_FORMAT),
   transaction_type: "OUT",
   labour_charge: 0,
@@ -162,7 +164,7 @@ function FormProgressStepper({ currentStep }: { currentStep: number }) {
             )}
           >
             Select
-            <br className="sm:hidden" /> Customer
+            <br className="sm:hidden" /> Site
           </span>
         </div>
 
@@ -205,7 +207,7 @@ function FormProgressStepper({ currentStep }: { currentStep: number }) {
 
 export default function NewRecordPage() {
   const navigate = useNavigate();
-  const { customer } = Route.useLoaderData();
+  const { site } = Route.useLoaderData();
   const [createdRecord, setCreatedRecord] = useState<Record | null>(null);
   const successRef = useRef<HTMLDivElement>(null);
 
@@ -220,39 +222,39 @@ export default function NewRecordPage() {
     }
   }, [createdRecord]);
 
-  const handleCustomerSelect = (selected: Customer) => {
+  const handleSiteSelect = (selected: Site) => {
     navigate({
       to: "/records/new",
-      search: { customer_id: selected.id },
+      search: { site_id: selected.id },
     });
   };
 
-  const handleChangeCustomer = () => {
+  const handleChangeSite = () => {
     setCreatedRecord(null);
     navigate({
       to: "/records/new",
-      search: { customer_id: undefined },
+      search: { site_id: undefined },
     });
   };
 
   return (
     <div className="flex-1 w-full max-w-[100vw] lg:max-w-6xl lg:mx-auto px-2 py-6 sm:p-6 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500 pb-24 overflow-x-hidden min-w-0">
       <Header
-        step={customer ? 2 : 1}
-        hasCustomer={!!customer}
-        onChangeCustomer={handleChangeCustomer}
+        step={site ? 2 : 1}
+        hasSite={!!site}
+        onChangeSite={handleChangeSite}
       />
 
-      <FormProgressStepper currentStep={customer ? 2 : 1} />
+      <FormProgressStepper currentStep={site ? 2 : 1} />
 
       <div className="pt-4">
-        {!customer ? (
-          <CustomerSelectionStep onSelect={handleCustomerSelect} />
+        {!site ? (
+          <SiteSelectionStep onSelect={handleSiteSelect} />
         ) : (
           <RecordEntryForm
-            customer={customer}
+            site={site}
             onSuccess={setCreatedRecord}
-            onReset={handleChangeCustomer}
+            onReset={handleChangeSite}
           />
         )}
       </div>
@@ -262,7 +264,7 @@ export default function NewRecordPage() {
           <NewRecordSuccessFeedback
             record={createdRecord}
             onDismiss={() => setCreatedRecord(null)}
-            onReset={handleChangeCustomer}
+            onReset={handleChangeSite}
           />
         </div>
       )}
@@ -272,12 +274,12 @@ export default function NewRecordPage() {
 
 function Header({
   step,
-  hasCustomer,
-  onChangeCustomer,
+  hasSite,
+  onChangeSite,
 }: {
   step: number;
-  hasCustomer: boolean;
-  onChangeCustomer: () => void;
+  hasSite: boolean;
+  onChangeSite: () => void;
 }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
@@ -287,18 +289,18 @@ function Header({
         </h2>
         <p className="text-sm text-muted-foreground font-medium">
           {step === 1
-            ? "Step 1: Locate an active customer"
+            ? "Step 1: Locate an active site"
             : "Step 2: Enter inventory movements and charges"}
         </p>
       </div>
       <div className="flex items-center gap-2">
-        {hasCustomer && (
+        {hasSite && (
           <Button
             variant="outline"
-            onClick={onChangeCustomer}
+            onClick={onChangeSite}
             className="hidden sm:flex cursor-pointer border-border hover:bg-muted text-foreground/80 h-9 px-4"
           >
-            <User className="mr-2 h-4 w-4" /> Change Customer
+            <User className="mr-2 h-4 w-4" /> Change Site
           </Button>
         )}
         <Button
@@ -315,15 +317,15 @@ function Header({
   );
 }
 
-function CustomerSelectionStep({
+function SiteSelectionStep({
   onSelect,
 }: {
-  onSelect: (c: Customer) => void;
+  onSelect: (c: Site) => void;
 }) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [filters, setFilters] = useState({
-    name: "",
+    contractor_name: "",
     mobile_no: "",
     address: "",
   });
@@ -331,12 +333,12 @@ function CustomerSelectionStep({
   const debouncedFilters = useDebounce(filters, 500);
 
   const { data, isLoading, isPlaceholderData } = useQuery({
-    queryKey: ["customers", "select", { page, perPage, ...debouncedFilters }],
+    queryKey: ["sites", "select", { page, perPage, ...debouncedFilters }],
     queryFn: () =>
-      customerService.search({
+      siteService.search({
         page,
         per_page: perPage,
-        name: debouncedFilters.name || undefined,
+        contractor_name: debouncedFilters.contractor_name || undefined,
         mobile_no: debouncedFilters.mobile_no || undefined,
         address: debouncedFilters.address || undefined,
       }),
@@ -350,7 +352,7 @@ function CustomerSelectionStep({
   };
 
   const handleReset = () => {
-    setFilters({ name: "", mobile_no: "", address: "" });
+    setFilters({ contractor_name: "", mobile_no: "", address: "" });
     setPage(1);
   };
 
@@ -358,15 +360,15 @@ function CustomerSelectionStep({
     <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500">
       <div className="space-y-1 px-1 sm:px-0">
         <h3 className="text-lg sm:text-xl font-bold text-foreground">
-          Find Customer
+          Find Site
         </h3>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Search for an existing customer to register an inventory movement.
+          Search for an existing site to register an inventory movement.
         </p>
       </div>
       <div className="bg-background sm:bg-card/60 sm:border border-border/80 sm:shadow-xl relative overflow-hidden animate-in fade-in duration-500 sm:rounded-xl sm:backdrop-blur-md min-w-0">
         <div className="py-2 sm:p-6 min-w-0 w-full">
-          <CustomerDataGrid
+          <SiteDataGrid
             data={data?.data || []}
             isLoading={isLoading}
             isPlaceholderData={isPlaceholderData}
@@ -392,11 +394,11 @@ function CustomerSelectionStep({
 }
 
 function RecordEntryForm({
-  customer,
+  site,
   onSuccess,
   onReset,
 }: {
-  customer: Customer;
+  site: Site;
   onSuccess: (data: Record) => void;
   onReset: () => void;
 }) {
@@ -406,7 +408,7 @@ function RecordEntryForm({
   const form = useAppForm({
     defaultValues: {
       ...DEFAULT_FORM_VALUES,
-      customer_id: customer.id,
+      site_id: site.id,
     } as CreateRecord,
     validators: {
       onSubmit: createRecordSchema,
@@ -422,17 +424,17 @@ function RecordEntryForm({
       onSuccess(data);
       form.reset({
         ...DEFAULT_FORM_VALUES,
-        customer_id: customer.id,
+        site_id: site.id,
       } as CreateRecord);
       queryClient.invalidateQueries({ queryKey: ["records"] });
-      queryClient.invalidateQueries({ queryKey: ["customers", customer.id] });
+      queryClient.invalidateQueries({ queryKey: ["sites", site.id] });
     },
   });
 
   const handleResetForm = () => {
     form.reset({
       ...DEFAULT_FORM_VALUES,
-      customer_id: customer.id,
+      site_id: site.id,
     } as CreateRecord);
     onReset();
     mutation.reset();
@@ -487,37 +489,33 @@ function RecordEntryForm({
       }}
       className="space-y-6 animate-in slide-in-from-right-4 duration-300 min-w-0 w-full"
     >
-      <form.Field name="customer_id">
+      <form.Field name="site_id">
         {(field) => (
           <input type="hidden" name={field.name} value={field.state.value} />
         )}
       </form.Field>
 
-      {/* Customer Header Info */}
+      {/* Site Header Info */}
       <div className="flex items-center justify-between bg-card/60 border border-border/80 p-4 rounded-xl shadow-md backdrop-blur-md min-w-0">
         <div className="flex items-center gap-4 min-w-0">
           <Avatar className="h-10 w-10 border border-border shrink-0">
-            <AvatarImage
-              src={customer.avatar || undefined}
-              alt={customer.name}
-            />
             <AvatarFallback className="bg-muted text-xs text-muted-foreground">
-              {getInitials(customer.name)}
+              {getInitials(site.contractor_name)}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h4 className="text-sm font-semibold text-foreground hover:underline truncate">
                 <Link
-                  to="/customers/$customerId"
-                  params={{ customerId: customer.id.toString() }}
+                  to="/sites/$siteId"
+                  params={{ siteId: site.id.toString() }}
                 >
-                  {customer.name}
+                  {site.contractor_name}
                 </Link>
               </h4>
             </div>
             <p className="text-xs text-muted-foreground truncate">
-              ID: #{customer.id} • {customer.mobile_no}
+              ID: #{site.id} • {site.mobile_no}
             </p>
           </div>
         </div>
@@ -526,7 +524,7 @@ function RecordEntryForm({
             variant="outline"
             className={cn(
               "hidden sm:flex pl-1.5 pr-2 py-0.5 rounded-full border text-[10px] font-semibold tracking-wider uppercase",
-              customer.active
+              site.active
                 ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
                 : "bg-muted text-muted-foreground border-border",
             )}
@@ -534,12 +532,12 @@ function RecordEntryForm({
             <span
               className={cn(
                 "mr-1.5 h-1.5 w-1.5 rounded-full",
-                customer.active
+                site.active
                   ? "bg-emerald-500 animate-pulse"
                   : "bg-muted-foreground",
               )}
             />
-            {customer.active ? "Active" : "Inactive"}
+            {site.active ? "Active" : "Inactive"}
           </Badge>
           <Button
             type="button"
@@ -555,7 +553,7 @@ function RecordEntryForm({
             onClick={handleResetForm}
             className="hidden sm:flex cursor-pointer border-border hover:bg-muted text-foreground h-10 px-4"
           >
-            <User className="mr-2 h-4 w-4" /> Change Customer
+            <User className="mr-2 h-4 w-4" /> Change Site
           </Button>
         </div>
       </div>

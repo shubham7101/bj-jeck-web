@@ -46,7 +46,7 @@ function RecordPage() {
   }>({
     from_date: search.from_date || "",
     to_date: search.to_date || "",
-    customer_id: search.customer_id ? search.customer_id.toString() : "",
+    site_id: search.site_id ? search.site_id.toString() : "",
     date: search.date || "",
     vehicle_no: search.vehicle_no || "",
     vehicle_mobile_no: search.vehicle_mobile_no || "",
@@ -60,24 +60,24 @@ function RecordPage() {
     navigate({
       search: (prev) => {
         // Parse strings back to numbers/undefined for the URL schema
-        const customerId = debouncedFilters.customer_id
-          ? parseInt(debouncedFilters.customer_id, 10)
+        const siteId = debouncedFilters.site_id
+          ? parseInt(debouncedFilters.site_id, 10)
           : undefined;
         const billId = debouncedFilters.bill_id
           ? parseInt(debouncedFilters.bill_id, 10)
           : undefined;
 
         // Ensure we don't pass NaN
-        const cleanCustomerId = Number.isNaN(customerId || NaN)
+        const cleanSiteId = Number.isNaN(siteId || NaN)
           ? undefined
-          : customerId;
+          : siteId;
         const cleanBillId = Number.isNaN(billId || NaN) ? undefined : billId;
 
         return {
           ...prev,
           from_date: debouncedFilters.from_date || undefined,
           to_date: debouncedFilters.to_date || undefined,
-          customer_id: cleanCustomerId,
+          site_id: cleanSiteId,
           date: debouncedFilters.date || undefined,
           vehicle_no: debouncedFilters.vehicle_no || undefined,
           vehicle_mobile_no: debouncedFilters.vehicle_mobile_no || undefined,
@@ -104,7 +104,7 @@ function RecordPage() {
         per_page,
         from_date: search.from_date || undefined,
         to_date: search.to_date || undefined,
-        customer_id: search.customer_id,
+        site_id: search.site_id,
         date: search.date || undefined,
         vehicle_no: search.vehicle_no || undefined,
         vehicle_mobile_no: search.vehicle_mobile_no || undefined,
@@ -126,7 +126,7 @@ function RecordPage() {
     setLocalFilters({
       from_date: "",
       to_date: "",
-      customer_id: "",
+      site_id: "",
       date: "",
       vehicle_no: "",
       vehicle_mobile_no: "",
@@ -138,7 +138,7 @@ function RecordPage() {
         ...prev,
         from_date: undefined,
         to_date: undefined,
-        customer_id: undefined,
+        site_id: undefined,
         date: undefined,
         vehicle_no: undefined,
         vehicle_mobile_no: undefined,

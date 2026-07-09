@@ -20,7 +20,7 @@ import {
 import { useEffect, useId, useState } from "react";
 import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import type { Customer } from "@/schemas/customerSchema";
+import type { Site } from "@/schemas/siteSchema";
 import { formatCurrency, getInitials } from "@/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
@@ -52,7 +52,7 @@ import {
 // Define the Ledger Entry shape based on your JSON
 export type LedgerEntry = {
   id: number;
-  customer_id: number;
+  site_id: number;
   amount: number;
   date: string;
   notes?: string;
@@ -61,7 +61,7 @@ export type LedgerEntry = {
 
 // Define the Search Request shape (Ensure your schema exports match this)
 export type LedgerSearchReq = {
-  customer_id?: string;
+  site_id?: string;
   date?: string;
   from_date?: string;
   to_date?: string;
@@ -104,7 +104,7 @@ type LedgerDataGridProps = {
   isPlaceholderData: boolean;
   filterProps: LedgerFiltersProps;
   paginationProps: LedgerPaginationProps;
-  customerMap?: Map<number, Customer>;
+  siteMap?: Map<number, Site>;
 } & Partial<LedgerTableActions>;
 
 // --- Main Component ---
@@ -118,7 +118,7 @@ export function LedgerDataGrid({
   processingIds,
   onDelete,
   navigate,
-  customerMap,
+  siteMap,
 }: LedgerDataGridProps) {
   return (
     <div
@@ -141,7 +141,7 @@ export function LedgerDataGrid({
           navigate={navigate!}
           processingIds={processingIds}
           onDelete={onDelete}
-          customerMap={customerMap}
+          siteMap={siteMap}
         />
         <LedgerPaginationControls
           {...paginationProps}
@@ -167,14 +167,14 @@ function LedgerFilters({
     <div className={themeStyles.glassHeader}>
       <div className={themeStyles.glassHeaderOverlay} />
       <div className="relative z-10 flex flex-col md:flex-row gap-4 items-stretch md:items-end">
-        {/* Customer ID Filter */}
+        {/* Site ID Filter */}
         <FilterInput
-          label="Customer ID"
+          label="Site ID"
           icon={Hash}
           placeholder="e.g. 55"
-          value={filters.customer_id}
-          onChange={(e) => onChange("customer_id", e.target.value)}
-          disabled={disabledFields?.customer_id}
+          value={filters.site_id}
+          onChange={(e) => onChange("site_id", e.target.value)}
+          disabled={disabledFields?.site_id}
           type="number"
         />
 
@@ -378,7 +378,7 @@ function LedgerPaginationControls({
 export type LedgerTableProps = {
   data: LedgerEntry[];
   isLoading: boolean;
-  customerMap?: Map<number, Customer>;
+  siteMap?: Map<number, Site>;
 } & LedgerTableActions;
 
 export function LedgerTable({
@@ -387,7 +387,7 @@ export function LedgerTable({
   processingIds = new Set(),
   onDelete,
   navigate,
-  customerMap,
+  siteMap,
 }: LedgerTableProps) {
   if (isLoading) {
     return (
@@ -428,7 +428,7 @@ export function LedgerTable({
           isProcessing={processingIds.has(entry.id)}
           onDelete={onDelete}
           navigate={navigate}
-          customer={customerMap?.get(entry.customer_id)}
+          site={siteMap?.get(entry.site_id)}
         />
       ))}
     </TableWrapper>
@@ -447,7 +447,7 @@ function TableWrapper({ children }: { children: React.ReactNode }) {
               ID
             </TableHead>
             <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-left pl-4">
-              Customer
+              Site
             </TableHead>
             <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-center">
               Transaction Date
@@ -476,13 +476,13 @@ function LedgerRow({
   entry,
   isProcessing,
   onDelete,
-  customer,
+  site,
 }: {
   entry: LedgerEntry;
   isProcessing: boolean;
   onDelete?: (r: LedgerEntry) => void;
   navigate: ReturnType<typeof useNavigate>;
-  customer?: Customer;
+  site?: Site;
 }) {
   return (
     <TableRow
@@ -496,21 +496,21 @@ function LedgerRow({
         #{entry.id.toString().padStart(4, "0")}
       </TableCell>
 
-      {/* Customer Link */}
+      {/* Site Link */}
       <TableCell className="text-left pl-4">
         <Link
-          to={`/customers/$customerId`}
-          params={{ customerId: entry.customer_id.toString() }}
+          to={`/sites/$siteId`}
+          params={{ siteId: entry.site_id.toString() }}
           className="flex items-center gap-3 group/cust hover:opacity-90 transition-opacity"
         >
           <Avatar className="h-8 w-8 border border-zinc-800 shrink-0">
             <AvatarImage
-              src={customer?.avatar || undefined}
-              alt={customer?.name}
+              src={undefined}
+              alt={site?.contractor_name}
             />
             <AvatarFallback className="bg-zinc-850 text-[10px] text-zinc-450 font-bold">
-              {customer ? (
-                getInitials(customer.name)
+              {site ? (
+                getInitials(site.contractor_name)
               ) : (
                 <User className="h-3.5 w-3.5 text-zinc-500" />
               )}
@@ -518,11 +518,11 @@ function LedgerRow({
           </Avatar>
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-semibold text-zinc-200 group-hover/cust:text-emerald-400 truncate max-w-[180px] transition-colors">
-              {customer ? customer.name : `Customer #${entry.customer_id}`}
+              {site ? site.contractor_name : `Site #${entry.site_id}`}
             </span>
             <span className="text-[10px] text-zinc-500 font-mono">
-              ID: #{entry.customer_id}{" "}
-              {customer?.mobile_no ? `• ${customer.mobile_no}` : ""}
+              ID: #{entry.site_id}{" "}
+              {site?.mobile_no ? `• ${site.mobile_no}` : ""}
             </span>
           </div>
         </Link>

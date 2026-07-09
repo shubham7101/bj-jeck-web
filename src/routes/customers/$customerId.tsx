@@ -179,13 +179,13 @@ function CustomerHeader({ customer }: { customer: Customer }) {
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
         <div className="grid grid-cols-2 lg:flex gap-2 w-full lg:w-auto">
-          <Link to="/records/new" search={{ customer_id: customer.id }}>
+          <Link to="/records/new" search={undefined}>
             <Button className="w-full bg-white text-zinc-950 hover:bg-zinc-200 font-semibold shadow-lg shadow-zinc-950/20 transition-all cursor-pointer">
               <Truck className="mr-2 h-4 w-4" /> New Record
             </Button>
           </Link>
 
-          <Link to="/ledger/new" search={{ customer_id: customer.id }}>
+          <Link to="/ledger/new" search={undefined}>
             <Button
               variant="outline"
               className="w-full border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 hover:border-emerald-500/50 transition-all cursor-pointer"
@@ -204,7 +204,7 @@ function CustomerHeader({ customer }: { customer: Customer }) {
               <ClipboardList className="mr-2 h-4 w-4" /> Statement
             </Button>
           </Link>
-          <Link to="/bills/new" search={{ customer_id: customer.id }}>
+          <Link to="/bills/new" search={undefined}>
             <Button
               variant="outline"
               className="w-full border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer"
@@ -767,7 +767,7 @@ function QuickLinks({ id }: { id: number }) {
   const LINKS = [
     {
       to: "/records" as const,
-      search: { customer_id: id },
+      search: undefined,
       params: undefined,
       icon: History,
       title: "Record History",
@@ -785,7 +785,7 @@ function QuickLinks({ id }: { id: number }) {
     },
     {
       to: "/ledger" as const,
-      search: { customer_id: id },
+      search: undefined,
       params: undefined,
       icon: Coins,
       title: "Payment Ledger",
@@ -794,7 +794,7 @@ function QuickLinks({ id }: { id: number }) {
     },
     {
       to: "/bills" as const,
-      search: { customer_id: id },
+      search: undefined,
       params: undefined,
       icon: FileText,
       title: "Generated Bills",

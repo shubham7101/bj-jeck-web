@@ -21,7 +21,7 @@ import {
   type LedgerSearchReq,
   ledgerSearchReqSchema,
 } from "@/schemas/ledgerSchema";
-import { customerService } from "@/services/customerService";
+import { siteService } from "@/services/siteService";
 import { ledgerService } from "@/services/ledgerService";
 import { formatCurrency } from "@/utils";
 
@@ -34,7 +34,7 @@ export const Route = createRoute({
 
 // Explicitly define the local filter state shape (all strings for inputs)
 type LedgerLocalFilters = {
-  customer_id: string;
+  site_id: string;
   date: string;
   from_date: string;
   to_date: string;
@@ -52,7 +52,7 @@ function LedgerPage() {
 
   // Initialize local filters from URL search params
   const [localFilters, setLocalFilters] = useState<LedgerLocalFilters>({
-    customer_id: search.customer_id ? search.customer_id.toString() : "",
+    site_id: search.site_id ? search.site_id.toString() : "",
     date: search.date || "",
     from_date: search.from_date || "",
     to_date: search.to_date || "",
@@ -64,18 +64,18 @@ function LedgerPage() {
   useEffect(() => {
     navigate({
       search: (prev) => {
-        const customerId = debouncedFilters.customer_id
-          ? parseInt(debouncedFilters.customer_id, 10)
+        const siteId = debouncedFilters.site_id
+          ? parseInt(debouncedFilters.site_id, 10)
           : undefined;
 
         // Ensure we don't pass NaN for IDs
-        const cleanCustomerId = Number.isNaN(customerId || NaN)
+        const cleanSiteId = Number.isNaN(siteId || NaN)
           ? undefined
-          : customerId;
+          : siteId;
 
         return {
           ...prev,
-          customer_id: cleanCustomerId,
+          site_id: cleanSiteId,
           date: debouncedFilters.date || undefined,
           from_date: debouncedFilters.from_date || undefined,
           to_date: debouncedFilters.to_date || undefined,
@@ -98,12 +98,12 @@ function LedgerPage() {
     },
   });
 
-  const { data: customersData } = useQuery({
-    queryKey: ["customers", "list-all-ledger"],
-    queryFn: () => customerService.search({ page: 1, per_page: 1000 }),
+  const { data: sitesData } = useQuery({
+    queryKey: ["sites", "list-all-ledger"],
+    queryFn: () => siteService.search({ page: 1, per_page: 1000 }),
   });
 
-  const customerMap = new Map(customersData?.data.map((c) => [c.id, c]) || []);
+  const siteMap = new Map(sitesData?.data.map((c) => [c.id, c]) || []);
 
   const { data, isLoading, isError, error, isPlaceholderData } = useQuery({
     queryKey: ["ledger", { ...search, page, per_page }],
@@ -111,7 +111,7 @@ function LedgerPage() {
       ledgerService.search({
         page,
         per_page,
-        customer_id: search.customer_id,
+        site_id: search.site_id,
         date: search.date || undefined,
         from_date: search.from_date || undefined,
         to_date: search.to_date || undefined,
@@ -142,8 +142,8 @@ function LedgerPage() {
     onSettled: (_data, _error, id) => {
       toggleProcessing(id, false);
       queryClient.invalidateQueries({ queryKey: ["ledger"] });
-      // Invalidate customers if ledger affects balances
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      // Invalidate sites if ledger affects balances
+      queryClient.invalidateQueries({ queryKey: ["sites"] });
     },
     onError: (err) => {
       console.error("Delete failed", err);
@@ -164,7 +164,7 @@ function LedgerPage() {
 
   const handleReset = () => {
     setLocalFilters({
-      customer_id: "",
+      site_id: "",
       date: "",
       from_date: "",
       to_date: "",
@@ -173,7 +173,7 @@ function LedgerPage() {
     navigate({
       search: (prev) => ({
         ...prev,
-        customer_id: undefined,
+        site_id: undefined,
         date: undefined,
         from_date: undefined,
         to_date: undefined,
@@ -263,7 +263,7 @@ function LedgerPage() {
         isPlaceholderData={isPlaceholderData}
         navigate={navigate}
         processingIds={processingIds}
-        customerMap={customerMap}
+        siteMap={siteMap}
         filterProps={{
           filters: localFilters,
           onChange: handleFilterChange,

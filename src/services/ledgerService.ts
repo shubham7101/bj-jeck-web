@@ -22,8 +22,8 @@ export const ledgerService = {
       per_page: (payload.per_page ?? 10).toString(),
     });
 
-    if (payload.customer_id)
-      params.append("customer_id", payload.customer_id.toString());
+    if (payload.site_id)
+      params.append("site_id", payload.site_id.toString());
     if (payload.from_date) params.append("from_date", payload.from_date);
     if (payload.to_date) params.append("to_date", payload.to_date);
     if (payload.date) params.append("date", payload.date);

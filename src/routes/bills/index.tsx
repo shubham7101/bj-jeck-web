@@ -35,7 +35,7 @@ function BillsPage() {
     [K in keyof BillSearchReq]: string;
   }>({
     date: search.date || "",
-    customer_id: search.customer_id ? search.customer_id.toString() : "",
+    site_id: search.site_id ? search.site_id.toString() : "",
     khata_no: search.khata_no || "",
   });
 
@@ -46,19 +46,19 @@ function BillsPage() {
     navigate({
       search: (prev) => {
         // Parse strings back to numbers/undefined for the URL schema
-        const customerId = debouncedFilters.customer_id
-          ? parseInt(debouncedFilters.customer_id, 10)
+        const siteId = debouncedFilters.site_id
+          ? parseInt(debouncedFilters.site_id, 10)
           : undefined;
 
         // Ensure we don't pass NaN
-        const cleanCustomerId = Number.isNaN(customerId || NaN)
+        const cleanSiteId = Number.isNaN(siteId || NaN)
           ? undefined
-          : customerId;
+          : siteId;
 
         return {
           ...prev,
           date: debouncedFilters.date || undefined,
-          customer_id: cleanCustomerId,
+          site_id: cleanSiteId,
           khata_no: debouncedFilters.khata_no || undefined,
           page: 1, // Reset to page 1 on filter change
         };
@@ -87,7 +87,7 @@ function BillsPage() {
         page,
         per_page,
         date: search.date || undefined,
-        customer_id: search.customer_id,
+        site_id: search.site_id,
         khata_no: search.khata_no || undefined,
       }),
     placeholderData: keepPreviousData,
@@ -105,7 +105,7 @@ function BillsPage() {
   const handleReset = () => {
     setLocalFilters({
       date: "",
-      customer_id: "",
+      site_id: "",
       khata_no: "",
     });
 
@@ -114,7 +114,7 @@ function BillsPage() {
         ...prev,
         from_date: undefined,
         to_date: undefined,
-        customer_id: undefined,
+        site_id: undefined,
         bill_id: undefined,
         khata_no: undefined,
         page: 1,

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
-import { CustomerDataGrid } from "@/components/CustomerDataGrid";
+import { SiteDataGrid } from "@/components/SiteDataGrid";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import type { Customer } from "@/schemas/customerSchema";
-import { customerService } from "@/services/customerService";
+import type { Site } from "@/schemas/siteSchema";
+import { siteService } from "@/services/siteService";
 
 const unbilledSearchSchema = z.object({
   date: z.string().optional(),
@@ -31,13 +31,13 @@ const unbilledSearchSchema = z.object({
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/customers/unbilled",
+  path: "/sites/unbilled",
   component: RouteComponent,
   validateSearch: (search) => unbilledSearchSchema.parse(search),
 });
 
-type CustomerFiltersState = {
-  name: string;
+type SiteFiltersState = {
+  contractor_name: string;
   mobile_no: string;
   address: string;
 };
@@ -52,8 +52,8 @@ function RouteComponent() {
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
 
   // Local text filters (client-side filtering)
-  const [localFilters, setLocalFilters] = useState<CustomerFiltersState>({
-    name: "",
+  const [localFilters, setLocalFilters] = useState<SiteFiltersState>({
+    contractor_name: "",
     mobile_no: "",
     address: "",
   });
@@ -61,8 +61,8 @@ function RouteComponent() {
   // --- Queries ---
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["customers", "unbilled", dateParam],
-    queryFn: () => customerService.unbilled(dateParam),
+    queryKey: ["sites", "unbilled", dateParam],
+    queryFn: () => siteService.unbilled(dateParam),
   });
 
   // --- Mutations ---
@@ -78,11 +78,11 @@ function RouteComponent() {
 
   const toggleStatusMutation = useMutation({
     mutationFn: ({ id, active }: { id: number; active: boolean }) =>
-      customerService.setActive(id, active),
+      siteService.setActive(id, active),
     onMutate: ({ id }) => toggleProcessing(id, true),
     onSettled: (_data, _error, { id }) => {
       toggleProcessing(id, false);
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["sites"] });
     },
     onError: (err) => {
       console.error("Status update failed", err);
@@ -91,15 +91,15 @@ function RouteComponent() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => customerService.delete(id),
+    mutationFn: (id: number) => siteService.delete(id),
     onMutate: (id) => toggleProcessing(id, true),
     onSettled: (_data, _error, id) => {
       toggleProcessing(id, false);
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["sites"] });
     },
     onError: (err) => {
       console.error("Delete failed", err);
-      alert("Failed to delete customer. Please try again.");
+      alert("Failed to delete site. Please try again.");
     },
   });
 
@@ -114,28 +114,28 @@ function RouteComponent() {
   };
 
   const handleReset = () => {
-    setLocalFilters({ name: "", address: "", mobile_no: "" });
+    setLocalFilters({ contractor_name: "", address: "", mobile_no: "" });
   };
 
-  const handleToggleStatus = (customer: Customer) => {
-    toggleStatusMutation.mutate({ id: customer.id, active: !customer.active });
+  const handleToggleStatus = (site: Site) => {
+    toggleStatusMutation.mutate({ id: site.id, active: !site.active });
   };
 
-  const handleDelete = (customer: Customer) => {
-    if (confirm(`Are you sure you want to delete ${customer.name}?`)) {
-      deleteMutation.mutate(customer.id);
+  const handleDelete = (site: Site) => {
+    if (confirm(`Are you sure you want to delete ${site.contractor_name}?`)) {
+      deleteMutation.mutate(site.id);
     }
   };
 
   // --- Client-side filtering ---
-  const filteredData = (data || []).filter((customer) => {
-    const nameMatch = customer.name
+  const filteredData = (data || []).filter((site) => {
+    const nameMatch = site.contractor_name
       .toLowerCase()
-      .includes(localFilters.name.toLowerCase());
-    const mobileMatch = customer.mobile_no
+      .includes(localFilters.contractor_name.toLowerCase());
+    const mobileMatch = site.mobile_no
       .toLowerCase()
       .includes(localFilters.mobile_no.toLowerCase());
-    const addressMatch = customer.address
+    const addressMatch = site.address
       .toLowerCase()
       .includes(localFilters.address.toLowerCase());
     return nameMatch && mobileMatch && addressMatch;
@@ -152,14 +152,14 @@ function RouteComponent() {
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center justify-between pb-2">
         <div className="space-y-1">
           <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-            Unbilled Customers
+            Unbilled Sites
             <div className="h-6 w-px bg-zinc-800 ml-2 hidden sm:block" />
             <span className="text-sm font-medium text-zinc-500 hidden sm:block mt-1">
               Outstanding
             </span>
           </h2>
           <p className="text-zinc-400">
-            View all client profiles that have unbilled records pending in the
+            View all sites that have unbilled records pending in the
             system.
           </p>
         </div>
@@ -168,7 +168,7 @@ function RouteComponent() {
           asChild
           className="border-zinc-700 bg-zinc-950/50 hover:bg-zinc-900 text-zinc-300 shadow-[0_0_20px_-5px_rgba(39,39,42,0.3)] transition-all font-medium cursor-pointer"
         >
-          <Link to="/customers">
+          <Link to="/sites">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Directory
           </Link>
         </Button>
@@ -180,7 +180,7 @@ function RouteComponent() {
       <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-3">
         <StatsCard
           loading={isLoading}
-          title="Total Unbilled Customers"
+          title="Total Unbilled Sites"
           value={totalCount}
           subText="With pending records"
           icon={<Users className="h-4 w-4 text-amber-400" />}
@@ -188,7 +188,7 @@ function RouteComponent() {
         />
         <StatsCard
           loading={isLoading}
-          title="Active Customers"
+          title="Active Sites"
           value={activeCount}
           subText="Currently renting items"
           icon={<UserCheck className="h-4 w-4 text-emerald-500" />}
@@ -198,7 +198,7 @@ function RouteComponent() {
         </StatsCard>
         <StatsCard
           loading={isLoading}
-          title="Inactive Customers"
+          title="Inactive Sites"
           value={inactiveCount}
           subText="Pending records but inactive"
           icon={<UserX className="h-4 w-4 text-rose-500" />}
@@ -213,7 +213,7 @@ function RouteComponent() {
             As of Date
           </span>
           <span className="text-xs text-zinc-500">
-            Show customers with unbilled records on or before this date
+            Show sites with unbilled records on or before this date
           </span>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
@@ -282,7 +282,7 @@ function RouteComponent() {
 
       {isError && error && <ErrorAlert error={error} />}
 
-      <CustomerDataGrid
+      <SiteDataGrid
         data={filteredData}
         isLoading={isLoading}
         isPlaceholderData={false}

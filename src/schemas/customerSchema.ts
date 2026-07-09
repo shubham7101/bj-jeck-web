@@ -1,30 +1,30 @@
 import z from "zod";
 import { inventorySchema, paginationSchema } from "@/schemas/common";
 
-export { PART_OPTIONS, SIZE_OPTIONS, STANDARD_RATES_SETUP, getSizesForPart } from "./common";
+export {
+  PART_OPTIONS,
+  SIZE_OPTIONS,
+  STANDARD_RATES_SETUP,
+  getSizesForPart,
+} from "./common";
 
 export const customerSchema = z.object({
   id: z.number().gt(0),
   name: z.string().min(2).max(100),
-  address: z.string().min(3).max(255),
-
   mobile_no: z
     .string()
     .length(10, "Mobile number must be exactly 10 digits")
     .regex(/^\d+$/, "Mobile number must contain only digits"),
-
   mobile_no_2: z
     .string()
     .length(10, "Alternate mobile must be exactly 10 digits")
     .regex(/^\d+$/, "Alternate mobile must contain only digits")
     .nullish(),
-
   aadhar_card_no: z
     .string()
     .length(12, "Aadhar card must be exactly 12 digits")
     .regex(/^\d+$/, "Aadhar card must contain only digits")
     .nullish(),
-
   reference_name: z
     .string()
     .min(2, "Reference name must be at least 2 characters")

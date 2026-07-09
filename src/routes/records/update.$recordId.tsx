@@ -25,7 +25,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { CustomerDataGrid } from "@/components/CustomerDataGrid";
+import { SiteDataGrid } from "@/components/SiteDataGrid";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { FormBase } from "@/components/form/FormBase";
 import { useAppForm } from "@/components/form/hooks";
@@ -67,17 +67,19 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
 import { Route as rootRoute } from "@/routes/__root";
 import {
-  type Customer,
-  getSizesForPart,
+  type Site,
+} from "@/schemas/siteSchema";
+import {
   PART_OPTIONS,
-} from "@/schemas/customerSchema";
+  getSizesForPart,
+} from "@/schemas/common";
 import {
   type CreateRecord,
   createRecordSchema,
   type Record,
   type RecordDetails,
 } from "@/schemas/recordSchema";
-import { customerService } from "@/services/customerService";
+import { siteService } from "@/services/siteService";
 import { recordService } from "@/services/recordService";
 import { formatDate, getInitials } from "@/utils";
 
@@ -89,8 +91,8 @@ export const Route = createRoute({
   component: UpdateRecordPage,
   loader: async ({ params: { recordId } }) => {
     const record = await recordService.get(Number(recordId));
-    const customer = await customerService.get(record.customer_id);
-    return { record, customer };
+    const site = await siteService.get(record.site_id);
+    return { record, site };
   },
   pendingComponent: RecordLoadingSkeleton,
 });
@@ -103,13 +105,13 @@ const DATE_FORMAT = "dd-MM-yyyy";
 // --- Main Component ---
 
 export default function UpdateRecordPage() {
-  const { record, customer: initialCustomer } = Route.useLoaderData() as {
+  const { record, site: initialSite } = Route.useLoaderData() as {
     record: RecordDetails;
-    customer: Customer;
+    site: Site;
   };
-  const [selectedCustomer, setSelectedCustomer] =
-    useState<Customer>(initialCustomer);
-  const [isSelectingCustomer, setIsSelectingCustomer] = useState(false);
+  const [selectedSite, setSelectedSite] =
+    useState<Site>(initialSite);
+  const [isSelectingSite, setIsSelectingSite] = useState(false);
   const [updatedRecord, setUpdatedRecord] = useState<Record | null>(null);
   const successRef = useRef<HTMLDivElement>(null);
 
@@ -124,20 +126,20 @@ export default function UpdateRecordPage() {
     }
   }, [updatedRecord]);
 
-  if (isSelectingCustomer) {
+  if (isSelectingSite) {
     return (
       <div className="flex-1 w-full max-w-6xl mx-auto px-4 py-8 space-y-6">
         <Button
           variant="ghost"
-          onClick={() => setIsSelectingCustomer(false)}
+          onClick={() => setIsSelectingSite(false)}
           className="mb-2"
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Cancel Selection
         </Button>
-        <CustomerSelectionStep
+        <SiteSelectionStep
           onSelect={(c) => {
-            setSelectedCustomer(c);
-            setIsSelectingCustomer(false);
+            setSelectedSite(c);
+            setIsSelectingSite(false);
           }}
         />
       </div>
@@ -178,9 +180,9 @@ export default function UpdateRecordPage() {
 
       <RecordUpdateForm
         record={record}
-        customer={selectedCustomer}
+        site={selectedSite}
         onSuccess={setUpdatedRecord}
-        onChangeCustomer={() => setIsSelectingCustomer(true)}
+        onChangeSite={() => setIsSelectingSite(true)}
       />
 
       {updatedRecord && (
@@ -244,14 +246,14 @@ export default function UpdateRecordPage() {
 
 function RecordUpdateForm({
   record,
-  customer,
+  site,
   onSuccess,
-  onChangeCustomer,
+  onChangeSite,
 }: {
   record: RecordDetails;
-  customer: Customer;
+  site: Site;
   onSuccess: (data: Record) => void;
-  onChangeCustomer: () => void;
+  onChangeSite: () => void;
 }) {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -260,7 +262,7 @@ function RecordUpdateForm({
   const form = useAppForm({
     defaultValues: {
       id: record.id,
-      customer_id: customer.id,
+      site_id: site.id,
       date: record.date
         ? format(new Date(record.date), DATE_FORMAT)
         : format(new Date(), DATE_FORMAT),
@@ -286,16 +288,16 @@ function RecordUpdateForm({
     onSuccess: (data) => {
       onSuccess(data);
       queryClient.invalidateQueries({ queryKey: ["records"] });
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["sites"] });
       router.invalidate();
     },
   });
 
   useEffect(() => {
-    if (form.state.values.customer_id !== customer.id) {
-      form.setFieldValue("customer_id", customer.id);
+    if (form.state.values.site_id !== site.id) {
+      form.setFieldValue("site_id", site.id);
     }
-  }, [customer.id, form]);
+  }, [site.id, form]);
 
   // Subscribe to react-form store values reactively to do totals calculations
   const formValues = useStore(form.store, (state: any) => state.values);
@@ -346,37 +348,33 @@ function RecordUpdateForm({
       }}
       className="space-y-6 animate-in slide-in-from-right-4 duration-300 min-w-0 w-full"
     >
-      <form.Field name="customer_id">
+      <form.Field name="site_id">
         {(field) => (
           <input type="hidden" name={field.name} value={field.state.value} />
         )}
       </form.Field>
 
-      {/* Customer Header Info */}
+      {/* Site Header Info */}
       <div className="flex items-center justify-between bg-card/60 border border-border/80 p-4 rounded-xl shadow-md backdrop-blur-md min-w-0">
         <div className="flex items-center gap-4 min-w-0">
           <Avatar className="h-10 w-10 border border-border shrink-0">
-            <AvatarImage
-              src={customer.avatar || undefined}
-              alt={customer.name}
-            />
             <AvatarFallback className="bg-muted text-xs text-muted-foreground">
-              {getInitials(customer.name)}
+              {getInitials(site.contractor_name)}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h4 className="text-sm font-semibold text-foreground hover:underline truncate">
                 <Link
-                  to="/customers/$customerId"
-                  params={{ customerId: customer.id.toString() }}
+                  to="/sites/$siteId"
+                  params={{ siteId: site.id.toString() }}
                 >
-                  {customer.name}
+                  {site.contractor_name}
                 </Link>
               </h4>
             </div>
             <p className="text-xs text-muted-foreground truncate">
-              ID: #{customer.id} • {customer.mobile_no}
+              ID: #{site.id} • {site.mobile_no}
             </p>
           </div>
         </div>
@@ -385,7 +383,7 @@ function RecordUpdateForm({
             variant="outline"
             className={cn(
               "hidden sm:flex pl-1.5 pr-2 py-0.5 rounded-full border text-[10px] font-semibold tracking-wider uppercase",
-              customer.active
+              site.active
                 ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
                 : "bg-muted text-muted-foreground border-border",
             )}
@@ -393,17 +391,17 @@ function RecordUpdateForm({
             <span
               className={cn(
                 "mr-1.5 h-1.5 w-1.5 rounded-full",
-                customer.active
+                site.active
                   ? "bg-emerald-500 animate-pulse"
                   : "bg-muted-foreground",
               )}
             />
-            {customer.active ? "Active" : "Inactive"}
+            {site.active ? "Active" : "Inactive"}
           </Badge>
           <Button
             type="button"
             variant="outline"
-            onClick={onChangeCustomer}
+            onClick={onChangeSite}
             className="sm:hidden w-full cursor-pointer border-border hover:bg-muted text-foreground text-xs h-9 px-3"
           >
             <User className="mr-1.5 h-3.5 w-3.5" /> Change
@@ -411,10 +409,10 @@ function RecordUpdateForm({
           <Button
             type="button"
             variant="outline"
-            onClick={onChangeCustomer}
+            onClick={onChangeSite}
             className="hidden sm:flex cursor-pointer border-border hover:bg-muted text-foreground h-10 px-4"
           >
-            <User className="mr-2 h-4 w-4" /> Change Customer
+            <User className="mr-2 h-4 w-4" /> Change Site
           </Button>
         </div>
       </div>
@@ -1473,15 +1471,15 @@ function RecordUpdateForm({
   );
 }
 
-function CustomerSelectionStep({
+function SiteSelectionStep({
   onSelect,
 }: {
-  onSelect: (c: Customer) => void;
+  onSelect: (c: Site) => void;
 }) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [filters, setFilters] = useState({
-    name: "",
+    contractor_name: "",
     mobile_no: "",
     address: "",
   });
@@ -1489,12 +1487,12 @@ function CustomerSelectionStep({
   const debouncedFilters = useDebounce(filters, 500);
 
   const { data, isLoading, isPlaceholderData } = useQuery({
-    queryKey: ["customers", "select", { page, perPage, ...debouncedFilters }],
+    queryKey: ["sites", "select", { page, perPage, ...debouncedFilters }],
     queryFn: () =>
-      customerService.search({
+      siteService.search({
         page,
         per_page: perPage,
-        name: debouncedFilters.name || undefined,
+        contractor_name: debouncedFilters.contractor_name || undefined,
         mobile_no: debouncedFilters.mobile_no || undefined,
         address: debouncedFilters.address || undefined,
       }),
@@ -1508,7 +1506,7 @@ function CustomerSelectionStep({
   };
 
   const handleReset = () => {
-    setFilters({ name: "", mobile_no: "", address: "" });
+    setFilters({ contractor_name: "", mobile_no: "", address: "" });
     setPage(1);
   };
 
@@ -1516,7 +1514,7 @@ function CustomerSelectionStep({
     <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500">
       <div className="bg-background sm:bg-card/60 sm:border border-border/80 sm:shadow-xl relative overflow-hidden animate-in fade-in duration-500 sm:rounded-xl sm:backdrop-blur-md min-w-0">
         <div className="py-2 sm:p-6 min-w-0 w-full">
-          <CustomerDataGrid
+          <SiteDataGrid
             data={data?.data || []}
             isLoading={isLoading}
             isPlaceholderData={isPlaceholderData}

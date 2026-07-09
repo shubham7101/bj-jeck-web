@@ -1,38 +1,37 @@
+import z from "zod";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
 import { Route as rootRoute } from "@/routes/__root";
-import { Plus, UserCheck, Users, UserX } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { z } from "zod";
-import { CustomerDataGrid } from "@/components/CustomerDataGrid";
+import { SiteDataGrid } from "@/components/SiteDataGrid";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
 import { useDebounce } from "@/hooks/use-debounce";
-import { customerSearchReqSchema } from "@/schemas/customerSchema";
-import { customerService } from "@/services/customerService";
+import { siteService } from "@/services/siteService";
+import { siteSearchReqSchema } from "@/schemas/siteSchema";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/customers/",
-  component: CustomerPage,
-  validateSearch: (search) => customerSearchReqSchema.parse(search),
+  path: "/sites/",
+  component: SitesPage,
+  validateSearch: (search) => siteSearchReqSchema.parse(search),
 });
 
-type CustomerFiltersState = Pick<
-  z.infer<typeof customerSearchReqSchema>,
-  "name" | "address" | "mobile_no"
+type SitesFiltersState = Pick<
+  z.infer<typeof siteSearchReqSchema>,
+  "contractor_name" | "address" | "mobile_no"
 >;
 
-function CustomerPage() {
+function SitesPage() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
 
   const page = search.page ?? 1;
   const per_page = search.per_page ?? 25;
 
-  const [localFilters, setLocalFilters] = useState<CustomerFiltersState>({
-    name: search.name || "",
+  const [localFilters, setLocalFilters] = useState<SitesFiltersState>({
+    contractor_name: search.contractor_name || "",
     address: search.address || "",
     mobile_no: search.mobile_no || "",
   });
@@ -45,7 +44,7 @@ function CustomerPage() {
       search: (prev) => {
         return {
           ...prev,
-          name: debouncedFilters.name || undefined,
+          contractor_name: debouncedFilters.contractor_name || undefined,
           address: debouncedFilters.address || undefined,
           mobile_no: debouncedFilters.mobile_no || undefined,
           page: 1, // Reset to page 1 on filter change
@@ -58,19 +57,19 @@ function CustomerPage() {
   // --- Queries ---
 
   // 1. Fetch Stats
-  const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ["customers", "stats"],
-    queryFn: () => customerService.stats(),
-  });
+  // const { data: stats, isLoading: isLoadingStats } = useQuery({
+  //   queryKey: ["customers", "stats"],
+  //   queryFn: () => customerService.stats(),
+  // });
 
   // 2. Fetch List Data
   const { data, isLoading, isError, error, isPlaceholderData } = useQuery({
-    queryKey: ["customers", { ...search, page, per_page }],
+    queryKey: ["sites", { ...search, page, per_page }],
     queryFn: () =>
-      customerService.search({
+      siteService.search({
         page,
         per_page,
-        name: search.name || undefined,
+        contractor_name: search.contractor_name || undefined,
         mobile_no: search.mobile_no || undefined,
         address: search.address || undefined,
       }),
@@ -83,7 +82,7 @@ function CustomerPage() {
     const { name, value } = e.target;
     setLocalFilters((prev) => ({
       ...prev,
-      [name as keyof CustomerFiltersState]: value,
+      [name as keyof SitesFiltersState]: value,
     }));
   };
 
@@ -98,11 +97,11 @@ function CustomerPage() {
   };
 
   const handleReset = () => {
-    setLocalFilters({ name: "", address: "", mobile_no: "" });
+    setLocalFilters({ contractor_name: "", address: "", mobile_no: "" });
     navigate({
       search: (prev) => ({
         ...prev,
-        name: undefined,
+        contractor_name: undefined,
         address: undefined,
         mobile_no: undefined,
         page: 1,
@@ -117,7 +116,7 @@ function CustomerPage() {
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center justify-between pb-2">
         <div className="space-y-1">
           <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-            Customers
+            Sites
             <div className="h-6 w-px bg-zinc-800 ml-2 hidden sm:block" />
             <span className="text-sm font-medium text-zinc-500 hidden sm:block mt-1">
               Directory
@@ -141,7 +140,7 @@ function CustomerPage() {
       <div className="h-px w-full bg-linear-to-r from-zinc-800 to-transparent" />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-3">
+      {/* <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-3">
         <StatsCard
           loading={isLoadingStats}
           title="Total Customers"
@@ -168,10 +167,10 @@ function CustomerPage() {
           icon={<UserX className="h-4 w-4 text-rose-500" />}
           className="bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
         />
-      </div>
+      </div> */}
       {isError && error && <ErrorAlert error={error} />}
 
-      <CustomerDataGrid
+      <SiteDataGrid
         data={data?.data || []}
         isLoading={isLoading}
         isPlaceholderData={isPlaceholderData}

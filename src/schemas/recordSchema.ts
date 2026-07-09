@@ -17,7 +17,7 @@ export type CreateRecordItem = z.infer<typeof createRecordItemSchema>;
 
 export const recordSchema = z.object({
   id: z.number().min(1),
-  customer_id: z.number().min(1),
+  site_id: z.number().min(1),
   date: z.string(),
   transaction_type: z.enum(["IN", "OUT"]),
   total: z.number().min(1),
@@ -36,7 +36,7 @@ export type RecordDetails = z.infer<typeof recordDetailsSchema>;
 
 export const createRecordSchema = recordSchema
   .pick({
-    customer_id: true,
+    site_id: true,
     id: true,
     transaction_type: true,
     vehicle_no: true,
@@ -78,7 +78,7 @@ export const recordSearchReqSchema = z.object({
     .optional(),
   vehicle_no: z.string().optional(),
   vehicle_mobile_no: z.string().optional(),
-  customer_id: z.coerce.number().optional(), // Coerce handles string->number
+  site_id: z.coerce.number().optional(), // Coerce handles string->number
   bill_id: z.coerce.number().optional(),
 });
 export type RecordSearchReq = z.infer<typeof recordSearchReqSchema>;

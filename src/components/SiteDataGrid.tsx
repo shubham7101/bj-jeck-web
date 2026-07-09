@@ -5,12 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import type {
-  Customer,
-  customerSearchReqSchema,
-} from "@/schemas/customerSchema";
-import { formatDate } from "@/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import type { Site, siteSearchReqSchema } from "@/schemas/siteSchema";
 import { Badge } from "./ui/badge";
 import {
   PaginationControls,
@@ -25,39 +20,38 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 // --- Types ---
 
-type CustomerFiltersState = Pick<
-  z.infer<typeof customerSearchReqSchema>,
-  "name" | "address" | "mobile_no"
+type SiteFiltersState = Pick<
+  z.infer<typeof siteSearchReqSchema>,
+  "contractor_name" | "address" | "mobile_no"
 >;
 
-type CustomerFiltersProps = {
-  filters: CustomerFiltersState;
+type SiteFiltersProps = {
+  filters: SiteFiltersState;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onReset: () => void;
 };
 
-// CustomerPaginationProps has been extracted to PaginationControlsProps
-
-type CustomerDataGridProps = {
-  data: Customer[];
+type SiteDataGridProps = {
+  data: Site[];
   isLoading: boolean;
   isPlaceholderData: boolean;
-  filterProps: CustomerFiltersProps;
+  filterProps: SiteFiltersProps;
   paginationProps?: PaginationControlsProps;
-  onSelect?: (customer: Customer) => void;
+  onSelect?: (site: Site) => void;
 };
 
-export function CustomerDataGrid({
+export function SiteDataGrid({
   data,
   isLoading,
   isPlaceholderData,
   filterProps,
   paginationProps,
   onSelect,
-}: CustomerDataGridProps) {
+}: SiteDataGridProps) {
   return (
     <div
       className={cn(
@@ -65,7 +59,7 @@ export function CustomerDataGrid({
         isPlaceholderData && "opacity-70 transition-opacity",
       )}
     >
-      <CustomerFilters {...filterProps} />
+      <SiteFilters {...filterProps} />
 
       <div className="flex flex-col rounded-xl border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-sm shadow-2xl shadow-black/40 overflow-hidden">
         {paginationProps && (
@@ -74,7 +68,7 @@ export function CustomerDataGrid({
             className="border-b border-zinc-800/80"
           />
         )}
-        <CustomerTable data={data} isLoading={isLoading} onSelect={onSelect} />
+        <SiteTable data={data} isLoading={isLoading} onSelect={onSelect} />
         {paginationProps && (
           <PaginationControls
             {...paginationProps}
@@ -86,9 +80,9 @@ export function CustomerDataGrid({
   );
 }
 
-function CustomerFilters({ filters, onChange, onReset }: CustomerFiltersProps) {
+function SiteFilters({ filters, onChange, onReset }: SiteFiltersProps) {
   const hasActiveFilters = !!(
-    filters.name ||
+    filters.contractor_name ||
     filters.mobile_no ||
     filters.address
   );
@@ -100,9 +94,9 @@ function CustomerFilters({ filters, onChange, onReset }: CustomerFiltersProps) {
         <div className="relative flex-1 group w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
           <Input
-            name="name"
-            placeholder="Search by name..."
-            value={filters.name}
+            name="contractor_name"
+            placeholder="Search by contractor..."
+            value={filters.contractor_name}
             onChange={onChange}
             className="pl-10 h-11 bg-zinc-950/50 border-zinc-800/50 hover:bg-zinc-900/50 focus:bg-zinc-950 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 rounded-xl transition-all"
           />
@@ -155,13 +149,13 @@ function CustomerFilters({ filters, onChange, onReset }: CustomerFiltersProps) {
 }
 
 // --- Table Component ---
-type CustomerTableProps = {
-  data: Customer[];
+type SiteTableProps = {
+  data: Site[];
   isLoading: boolean;
-  onSelect?: (customer: Customer) => void;
+  onSelect?: (site: Site) => void;
 };
 
-function CustomerTable({ data, isLoading, onSelect }: CustomerTableProps) {
+function SiteTable({ data, isLoading, onSelect }: SiteTableProps) {
   if (isLoading) {
     return (
       <TableWrapper onSelect={!!onSelect}>
@@ -180,7 +174,7 @@ function CustomerTable({ data, isLoading, onSelect }: CustomerTableProps) {
                 <Search className="h-8 w-8 opacity-50" />
               </div>
               <p className="text-lg font-medium text-zinc-300">
-                No customers found
+                No sites found
               </p>
               <p className="text-sm">
                 Try adjusting your filters or search query.
@@ -194,12 +188,8 @@ function CustomerTable({ data, isLoading, onSelect }: CustomerTableProps) {
 
   return (
     <TableWrapper onSelect={!!onSelect}>
-      {data.map((customer) => (
-        <CustomerRow
-          key={customer.id}
-          customer={customer}
-          onSelect={onSelect}
-        />
+      {data.map((site) => (
+        <SiteRow key={site.id} site={site} onSelect={onSelect} />
       ))}
     </TableWrapper>
   );
@@ -223,10 +213,13 @@ function TableWrapper({
               ID
             </TableHead>
             <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold">
-              Customer
+              Contractor
             </TableHead>
             <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold">
               Mobile
+            </TableHead>
+            <TableHead className="hidden md:table-cell h-12 text-zinc-500 uppercase text-xs font-bold">
+              Location
             </TableHead>
             <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold">
               Status
@@ -242,12 +235,12 @@ function TableWrapper({
   );
 }
 
-function CustomerRow({
-  customer,
+function SiteRow({
+  site,
   onSelect,
 }: {
-  customer: Customer;
-  onSelect?: (customer: Customer) => void;
+  site: Site;
+  onSelect?: (site: Site) => void;
 }) {
   const navigate = useNavigate();
 
@@ -255,33 +248,27 @@ function CustomerRow({
     <TableRow
       onClick={() => {
         if (onSelect) {
-          onSelect(customer);
+          onSelect(site);
         } else {
-          navigate({ to: `/customers/${customer.id}` });
+          navigate({ to: `/sites/${site.id}` });
         }
       }}
       className={cn(themeStyles.tableRowInteractive, "cursor-pointer")}
     >
       <TableCell className="pl-6 font-mono text-xs text-zinc-600 group-hover:text-emerald-500/70 transition-colors">
-        #{customer.id.toString().padStart(4, "0")}
+        #{site.id.toString().padStart(4, "0")}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-4">
           <Avatar className="h-10 w-10 border border-zinc-700/50 shadow-sm group-hover:border-emerald-500/50 transition-colors">
-            <AvatarImage
-              src={customer.avatar || undefined}
-              alt={customer.name}
-            />
+            <AvatarImage src={undefined} alt={site.contractor_name} />
             <AvatarFallback className="bg-zinc-800 text-xs text-zinc-300 font-medium">
-              {customer.name.substring(0, 2).toUpperCase()}
+              {site.contractor_name.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div>
             <span className="font-semibold text-zinc-200 text-sm block group-hover:text-emerald-50 transition-colors">
-              {customer.name}
-            </span>
-            <span className="text-xs text-zinc-500 group-hover:text-zinc-400 transition-colors">
-              Joined {formatDate(customer.joined_date)}
+              {site.contractor_name}
             </span>
           </div>
         </div>
@@ -289,26 +276,30 @@ function CustomerRow({
       <TableCell>
         <div className="flex items-center gap-2 text-zinc-400 text-xs font-mono group-hover:text-zinc-300 transition-colors">
           <Phone className="h-3.5 w-3.5 opacity-70" />
-          {customer.mobile_no}
+          {site.mobile_no}
+        </div>
+      </TableCell>
+      <TableCell className="hidden md:table-cell">
+        <div className="flex items-center gap-2 text-zinc-500 max-w-45 group-hover:text-zinc-400 transition-colors">
+          <MapPin className="h-3.5 w-3.5 shrink-0 opacity-70" />
+          <span className="truncate text-sm">{site.address}</span>
         </div>
       </TableCell>
       <TableCell>
         <Badge
           variant="outline"
           className={cn(
-            customer.active
-              ? themeStyles.activeBadge
-              : themeStyles.inactiveBadge,
+            site.active ? themeStyles.activeBadge : themeStyles.inactiveBadge,
             "group-hover:bg-transparent",
           )}
         >
           <span
             className={cn(
               "mr-1.5 h-1.5 w-1.5 rounded-full print:hidden",
-              customer.active ? "bg-emerald-500 animate-pulse" : "bg-zinc-500",
+              site.active ? "bg-emerald-500 animate-pulse" : "bg-zinc-500",
             )}
           />
-          {customer.active ? "Active" : "Inactive"}
+          {site.active ? "Active" : "Inactive"}
         </Badge>
       </TableCell>
       <TableCell className="text-right pr-6">
@@ -327,12 +318,8 @@ function SkeletonRows({ count }: { count: number }) {
             <Skeleton className="h-4 w-8 bg-zinc-800" />
           </TableCell>
           <TableCell>
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-9 w-9 rounded-full bg-zinc-800" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-24 bg-zinc-800" />
-                <Skeleton className="h-3 w-16 bg-zinc-800" />
-              </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24 bg-zinc-800" />
             </div>
           </TableCell>
           <TableCell>

@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/table";
 import type { BillDetails, SizeCategory } from "@/schemas/billSchema";
 import { billService } from "@/services/billService";
-import { customerService } from "@/services/customerService";
+import { siteService } from "@/services/siteService";
 import { formatCurrency } from "@/utils";
 
 // Define the route
@@ -136,11 +136,11 @@ function BillHeader({ bill }: { bill: BillDetails }) {
   );
 }
 
-// --- Customer Info Card ---
-function CustomerSection({ bill }: { bill: BillDetails }) {
-  const { data: customer, isLoading } = useQuery({
-    queryKey: ["customers", bill.customer_id],
-    queryFn: () => customerService.get(bill.customer_id),
+// --- Site Info Card ---
+function SiteSection({ bill }: { bill: BillDetails }) {
+  const { data: site, isLoading } = useQuery({
+    queryKey: ["sites", bill.site_id],
+    queryFn: () => siteService.get(bill.site_id),
   });
 
   return (
@@ -165,58 +165,33 @@ function CustomerSection({ bill }: { bill: BillDetails }) {
         ) : (
           <div className="flex flex-col gap-3 px-2">
             <Link
-              to="/customers/$customerId"
-              params={{ customerId: bill.customer_id.toString() }}
+              to="/sites/$siteId"
+              params={{ siteId: bill.site_id.toString() }}
               className="text-xl font-bold text-zinc-100 hover:text-emerald-400 hover:underline transition-colors print:text-black print:no-underline truncate"
             >
-              {customer
-                ? `#${customer.id} ${customer.name}`
-                : `Customer #${bill.customer_id}`}
+              {site
+                ? `#${site.id} ${site.contractor_name}`
+                : `Site #${bill.site_id}`}
             </Link>
 
-            {/* Customer Details */}
+            {/* Site Details */}
             <div className="text-sm text-zinc-400 space-y-2.5 print:text-black print:mt-0">
-              {customer?.address && (
+              {site?.address && (
                 <div className="flex items-start gap-2.5">
                   <MapPin className="h-4 w-4 text-zinc-600 mt-0.5 shrink-0 print:text-black" />
-                  <span className="leading-tight">{customer.address}</span>
+                  <span className="leading-tight">{site.address}</span>
                 </div>
               )}
 
               <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-                {customer?.mobile_no && (
+                {site?.mobile_no && (
                   <div
                     className="flex items-center gap-2.5"
                     title="Primary Mobile"
                   >
                     <Smartphone className="h-4 w-4 text-zinc-500 print:text-black" />
                     <span className="font-mono text-zinc-300 print:text-black">
-                      {customer.mobile_no}{" "}
-                      {customer?.mobile_no_2 && `/ ${customer.mobile_no_2}`}
-                    </span>
-                  </div>
-                )}
-                {customer?.aadhar_card_no && (
-                  <div
-                    className="flex items-center gap-2.5"
-                    title="Aadhar Card"
-                  >
-                    <span className="h-4 w-4 text-zinc-500 font-bold text-[10px] flex items-center justify-center print:text-black tracking-tighter">
-                      AD
-                    </span>
-                    <span className="font-mono text-zinc-300 print:text-black">
-                      {customer.aadhar_card_no}
-                    </span>
-                  </div>
-                )}
-                {customer?.reference_name && (
-                  <div
-                    className="flex items-center gap-2.5"
-                    title="Reference Name"
-                  >
-                    <User className="h-4 w-4 text-zinc-500 print:text-black" />
-                    <span className="text-zinc-300 print:text-black">
-                      Ref: {customer.reference_name}
+                      {site.mobile_no}
                     </span>
                   </div>
                 )}
@@ -781,7 +756,7 @@ function BillDetailsPage() {
 
       {/* Grid Layout: 2 Columns Dashboard */}
       <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 print:grid-cols-2 h-auto items-start min-w-0">
-        <CustomerSection bill={bill} />
+        <SiteSection bill={bill} />
         <FinancialSection bill={bill} />
         <AdditionalChargesSection bill={bill} />
       </div>

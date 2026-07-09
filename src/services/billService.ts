@@ -16,8 +16,8 @@ export const billService = {
       per_page: (payload.per_page ?? 10).toString(),
     });
 
-    if (payload.customer_id)
-      params.append("customer_id", payload.customer_id.toString());
+    if (payload.site_id)
+      params.append("site_id", payload.site_id.toString());
     if (payload.date) params.append("date", payload.date);
     if (payload.khata_no) params.append("khata_no", payload.khata_no);
 
@@ -34,9 +34,9 @@ export const billService = {
     return billSchema.parse(data);
   },
 
-  billParams: async (customerId: number) => {
+  billParams: async (siteId: number) => {
     const data = await apiClient(
-      `/api/bills/unbilled?customer_id=${customerId}`,
+      `/api/bills/unbilled?site_id=${siteId}`,
     );
     return billParamsSchema.parse(data);
   },
@@ -52,8 +52,5 @@ export const billService = {
     });
   },
 
-  stats: async () => {
-    const data = await apiClient("/api/bills/stats");
-    return billStatsSchema.parse(data);
-  },
+
 };

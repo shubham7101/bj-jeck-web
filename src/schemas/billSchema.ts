@@ -3,7 +3,7 @@ import { inventorySchema, paginationSchema } from "./common";
 
 export const billSchema = z.object({
   id: z.number().gt(0),
-  customer_id: z.number().gt(0),
+  site_id: z.number().gt(0),
   from_date: z.string(),
   to_date: z.string(),
   total: z.number(),
@@ -13,7 +13,7 @@ export type Bill = z.infer<typeof billSchema>;
 
 export const createBillSchema = billSchema
   .pick({
-    customer_id: true,
+    site_id: true,
     khata_no: true,
   })
   .extend({
@@ -26,7 +26,7 @@ export const createBillSchema = billSchema
 export type CreateBill = z.infer<typeof createBillSchema>;
 
 export const billParamsSchema = z.object({
-  customer_id: z.number().gt(0),
+  site_id: z.number().gt(0),
   from_date: z.string(),
   to_date: z.string(),
   record_ids: z.array(z.number()),
@@ -72,7 +72,7 @@ export type BillInventory = z.infer<typeof billInventorySchema>;
 // 3. Bill Details Schema
 export const billDetailsSchema = z.object({
   id: z.number(),
-  customer_id: z.number(),
+  site_id: z.number(),
   from_date: z.string().datetime(),
   to_date: z.string().datetime(),
   khata_no: z.string(),
@@ -89,7 +89,7 @@ export type BillDetails = z.infer<typeof billDetailsSchema>;
 export const billSearchReqSchema = z.object({
   page: z.number().optional(),
   per_page: z.number().optional(),
-  customer_id: z.number().optional(),
+  site_id: z.number().optional(),
   khata_no: z.string().optional(),
   date: z.string().optional(),
 });

@@ -1,0 +1,69 @@
+
+> build
+> vite build && tsc
+
+vite v7.3.1 building client environment for production...
+transforming...
+✓ 3194 modules transformed.
+✗ Build failed in 9.06s
+error during build:
+src/routes/records/update.$recordId.tsx (71:2): "getSizesForPart" is not exported by "src/schemas/siteSchema.ts", imported by "src/routes/records/update.$recordId.tsx".
+file: /home/shubham/Code/bg-jeck-web/src/routes/records/update.$recordId.tsx:71:2
+
+69: import {
+70:   type Site,
+71:   getSizesForPart,
+      ^
+72:   PART_OPTIONS,
+73: } from "@/schemas/siteSchema";
+
+    at getRollupError (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/parseAst.js:401:41)
+    at error (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/parseAst.js:397:42)
+    at Module.error (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:17022:16)
+    at Module.traceVariable (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:17478:29)
+    at ModuleScope.findVariable (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:15141:39)
+    at FunctionScope.findVariable (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:5688:38)
+    at FunctionBodyScope.findVariable (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:5688:38)
+    at TrackingScope.findVariable (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:5688:38)
+    at BlockScope.findVariable (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:5688:38)
+    at ReturnValueScope.findVariable (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:5688:38)
+    at FunctionBodyScope.findVariable (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:5688:38)
+    at ReturnValueScope.findVariable (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:5688:38)
+    at FunctionBodyScope.findVariable (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:5688:38)
+    at Identifier.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:5462:40)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:12172:15)
+    at VariableDeclarator.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at VariableDeclaration.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at BlockStatement.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at ArrowFunctionExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:12172:15)
+    at Property.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at ObjectExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:12172:15)
+    at ArrayExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at Property.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at ObjectExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:12172:15)
+    at Property.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at ObjectExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:12172:15)
+    at ArrayExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at Property.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at ObjectExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:12172:15)
+    at ArrayExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at Property.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at ObjectExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at CallExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:12172:15)
+    at ArrowFunctionExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at AssignmentExpression.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at ExpressionStatement.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at BlockStatement.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at IfStatement.bind (file:///home/shubham/Code/bg-jeck-web/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)

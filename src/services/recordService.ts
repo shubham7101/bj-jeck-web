@@ -32,8 +32,8 @@ export const recordService = {
     if (payload.vehicle_mobile_no)
       params.append("vehicle_mobile_no", payload.vehicle_mobile_no);
 
-    if (payload.customer_id)
-      params.append("customer_id", payload.customer_id.toString());
+    if (payload.site_id)
+      params.append("site_id", payload.site_id.toString());
     if (payload.bill_id) params.append("bill_id", payload.bill_id.toString());
 
     const data = await apiClient(`/api/records?${params}`);

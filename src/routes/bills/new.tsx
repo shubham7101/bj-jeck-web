@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
-import { CustomerDataGrid } from "@/components/CustomerDataGrid";
+import { SiteDataGrid } from "@/components/SiteDataGrid";
 import { FilterDatePicker } from "@/components/FilterDatePicker";
 import { FormBase } from "@/components/form/FormBase";
 import { useAppForm } from "@/components/form/hooks";
@@ -46,9 +46,9 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
-import type { Customer } from "@/schemas/customerSchema";
+import type { Site } from "@/schemas/siteSchema";
 import { billService } from "@/services/billService";
-import { customerService } from "@/services/customerService";
+import { siteService } from "@/services/siteService";
 import { recordService } from "@/services/recordService";
 import { formatCurrency, getInitials } from "@/utils";
 
@@ -66,7 +66,7 @@ function parseDateSafe(dateStr: string | null | undefined): Date | null {
 // --- Route Definition ---
 
 const billSearchSchema = z.object({
-  customer_id: z.number().optional(),
+  site_id: z.number().optional(),
 });
 
 export const Route = createRoute({
@@ -74,14 +74,14 @@ export const Route = createRoute({
   path: "/bills/new",
   component: NewBillPage,
   validateSearch: (search) => billSearchSchema.parse(search),
-  loaderDeps: ({ search }) => ({ customer_id: search.customer_id }),
-  loader: async ({ deps: { customer_id } }) => {
-    if (!customer_id) return { customer: null };
+  loaderDeps: ({ search }) => ({ site_id: search.site_id }),
+  loader: async ({ deps: { site_id } }) => {
+    if (!site_id) return { site: null };
     try {
-      const customer = await customerService.get(customer_id);
-      return { customer };
+      const site = await siteService.get(site_id);
+      return { site };
     } catch (_e) {
-      return { customer: null };
+      return { site: null };
     }
   },
   pendingComponent: BillLoadingSkeleton,
@@ -91,34 +91,34 @@ export const Route = createRoute({
 
 export default function NewBillPage() {
   const navigate = useNavigate();
-  const { customer } = Route.useLoaderData();
+  const { site } = Route.useLoaderData();
 
-  const handleCustomerSelect = (selected: Customer) => {
+  const handleSiteSelect = (selected: Site) => {
     navigate({
       to: "/bills/new",
-      search: { customer_id: selected.id },
+      search: { site_id: selected.id },
     });
   };
 
-  const handleChangeCustomer = () => {
+  const handleChangeSite = () => {
     navigate({
       to: "/bills/new",
-      search: { customer_id: undefined },
+      search: { site_id: undefined },
     });
   };
 
   return (
     <div className="flex-1 w-full max-w-[100vw] lg:max-w-6xl lg:mx-auto px-2 py-4 sm:py-6 sm:p-6 md:p-8 space-y-4 sm:space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-24 overflow-x-hidden min-w-0">
       <Header
-        step={customer ? 2 : 1}
-        hasCustomer={!!customer}
-        onChangeCustomer={handleChangeCustomer}
+        step={site ? 2 : 1}
+        hasSite={!!site}
+        onChangeSite={handleChangeSite}
       />
 
-      {!customer ? (
-        <CustomerSelectionStep onSelect={handleCustomerSelect} />
+      {!site ? (
+        <SiteSelectionStep onSelect={handleSiteSelect} />
       ) : (
-        <BillEntryForm customer={customer} />
+        <BillEntryForm site={site} />
       )}
     </div>
   );
@@ -126,12 +126,12 @@ export default function NewBillPage() {
 
 function Header({
   step,
-  hasCustomer,
-  onChangeCustomer,
+  hasSite,
+  onChangeSite,
 }: {
   step: number;
-  hasCustomer: boolean;
-  onChangeCustomer: () => void;
+  hasSite: boolean;
+  onChangeSite: () => void;
 }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -140,17 +140,17 @@ function Header({
           Create New Bill
         </h2>
         <p className="text-zinc-400">
-          {step === 1 ? "Step 1: Select a Customer" : "Step 2: Bill Details"}
+          {step === 1 ? "Step 1: Select a Site" : "Step 2: Bill Details"}
         </p>
       </div>
       <div className="flex items-center gap-2">
-        {hasCustomer && (
+        {hasSite && (
           <Button
             variant="outline"
-            onClick={onChangeCustomer}
+            onClick={onChangeSite}
             className="hidden sm:flex cursor-pointer border-zinc-700 bg-zinc-950/50 hover:bg-zinc-800 text-zinc-300"
           >
-            <User className="mr-2 h-4 w-4" /> Change Customer
+            <User className="mr-2 h-4 w-4" /> Change Site
           </Button>
         )}
         <Button
@@ -169,15 +169,15 @@ function Header({
 
 // --- Step 1: Customer Selection ---
 
-function CustomerSelectionStep({
+function SiteSelectionStep({
   onSelect,
 }: {
-  onSelect: (c: Customer) => void;
+  onSelect: (c: Site) => void;
 }) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [filters, setFilters] = useState({
-    name: "",
+    contractor_name: "",
     mobile_no: "",
     address: "",
   });
@@ -185,12 +185,12 @@ function CustomerSelectionStep({
   const debouncedFilters = useDebounce(filters, 500);
 
   const { data, isLoading, isPlaceholderData } = useQuery({
-    queryKey: ["customers", "select", { page, perPage, ...debouncedFilters }],
+    queryKey: ["sites", "select", { page, perPage, ...debouncedFilters }],
     queryFn: () =>
-      customerService.search({
+      siteService.search({
         page,
         per_page: perPage,
-        name: debouncedFilters.name || undefined,
+        contractor_name: debouncedFilters.contractor_name || undefined,
         mobile_no: debouncedFilters.mobile_no || undefined,
         address: debouncedFilters.address || undefined,
       }),
@@ -204,23 +204,23 @@ function CustomerSelectionStep({
   };
 
   const handleReset = () => {
-    setFilters({ name: "", mobile_no: "", address: "" });
+    setFilters({ contractor_name: "", mobile_no: "", address: "" });
     setPage(1);
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="space-y-1">
-        <h3 className="text-xl font-bold text-zinc-100">Find Customer</h3>
+        <h3 className="text-xl font-bold text-zinc-100">Find Site</h3>
         <p className="text-zinc-400">
-          Search for an existing customer to generate a bill for.
+          Search for an existing site to generate a bill for.
         </p>
       </div>
       <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden min-w-0">
         <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-emerald-400/50" />
         <CardContent className="p-2 sm:p-6 pt-4 sm:pt-6 min-w-0">
           <div className="min-w-0 w-full">
-            <CustomerDataGrid
+            <SiteDataGrid
               data={data?.data || []}
               isLoading={isLoading}
               isPlaceholderData={isPlaceholderData}
@@ -248,7 +248,7 @@ function CustomerSelectionStep({
 
 // --- Step 2: Bill Entry ---
 
-function BillEntryForm({ customer }: { customer: Customer }) {
+function BillEntryForm({ site }: { site: Site }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [_maxToDate, setMaxToDate] = useState<Date | null>(null);
@@ -257,7 +257,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
 
   // Bill Params Mutation (Fetch initial dates)
   const billParamsMutation = useMutation({
-    mutationFn: (customerId: number) => billService.billParams(customerId),
+    mutationFn: (siteId: number) => billService.billParams(siteId),
     onSuccess: (data) => {
       const safeFromDate = parseDateSafe(data.from_date);
       const safeToDate = parseDateSafe(data.to_date);
@@ -283,7 +283,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
       queryClient.invalidateQueries({ queryKey: ["records"] });
       queryClient.invalidateQueries({
-        queryKey: ["records", customer.id],
+        queryKey: ["records", site.id],
       });
       setSuccessBill(data);
     },
@@ -291,10 +291,10 @@ function BillEntryForm({ customer }: { customer: Customer }) {
 
   // Load params on mount
   useEffect(() => {
-    if (customer.id && !successBill) {
-      billParamsMutation.mutate(customer.id);
+    if (site.id && !successBill) {
+      billParamsMutation.mutate(site.id);
     }
-  }, [customer.id, successBill, billParamsMutation.mutate]);
+  }, [site.id, successBill, billParamsMutation.mutate]);
 
   // Scroll to success message
   useEffect(() => {
@@ -313,7 +313,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
   const form = useAppForm({
     defaultValues: {
       bill_id: "" as number | "",
-      customer_id: customer.id,
+      site_id: site.id,
       from_date: "",
       to_date: "",
       khata_no: "",
@@ -321,7 +321,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
     onSubmit: async ({ value }) => {
       createBillMutation.mutate({
         id: Number(value.bill_id),
-        customer_id: value.customer_id,
+        site_id: value.site_id,
         from_date: value.from_date,
         to_date: value.to_date,
         khata_no: value.khata_no,
@@ -333,9 +333,9 @@ function BillEntryForm({ customer }: { customer: Customer }) {
   const handleReset = () => {
     setSuccessBill(null);
     form.reset();
-    form.setFieldValue("customer_id", customer.id);
+    form.setFieldValue("site_id", site.id);
     // Fetch fresh params for the next bill
-    billParamsMutation.mutate(customer.id);
+    billParamsMutation.mutate(site.id);
   };
 
   // Logic for Record Preview Table
@@ -353,7 +353,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
     queryKey: [
       "records",
       "bill-preview",
-      customer.id,
+      site.id,
       fromDateVal,
       toDateVal,
       page,
@@ -361,7 +361,7 @@ function BillEntryForm({ customer }: { customer: Customer }) {
     ],
     queryFn: () =>
       recordService.search({
-        customer_id: customer.id,
+        site_id: site.id,
         from_date: fromDateVal,
         to_date: toDateVal,
         page,
@@ -376,29 +376,25 @@ function BillEntryForm({ customer }: { customer: Customer }) {
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-in slide-in-from-right-4 duration-300">
-      {/* Customer Header Info */}
+      {/* Site Header Info */}
       <div className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 p-4 rounded-lg shadow-sm">
         <div className="flex items-center gap-4">
           <Avatar className="h-9 w-9 border border-zinc-800">
-            <AvatarImage
-              src={customer.avatar || undefined}
-              alt={customer.name}
-            />
             <AvatarFallback className="bg-zinc-800 text-xs text-zinc-300">
-              {getInitials(customer.name)}
+              {getInitials(site.contractor_name)}
             </AvatarFallback>
           </Avatar>
           <div>
             <h4 className="text-sm font-semibold text-zinc-100 hover:underline">
               <Link
-                to="/customers/$customerId"
-                params={{ customerId: customer.id.toString() }}
+                to="/sites/$siteId"
+                params={{ siteId: site.id.toString() }}
               >
-                {customer.name}
+                {site.contractor_name}
               </Link>
             </h4>
             <p className="text-xs text-zinc-400">
-              ID: #{customer.id} • {customer.mobile_no}
+              ID: #{site.id} • {site.mobile_no}
             </p>
           </div>
         </div>
@@ -406,12 +402,12 @@ function BillEntryForm({ customer }: { customer: Customer }) {
           variant="outline"
           className={cn(
             "pl-2 pr-2.5 py-1 rounded-full border",
-            customer.active
+            site.active
               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
               : "bg-zinc-800 text-zinc-400 border-zinc-700",
           )}
         >
-          {customer.active ? "Active" : "Inactive"}
+          {site.active ? "Active" : "Inactive"}
         </Badge>
       </div>
 

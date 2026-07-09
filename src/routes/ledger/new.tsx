@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
-import { CustomerDataGrid } from "@/components/CustomerDataGrid";
+import { SiteDataGrid } from "@/components/SiteDataGrid";
 import { FormBase } from "@/components/form/FormBase";
 import { useAppForm } from "@/components/form/hooks";
 import { SuccessFeedback } from "@/components/SuccessFeedback";
@@ -55,16 +55,16 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
-import type { Customer } from "@/schemas/customerSchema";
+import type { Site } from "@/schemas/siteSchema";
 import { type CreateLedger, createLedgerSchema } from "@/schemas/ledgerSchema";
-import { customerService } from "@/services/customerService";
+import { siteService } from "@/services/siteService";
 import { ledgerService } from "@/services/ledgerService";
 import { formatCurrency, formatDate, getInitials } from "@/utils";
 
 // --- Route Definition ---
 
 const ledgerSearchSchema = z.object({
-  customer_id: z.number().optional(),
+  site_id: z.number().optional(),
 });
 
 export const Route = createRoute({
@@ -72,14 +72,14 @@ export const Route = createRoute({
   path: "/ledger/new",
   component: NewLedgerPage,
   validateSearch: (search) => ledgerSearchSchema.parse(search),
-  loaderDeps: ({ search }) => ({ customer_id: search.customer_id }),
-  loader: async ({ deps: { customer_id } }) => {
-    if (!customer_id) return { customer: null };
+  loaderDeps: ({ search }) => ({ site_id: search.site_id }),
+  loader: async ({ deps: { site_id } }) => {
+    if (!site_id) return { site: null };
     try {
-      const customer = await customerService.get(customer_id);
-      return { customer };
+      const site = await siteService.get(site_id);
+      return { site };
     } catch (_e) {
-      return { customer: null };
+      return { site: null };
     }
   },
   pendingComponent: LedgerLoadingSkeleton,
@@ -90,7 +90,7 @@ export const Route = createRoute({
 const DATE_FORMAT = "dd-MM-yyyy";
 
 const DEFAULT_FORM_VALUES: Partial<CreateLedger> = {
-  customer_id: 0,
+  site_id: 0,
   amount: 0,
   date: format(new Date(), DATE_FORMAT),
   notes: "",
@@ -101,7 +101,7 @@ const DEFAULT_FORM_VALUES: Partial<CreateLedger> = {
 
 export default function NewLedgerPage() {
   const navigate = useNavigate();
-  const { customer } = Route.useLoaderData();
+  const { site } = Route.useLoaderData();
   const [createdEntry, setCreatedEntry] = useState<any | null>(null);
 
   // 1. Add a key state to control the form instance
@@ -121,19 +121,19 @@ export default function NewLedgerPage() {
     }
   }, [createdEntry]);
 
-  const handleCustomerSelect = (selected: Customer) => {
+  const handleSiteSelect = (selected: Site) => {
     navigate({
       to: "/ledger/new",
-      search: { customer_id: selected.id },
+      search: { site_id: selected.id },
     });
   };
 
-  const handleChangeCustomer = () => {
+  const handleChangeSite = () => {
     setCreatedEntry(null);
-    setFormKey(0); // Reset key when changing customer
+    setFormKey(0); // Reset key when changing site
     navigate({
       to: "/ledger/new",
-      search: { customer_id: undefined },
+      search: { site_id: undefined },
     });
   };
 
@@ -146,20 +146,20 @@ export default function NewLedgerPage() {
   return (
     <div className="flex-1 w-full max-w-[100vw] lg:max-w-6xl lg:mx-auto px-2 py-6 sm:p-6 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-24 overflow-x-hidden min-w-0">
       <Header
-        step={customer ? 2 : 1}
-        hasCustomer={!!customer}
-        onChangeCustomer={handleChangeCustomer}
+        step={site ? 2 : 1}
+        hasSite={!!site}
+        onChangeSite={handleChangeSite}
       />
 
-      {!customer ? (
-        <CustomerSelectionStep onSelect={handleCustomerSelect} />
+      {!site ? (
+        <SiteSelectionStep onSelect={handleSiteSelect} />
       ) : (
         <LedgerEntryForm
           key={formKey} // 3. Pass the key here
-          customer={customer}
+          site={site}
           onSuccess={setCreatedEntry}
           onReset={() => setCreatedEntry(null)}
-          onChangeCustomer={handleChangeCustomer}
+          onChangeSite={handleChangeSite}
         />
       )}
 
@@ -207,12 +207,12 @@ export default function NewLedgerPage() {
 
 function Header({
   step,
-  hasCustomer,
-  onChangeCustomer,
+  hasSite,
+  onChangeSite,
 }: {
   step: number;
-  hasCustomer: boolean;
-  onChangeCustomer: () => void;
+  hasSite: boolean;
+  onChangeSite: () => void;
 }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -221,17 +221,17 @@ function Header({
           New Payment
         </h2>
         <p className="text-zinc-400">
-          {step === 1 ? "Step 1: Select Customer" : "Step 2: Payment Details"}
+          {step === 1 ? "Step 1: Select Site" : "Step 2: Payment Details"}
         </p>
       </div>
       <div className="flex items-center gap-2">
-        {hasCustomer && (
+        {hasSite && (
           <Button
             variant="outline"
-            onClick={onChangeCustomer}
+            onClick={onChangeSite}
             className="hidden sm:flex cursor-pointer border-zinc-700 bg-zinc-950/50 hover:bg-zinc-800 text-zinc-300"
           >
-            <User className="mr-2 h-4 w-4" /> Change Customer
+            <User className="mr-2 h-4 w-4" /> Change Site
           </Button>
         )}
         <Button
@@ -250,15 +250,15 @@ function Header({
 
 // --- Step 1: Customer Selection (Reused) ---
 
-function CustomerSelectionStep({
+function SiteSelectionStep({
   onSelect,
 }: {
-  onSelect: (c: Customer) => void;
+  onSelect: (c: Site) => void;
 }) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(5);
   const [filters, setFilters] = useState({
-    name: "",
+    contractor_name: "",
     mobile_no: "",
     address: "",
   });
@@ -266,12 +266,12 @@ function CustomerSelectionStep({
   const debouncedFilters = useDebounce(filters, 500);
 
   const { data, isLoading, isPlaceholderData } = useQuery({
-    queryKey: ["customers", "select", { page, perPage, ...debouncedFilters }],
+    queryKey: ["sites", "select", { page, perPage, ...debouncedFilters }],
     queryFn: () =>
-      customerService.search({
+      siteService.search({
         page,
         per_page: perPage,
-        name: debouncedFilters.name || undefined,
+        contractor_name: debouncedFilters.contractor_name || undefined,
         mobile_no: debouncedFilters.mobile_no || undefined,
         address: debouncedFilters.address || undefined,
       }),
@@ -285,7 +285,7 @@ function CustomerSelectionStep({
   };
 
   const handleReset = () => {
-    setFilters({ name: "", mobile_no: "", address: "" });
+    setFilters({ contractor_name: "", mobile_no: "", address: "" });
     setPage(1);
   };
 
@@ -301,15 +301,15 @@ function CustomerSelectionStep({
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="space-y-1">
-        <h3 className="text-xl font-bold text-zinc-100">Find Customer</h3>
+        <h3 className="text-xl font-bold text-zinc-100">Find Site</h3>
         <p className="text-zinc-400">
-          Select the customer who made the payment.
+          Select the site for this transaction.
         </p>
       </div>
       <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl animate-in fade-in duration-500 relative overflow-hidden min-w-0">
         <CardContent className="p-2 sm:p-6 pt-4 sm:pt-6 min-w-0">
           <div className="min-w-0 w-full">
-            <CustomerDataGrid
+            <SiteDataGrid
               data={data?.data || []}
               isLoading={isLoading}
               isPlaceholderData={isPlaceholderData}
@@ -338,21 +338,21 @@ function CustomerSelectionStep({
 // --- Step 2: Form ---
 
 function LedgerEntryForm({
-  customer,
+  site,
   onSuccess,
   onReset,
-  onChangeCustomer,
+  onChangeSite,
 }: {
-  customer: Customer;
+  site: Site;
   onSuccess: (data: any) => void;
   onReset: () => void;
-  onChangeCustomer: () => void;
+  onChangeSite: () => void;
 }) {
   const queryClient = useQueryClient();
 
   const { data: stats } = useQuery({
-    queryKey: ["customer", customer.id, "stats"],
-    queryFn: () => customerService.customerStats(customer.id),
+    queryKey: ["sites", site.id, "stats"],
+    queryFn: () => siteService.stats(site.id),
   });
 
   const billed = stats?.bills?.total_bill_amount ?? 0;
@@ -364,14 +364,14 @@ function LedgerEntryForm({
     onSuccess: (data) => {
       onSuccess(data);
       queryClient.invalidateQueries({ queryKey: ["ledger"] });
-      queryClient.invalidateQueries({ queryKey: ["customers", customer.id] });
+      queryClient.invalidateQueries({ queryKey: ["sites", site.id] });
     },
   });
 
   const form = useAppForm({
     defaultValues: {
       ...DEFAULT_FORM_VALUES,
-      customer_id: customer.id,
+      site_id: site.id,
     } as CreateLedger,
     validators: {
       onSubmit: createLedgerSchema,
@@ -386,7 +386,7 @@ function LedgerEntryForm({
   const handleResetForm = () => {
     form.reset({
       ...DEFAULT_FORM_VALUES,
-      customer_id: customer.id,
+      site_id: site.id,
     } as CreateLedger);
     onReset();
     mutation.reset();
@@ -401,7 +401,7 @@ function LedgerEntryForm({
       }}
       className="animate-in slide-in-from-right-4 duration-300"
     >
-      <form.Field name="customer_id">
+      <form.Field name="site_id">
         {(field) => (
           <input type="hidden" name={field.name} value={field.state.value} />
         )}
@@ -410,31 +410,27 @@ function LedgerEntryForm({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start min-w-0">
         {/* Left Column: Input Form fields */}
         <div className="lg:col-span-7 space-y-6 min-w-0">
-          {/* Customer Header Info */}
+          {/* Site Header Info */}
           <div className="flex items-center justify-between bg-card/60 border border-border/80 p-4 rounded-xl shadow-md backdrop-blur-md min-w-0">
             <div className="flex items-center gap-4 min-w-0">
               <Avatar className="h-10 w-10 border border-border shrink-0">
-                <AvatarImage
-                  src={customer.avatar || undefined}
-                  alt={customer.name}
-                />
                 <AvatarFallback className="bg-muted text-xs text-muted-foreground">
-                  {getInitials(customer.name)}
+                  {getInitials(site.contractor_name)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-semibold text-foreground hover:underline truncate">
                     <Link
-                      to="/customers/$customerId"
-                      params={{ customerId: customer.id.toString() }}
+                      to="/sites/$siteId"
+                      params={{ siteId: site.id.toString() }}
                     >
-                      {customer.name}
+                      {site.contractor_name}
                     </Link>
                   </h4>
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
-                  ID: #{customer.id} • {customer.mobile_no}
+                  ID: #{site.id} • {site.mobile_no}
                 </p>
               </div>
             </div>
@@ -443,7 +439,7 @@ function LedgerEntryForm({
                 variant="outline"
                 className={cn(
                   "hidden sm:flex pl-1.5 pr-2 py-0.5 rounded-full border text-[10px] font-semibold tracking-wider uppercase",
-                  customer.active
+                  site.active
                     ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
                     : "bg-muted text-muted-foreground border-border",
                 )}
@@ -451,17 +447,17 @@ function LedgerEntryForm({
                 <span
                   className={cn(
                     "mr-1.5 h-1.5 w-1.5 rounded-full",
-                    customer.active
+                    site.active
                       ? "bg-emerald-500 animate-pulse"
                       : "bg-muted-foreground",
                   )}
                 />
-                {customer.active ? "Active" : "Inactive"}
+                {site.active ? "Active" : "Inactive"}
               </Badge>
               <Button
                 type="button"
                 variant="outline"
-                onClick={onChangeCustomer}
+                onClick={onChangeSite}
                 className="sm:hidden w-full cursor-pointer border-border hover:bg-muted text-foreground text-xs h-9 px-3"
               >
                 <User className="mr-1.5 h-3.5 w-3.5" /> Change
@@ -469,10 +465,10 @@ function LedgerEntryForm({
               <Button
                 type="button"
                 variant="outline"
-                onClick={onChangeCustomer}
+                onClick={onChangeSite}
                 className="hidden sm:flex cursor-pointer border-border hover:bg-muted text-foreground h-10 px-4"
               >
-                <User className="mr-2 h-4 w-4" /> Change Customer
+                <User className="mr-2 h-4 w-4" /> Change Site
               </Button>
             </div>
           </div>
@@ -691,21 +687,21 @@ function LedgerEntryForm({
                 </Badge>
               </div>
 
-              {/* Customer Segment */}
+              {/* Site Segment */}
               <div className="space-y-2">
                 <span className="text-[10px] font-bold text-zinc-550 uppercase tracking-widest block">
                   Received From
                 </span>
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300">
-                    {getInitials(customer.name)}
+                    {getInitials(site.contractor_name)}
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-zinc-200">
-                      {customer.name}
+                      {site.contractor_name}
                     </p>
                     <p className="text-[10px] text-zinc-550">
-                      ID: #{customer.id} • {customer.mobile_no}
+                      ID: #{site.id} • {site.mobile_no}
                     </p>
                   </div>
                 </div>
