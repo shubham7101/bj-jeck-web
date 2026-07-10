@@ -102,9 +102,3 @@ export const billSearchResSchema = z.object({
 });
 export type BillSearchRes = z.infer<typeof billSearchResSchema>;
 
-export const billStatsSchema = z.object({
-  year_total: z.number(),
-  year_bills: z.number(),
-  total_bills: z.number(),
-});
-export type BillStats = z.infer<typeof billStatsSchema>;

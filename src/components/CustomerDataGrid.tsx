@@ -30,7 +30,7 @@ import {
 
 type CustomerFiltersState = Pick<
   z.infer<typeof customerSearchReqSchema>,
-  "name" | "address" | "mobile_no"
+  "name" | "mobile_no"
 >;
 
 type CustomerFiltersProps = {
@@ -89,8 +89,7 @@ export function CustomerDataGrid({
 function CustomerFilters({ filters, onChange, onReset }: CustomerFiltersProps) {
   const hasActiveFilters = !!(
     filters.name ||
-    filters.mobile_no ||
-    filters.address
+    filters.mobile_no
   );
 
   return (
@@ -115,16 +114,6 @@ function CustomerFilters({ filters, onChange, onReset }: CustomerFiltersProps) {
             value={filters.mobile_no}
             onChange={onChange}
             className="pl-10 h-11 bg-zinc-950/50 border-zinc-800/50 hover:bg-zinc-900/50 focus:bg-zinc-950 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 rounded-xl transition-all font-mono"
-          />
-        </div>
-        <div className="relative w-full flex-1 group">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
-          <Input
-            name="address"
-            placeholder="Search address..."
-            value={filters.address}
-            onChange={onChange}
-            className="pl-10 h-11 bg-zinc-950/50 border-zinc-800/50 hover:bg-zinc-900/50 focus:bg-zinc-950 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 rounded-xl transition-all"
           />
         </div>
         <div className="flex items-center justify-end gap-3 shrink-0 h-11 w-full md:w-auto">

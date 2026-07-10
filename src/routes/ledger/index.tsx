@@ -88,15 +88,15 @@ function LedgerPage() {
 
   // --- Queries ---
 
-  const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ["ledger", "stats"],
-    queryFn: () => ledgerService.stats(),
-    placeholderData: {
-      total_received: 0,
-      year_received: 0,
-      total_entries: 0,
-    },
-  });
+  // const { data: stats, isLoading: isLoadingStats } = useQuery({
+  //   queryKey: ["ledger", "stats"],
+  //   queryFn: () => ledgerService.stats(),
+  //   placeholderData: {
+  //     total_received: 0,
+  //     year_received: 0,
+  //     total_entries: 0,
+  //   },
+  // });
 
   const { data: sitesData } = useQuery({
     queryKey: ["sites", "list-all-ledger"],
@@ -230,7 +230,7 @@ function LedgerPage() {
       <div className="h-px w-full bg-linear-to-r from-zinc-800 to-transparent" />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 min-w-0">
+      {/* <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 min-w-0">
         <StatsCard
           loading={isLoadingStats}
           title="Total Collected"
@@ -253,7 +253,7 @@ function LedgerPage() {
           subText="Total payment entries"
           icon={<History className="h-4 w-4 text-zinc-500" />}
         />
-      </div>
+      </div> */}
 
       {isError && error && <ErrorAlert error={error} />}
 

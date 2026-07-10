@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
 import { Route as rootRoute } from "@/routes/__root";
 import { format, parse } from "date-fns";
@@ -22,7 +22,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import type { Site } from "@/schemas/siteSchema";
 import { siteService } from "@/services/siteService";
 
 const unbilledSearchSchema = z.object({
@@ -45,11 +44,8 @@ type SiteFiltersState = {
 function RouteComponent() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
-  const queryClient = useQueryClient();
 
   const dateParam = search.date;
-
-  const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
 
   // Local text filters (client-side filtering)
   const [localFilters, setLocalFilters] = useState<SiteFiltersState>({
@@ -65,44 +61,6 @@ function RouteComponent() {
     queryFn: () => siteService.unbilled(dateParam),
   });
 
-  // --- Mutations ---
-
-  const toggleProcessing = (id: number, isProcessing: boolean) => {
-    setProcessingIds((prev) => {
-      const next = new Set(prev);
-      if (isProcessing) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  };
-
-  const toggleStatusMutation = useMutation({
-    mutationFn: ({ id, active }: { id: number; active: boolean }) =>
-      siteService.setActive(id, active),
-    onMutate: ({ id }) => toggleProcessing(id, true),
-    onSettled: (_data, _error, { id }) => {
-      toggleProcessing(id, false);
-      queryClient.invalidateQueries({ queryKey: ["sites"] });
-    },
-    onError: (err) => {
-      console.error("Status update failed", err);
-      alert("Failed to update status. Please try again.");
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => siteService.delete(id),
-    onMutate: (id) => toggleProcessing(id, true),
-    onSettled: (_data, _error, id) => {
-      toggleProcessing(id, false);
-      queryClient.invalidateQueries({ queryKey: ["sites"] });
-    },
-    onError: (err) => {
-      console.error("Delete failed", err);
-      alert("Failed to delete site. Please try again.");
-    },
-  });
-
   // --- Handlers ---
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,16 +73,6 @@ function RouteComponent() {
 
   const handleReset = () => {
     setLocalFilters({ contractor_name: "", address: "", mobile_no: "" });
-  };
-
-  const handleToggleStatus = (site: Site) => {
-    toggleStatusMutation.mutate({ id: site.id, active: !site.active });
-  };
-
-  const handleDelete = (site: Site) => {
-    if (confirm(`Are you sure you want to delete ${site.contractor_name}?`)) {
-      deleteMutation.mutate(site.id);
-    }
   };
 
   // --- Client-side filtering ---
@@ -159,8 +107,7 @@ function RouteComponent() {
             </span>
           </h2>
           <p className="text-zinc-400">
-            View all sites that have unbilled records pending in the
-            system.
+            View all sites that have unbilled records pending in the system.
           </p>
         </div>
         <Button
@@ -228,14 +175,12 @@ function RouteComponent() {
               >
                 <CalendarIcon className="mr-2 h-4 w-4 text-zinc-500 shrink-0" />
                 <span className="truncate">
-                  {dateParam ? (
-                    format(
-                      parse(dateParam, "yyyy-MM-dd", new Date()),
-                      "dd MMM yyyy",
-                    )
-                  ) : (
-                    "All Dates"
-                  )}
+                  {dateParam
+                    ? format(
+                        parse(dateParam, "yyyy-MM-dd", new Date()),
+                        "dd MMM yyyy",
+                      )
+                    : "All Dates"}
                 </span>
               </Button>
             </PopoverTrigger>

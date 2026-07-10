@@ -152,12 +152,7 @@ function StatementPage() {
   const closingBalance = runningBalance;
 
   // Dynamic fallback bounds for From & To Dates when no manual filters are active
-  const firstTxDate =
-    allItems.length > 0
-      ? allItems[0].date
-      : site.joined_date
-        ? new Date(site.joined_date)
-        : new Date();
+  const firstTxDate = allItems.length > 0 ? allItems[0].date : new Date();
   const lastTxDate =
     allItems.length > 0 ? allItems[allItems.length - 1].date : new Date();
 
@@ -215,14 +210,18 @@ function StatementPage() {
             <h1 className="text-base sm:text-lg font-bold text-slate-800 truncate">
               Ledger Statement
             </h1>
-            <p className="text-xs text-slate-500 truncate">{site.contractor_name}</p>
+            <p className="text-xs text-slate-500 truncate">
+              {site.contractor_name}
+            </p>
           </div>
         </div>
 
         {/* Date Filters */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap w-full sm:w-auto">
           <div className="flex items-center gap-2 flex-1 sm:flex-none">
-            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">From:</span>
+            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">
+              From:
+            </span>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -234,7 +233,9 @@ function StatementPage() {
                   )}
                 >
                   <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
-                  <span className="truncate">{fromDateStr ? fromDateStr : "From Date"}</span>
+                  <span className="truncate">
+                    {fromDateStr ? fromDateStr : "From Date"}
+                  </span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -251,7 +252,9 @@ function StatementPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-1 sm:flex-none">
-            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">To:</span>
+            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">
+              To:
+            </span>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -263,7 +266,9 @@ function StatementPage() {
                   )}
                 >
                   <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
-                  <span className="truncate">{toDateStr ? toDateStr : "To Date"}</span>
+                  <span className="truncate">
+                    {toDateStr ? toDateStr : "To Date"}
+                  </span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -309,7 +314,9 @@ function StatementPage() {
           <div className="flex items-center justify-start w-full sm:w-auto">
             {/* Logo area */}
             <div className="h-12 w-12 sm:h-14 sm:w-14 flex flex-col items-center justify-center font-extrabold text-slate-800 border-2 border-slate-800 rounded-lg overflow-hidden bg-white sm:bg-slate-50 shrink-0">
-              <span className="text-lg sm:text-xl tracking-tighter leading-none">BG</span>
+              <span className="text-lg sm:text-xl tracking-tighter leading-none">
+                BG
+              </span>
               <span className="text-[5px] sm:text-[6px] tracking-widest uppercase mt-0.5 leading-none">
                 JECK
               </span>
@@ -352,7 +359,7 @@ function StatementPage() {
 
         {/* Info Details Section */}
         <div className="flex flex-col sm:flex-row border-b sm:border-b-2 border-slate-800">
-          {/* Customer Left */}
+          {/* Site Left */}
           <div className="w-full sm:w-3/5 border-b sm:border-b-0 sm:border-r-2 border-slate-800 p-3 sm:p-4 flex flex-col justify-between bg-slate-50/50">
             <div className="flex flex-col gap-1">
               <div className="font-extrabold text-xs sm:text-sm uppercase text-slate-900 tracking-wide leading-none">
@@ -364,19 +371,25 @@ function StatementPage() {
             </div>
             <div className="mt-3 sm:mt-2 flex flex-col gap-0.5">
               <div className="text-[10px] sm:text-[11px] font-bold flex gap-2 sm:gap-3 text-slate-800">
-                <span className="w-20 sm:w-24 tracking-wider shrink-0">SITE ID</span>
+                <span className="w-20 sm:w-24 tracking-wider shrink-0">
+                  SITE ID
+                </span>
                 <span className="font-semibold text-slate-600 truncate">
                   : {site.id}
                 </span>
               </div>
               <div className="text-[10px] sm:text-[11px] font-bold flex gap-2 sm:gap-3 text-slate-800">
-                <span className="w-20 sm:w-24 tracking-wider shrink-0">MOBILE NO</span>
+                <span className="w-20 sm:w-24 tracking-wider shrink-0">
+                  MOBILE NO
+                </span>
                 <span className="font-semibold text-slate-600 truncate">
                   : {site.mobile_no}
                 </span>
               </div>
               <div className="text-[10px] sm:text-[11px] font-bold flex gap-2 sm:gap-3 text-slate-800">
-                <span className="w-20 sm:w-24 tracking-wider shrink-0">GSTIN</span>
+                <span className="w-20 sm:w-24 tracking-wider shrink-0">
+                  GSTIN
+                </span>
                 <span className="font-semibold text-slate-600">:</span>
               </div>
             </div>
@@ -386,7 +399,9 @@ function StatementPage() {
           <div className="w-full sm:w-2/5 p-3 sm:p-4 flex flex-col justify-center gap-2 text-[10px] sm:text-[11px] font-bold bg-white">
             <div className="flex justify-between items-center border-b border-slate-200 sm:border-slate-300 pb-1">
               <span className="text-slate-500 tracking-wider">DOCUMENT</span>
-              <span className="text-slate-900 text-right">ACCOUNT STATEMENT</span>
+              <span className="text-slate-900 text-right">
+                ACCOUNT STATEMENT
+              </span>
             </div>
             <div className="flex justify-between items-center border-b border-slate-200 sm:border-slate-300 pb-1">
               <span className="text-slate-500 tracking-wider">FROM DATE</span>

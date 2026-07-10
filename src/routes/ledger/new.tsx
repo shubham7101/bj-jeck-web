@@ -350,10 +350,11 @@ function LedgerEntryForm({
 }) {
   const queryClient = useQueryClient();
 
-  const { data: stats } = useQuery({
-    queryKey: ["sites", site.id, "stats"],
-    queryFn: () => siteService.stats(site.id),
-  });
+  // const { data: stats } = useQuery({
+  //   queryKey: ["sites", site.id, "stats"],
+  //   queryFn: () => siteService.stats(site.id),
+  // });
+  const stats: any = null;
 
   const billed = stats?.bills?.total_bill_amount ?? 0;
   const paid = stats?.ledger?.total_paid ?? 0;

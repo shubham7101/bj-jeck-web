@@ -89,7 +89,6 @@ function SiteFilters({ filters, onChange, onReset }: SiteFiltersProps) {
 
   return (
     <div className={themeStyles.glassHeader}>
-      <div className={themeStyles.glassHeaderOverlay} />
       <div className="relative z-10 flex flex-col md:flex-row gap-3 items-stretch md:items-end">
         <div className="relative flex-1 group w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />

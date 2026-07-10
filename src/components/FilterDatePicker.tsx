@@ -7,7 +7,8 @@ import {
   startOfDay,
 } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import React, { useId, useState } from "react";
+import type React from "react";
+import { useId, useState } from "react";
 import { Button } from "./ui/button";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
@@ -37,7 +38,7 @@ export function FilterDatePicker({
   const inputId = useId();
   const [open, setOpen] = useState(false);
 
-  let dateValue: Date | undefined = undefined;
+  let dateValue: Date | undefined ;
   if (value && isValid(parse(value, DATE_FORMAT, new Date()))) {
     dateValue = parse(value, DATE_FORMAT, new Date());
   }

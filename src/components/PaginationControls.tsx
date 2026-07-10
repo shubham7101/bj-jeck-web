@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -72,10 +73,10 @@ export function PaginationControls({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 gap-2 border-zinc-800 bg-zinc-950 text-zinc-400 text-xs w-[110px] sm:w-auto justify-between sm:justify-center"
+              className="h-8 gap-2 border-zinc-800 bg-zinc-950 text-zinc-400 text-xs sm:w-auto justify-between sm:justify-center"
             >
               <span>
-                Rows: <span className="text-zinc-200">{perPage}</span>
+                Rows : <span className="text-zinc-200">{perPage}</span>
               </span>
               <ChevronDown className="h-3 w-3 opacity-50" />
             </Button>

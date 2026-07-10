@@ -67,13 +67,8 @@ import {
 } from "@/components/ui/table";
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
-import {
-  type Site,
-} from "@/schemas/siteSchema";
-import {
-  PART_OPTIONS,
-  getSizesForPart,
-} from "@/schemas/common";
+import type { Site } from "@/schemas/siteSchema";
+import { PART_OPTIONS, getSizesForPart } from "@/schemas/common";
 import {
   type CreateRecord,
   createRecordSchema,
@@ -128,6 +123,7 @@ const DEFAULT_FORM_VALUES: Partial<CreateRecord> = {
       broken_amount: 0,
       broken_charge: 0,
       service_charge: 0,
+      lost_amount: 0,
       lost_charge: 0,
     },
   ],
@@ -317,11 +313,7 @@ function Header({
   );
 }
 
-function SiteSelectionStep({
-  onSelect,
-}: {
-  onSelect: (c: Site) => void;
-}) {
+function SiteSelectionStep({ onSelect }: { onSelect: (c: Site) => void }) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [filters, setFilters] = useState({
@@ -448,13 +440,18 @@ function RecordEntryForm({
     (acc: number, item: any) =>
       acc +
       (item.part === "full" || item.part === "plate"
-        ? (item.item_amount || 0) + (item.broken_amount || 0)
+        ? (item.item_amount || 0) +
+          (item.broken_amount || 0) +
+          (item.lost_amount || 0)
         : 0),
     0,
   );
 
   const calculatedLabourCharge = items.reduce((acc: number, item: any) => {
-    const totalQty = (item.item_amount || 0) + (item.broken_amount || 0);
+    const totalQty =
+      (item.item_amount || 0) +
+      (item.broken_amount || 0) +
+      (item.lost_amount || 0);
     if (item.part === "plate") {
       return acc + totalQty * 2;
     }
@@ -802,6 +799,7 @@ function RecordEntryForm({
                       broken_amount: 0,
                       broken_charge: 0,
                       service_charge: 0,
+                      lost_amount: 0,
                       lost_charge: 0,
                     })
                   }
@@ -829,7 +827,10 @@ function RecordEntryForm({
                         <TableHead className="w-[12%] text-muted-foreground font-semibold text-xs uppercase tracking-wider text-center">
                           Broken Qty
                         </TableHead>
-                        <TableHead className="w-[14%] text-muted-foreground font-semibold text-xs uppercase tracking-wider text-center">
+                        <TableHead className="w-[12%] text-muted-foreground font-semibold text-xs uppercase tracking-wider text-center">
+                          Lost Qty
+                        </TableHead>
+                        <TableHead className="w-[12%] text-muted-foreground font-semibold text-xs uppercase tracking-wider text-center">
                           Broken Charge
                         </TableHead>
                         <TableHead className="w-[14%] text-muted-foreground font-semibold text-xs uppercase tracking-wider text-center">
@@ -972,6 +973,32 @@ function RecordEntryForm({
                                             `items[${index}].broken_charge`,
                                             val * 100,
                                           );
+                                        }}
+                                        onWheel={(e) => e.currentTarget.blur()}
+                                      />
+                                    </div>
+                                  </FormBase>
+                                )}
+                              </form.Field>
+                            </TableCell>
+
+                            <TableCell className="py-3.5 align-top text-center">
+                              <form.Field name={`items[${index}].lost_amount`}>
+                                {(subField) => (
+                                  <FormBase field={subField} className="mb-0">
+                                    <div className="flex justify-center">
+                                      <Input
+                                        type="number"
+                                        className="border-rose-500/20 bg-rose-500/5 text-center hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
+                                        placeholder="0"
+                                        value={
+                                          subField.state.value === 0
+                                            ? ""
+                                            : subField.state.value
+                                        }
+                                        onChange={(e) => {
+                                          const val = Number(e.target.value);
+                                          subField.handleChange(val);
                                         }}
                                         onWheel={(e) => e.currentTarget.blur()}
                                       />
@@ -1199,7 +1226,7 @@ function RecordEntryForm({
                           </form.Field>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-3 gap-4">
                           <form.Field name={`items[${index}].item_amount`}>
                             {(subField) => (
                               <FormBase
@@ -1249,6 +1276,31 @@ function RecordEntryForm({
                                       `items[${index}].broken_charge`,
                                       val * 100,
                                     );
+                                  }}
+                                  onWheel={(e) => e.currentTarget.blur()}
+                                />
+                              </FormBase>
+                            )}
+                          </form.Field>
+                          <form.Field name={`items[${index}].lost_amount`}>
+                            {(subField) => (
+                              <FormBase
+                                field={subField}
+                                label="Lost Qty"
+                                className="mb-0"
+                              >
+                                <Input
+                                  type="number"
+                                  className="bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all text-center h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
+                                  placeholder="0"
+                                  value={
+                                    subField.state.value === 0
+                                      ? ""
+                                      : subField.state.value
+                                  }
+                                  onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    subField.handleChange(val);
                                   }}
                                   onWheel={(e) => e.currentTarget.blur()}
                                 />
@@ -1511,6 +1563,9 @@ function RecordEntryForm({
                   <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground text-right">
                     Broken
                   </TableHead>
+                  <TableHead className="font-bold text-xs uppercase tracking-wider text-muted-foreground text-right">
+                    Lost
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1536,12 +1591,15 @@ function RecordEntryForm({
                         <TableCell className="text-right font-mono text-sm text-rose-500">
                           {item.broken_amount || 0}
                         </TableCell>
+                        <TableCell className="text-right font-mono text-sm text-rose-500">
+                          {item.lost_amount || 0}
+                        </TableCell>
                       </TableRow>
                     ))
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={5}
                       className="text-center text-muted-foreground py-6 text-sm"
                     >
                       No items added yet.

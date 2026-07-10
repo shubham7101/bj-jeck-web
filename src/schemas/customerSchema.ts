@@ -65,7 +65,6 @@ export const updateCustomerSchema = customerSchema.pick({
   mobile_no_2: true,
   aadhar_card_no: true,
   reference_name: true,
-  address: true,
   active: true,
 });
 export type UpdateCustomer = z.infer<typeof updateCustomerSchema>;
@@ -84,59 +83,3 @@ export const customerInventorySchema = z.array(
 );
 export type CustomerInventory = z.infer<typeof customerInventorySchema>;
 
-export const customersStatsSchema = z.object({
-  total: z.number(),
-  active: z.number(),
-  inactive: z.number(),
-});
-export type CustomersStats = z.infer<typeof customersStatsSchema>;
-
-export const customerStatsSchema = z.object({
-  records: z
-    .object({
-      total_count: z.number().nullish().default(0),
-      latest_id: z.number().nullish().default(0),
-      latest_date: z.string().nullish().default(""),
-    })
-    .nullish()
-    .default({
-      total_count: 0,
-      latest_id: 0,
-      latest_date: "",
-    }),
-
-  bills: z
-    .object({
-      total_count: z.number().nullish().default(0),
-      total_bill_amount: z.number().nullish().default(0),
-      latest_id: z.number().nullish().default(0),
-      latest_from_date: z.string().nullish().default(""),
-      latest_to_date: z.string().nullish().default(""),
-      latest_total: z.number().nullish().default(0),
-    })
-    .nullish()
-    .default({
-      total_count: 0,
-      total_bill_amount: 0,
-      latest_id: 0,
-      latest_from_date: "",
-      latest_to_date: "",
-      latest_total: 0,
-    }),
-
-  ledger: z
-    .object({
-      total_paid: z.number().nullish().default(0),
-      total_discounted: z.number().nullish().default(0),
-      total_refunded: z.number().nullish().default(0),
-      latest_date: z.string().nullish().default(""),
-    })
-    .nullish()
-    .default({
-      total_paid: 0,
-      total_discounted: 0,
-      total_refunded: 0,
-      latest_date: "",
-    }),
-});
-export type CustomerStats = z.infer<typeof customerStatsSchema>;

@@ -70,15 +70,15 @@ function BillsPage() {
   // --- Queries ---
 
   // Assuming you have a stats endpoint for bills, otherwise remove or adapt
-  const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ["bills", "stats"],
-    queryFn: () => billService.stats(),
-    placeholderData: {
-      year_total: 0,
-      year_bills: 0,
-      total_bills: 0,
-    },
-  });
+  // const { data: stats, isLoading: isLoadingStats } = useQuery({
+  //   queryKey: ["bills", "stats"],
+  //   queryFn: () => billService.stats(),
+  //   placeholderData: {
+  //     year_total: 0,
+  //     year_bills: 0,
+  //     total_bills: 0,
+  //   },
+  // });
 
   const { data, isLoading, isError, error, isPlaceholderData } = useQuery({
     queryKey: ["bills", { ...search, page, per_page }],
@@ -185,7 +185,7 @@ function BillsPage() {
       <div className="h-px w-full bg-linear-to-r from-zinc-800 to-transparent" />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 min-w-0">
+      {/* <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 min-w-0">
         <StatsCard
           loading={isLoadingStats}
           title="Yearly Revenue"
@@ -220,7 +220,7 @@ function BillsPage() {
           icon={<TrendingUp className="h-4 w-4 text-amber-500" />}
           className="bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
         />
-      </div>
+      </div> */}
 
       {isError && error && <ErrorAlert error={error} />}
 

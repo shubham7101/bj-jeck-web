@@ -372,6 +372,10 @@ function FinancialInfoCard({ record }: { record: RecordDetails }) {
     (sum, item) => sum + (item.broken_amount || 0),
     0,
   );
+  const totalLostQty = record.items.reduce(
+    (sum, item) => sum + (item.lost_amount || 0),
+    0,
+  );
   const totalServiceCharges = record.items.reduce(
     (sum, item) => sum + (item.service_charge || 0),
     0,
@@ -482,8 +486,8 @@ function FinancialInfoCard({ record }: { record: RecordDetails }) {
               <div className="text-sm font-black text-rose-400 print:text-black">
                 ₹{totalLostCharges.toLocaleString("en-IN")}
               </div>
-              <div className="text-[8px] text-zinc-500">
-                missing items value
+              <div className="text-[8px] text-zinc-500 font-semibold">
+                {totalLostQty} lost pcs
               </div>
             </div>
           </div>
@@ -548,28 +552,31 @@ function RecordItemsTable({ items }: { items: RecordItem[] }) {
             <Table className="min-w-[800px] sm:min-w-full">
               <TableHeader className="bg-zinc-950/50 print:bg-zinc-100">
                 <TableRow className="border-zinc-800/80 hover:bg-transparent print:border-zinc-300">
-                  <TableHead className="w-[16%] pl-6 text-zinc-400 uppercase text-[10px] font-bold tracking-wider print:text-black">
+                  <TableHead className="w-[15%] pl-6 text-zinc-400 uppercase text-[10px] font-bold tracking-wider print:text-black">
                     Part Details
                   </TableHead>
                   <TableHead className="w-[10%] text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-center print:text-black">
                     Size
                   </TableHead>
-                  <TableHead className="w-[12%] text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-center print:text-black">
+                  <TableHead className="w-[10%] text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-center print:text-black">
                     Good Qty
                   </TableHead>
-                  <TableHead className="w-[12%] text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-center print:text-black">
+                  <TableHead className="w-[10%] text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-center print:text-black">
                     Broken Qty
                   </TableHead>
-                  <TableHead className="w-[12%] text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-center print:text-black">
+                  <TableHead className="w-[10%] text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-center print:text-black">
+                    Lost Qty
+                  </TableHead>
+                  <TableHead className="w-[11%] text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-center print:text-black">
                     Broken Charge
                   </TableHead>
-                  <TableHead className="w-[12%] text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-center print:text-black">
+                  <TableHead className="w-[11%] text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-center print:text-black">
                     Service Charge
                   </TableHead>
-                  <TableHead className="w-[12%] text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-center print:text-black">
+                  <TableHead className="w-[11%] text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-center print:text-black">
                     Lost Charge
                   </TableHead>
-                  <TableHead className="w-[14%] pr-6 text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-right print:text-black">
+                  <TableHead className="w-[12%] pr-6 text-zinc-400 uppercase text-[10px] font-bold tracking-wider text-right print:text-black">
                     Total Qty
                   </TableHead>
                 </TableRow>
@@ -580,7 +587,7 @@ function RecordItemsTable({ items }: { items: RecordItem[] }) {
                     key={index}
                     className="border-none hover:bg-zinc-900/40 transition-colors group print:hover:bg-transparent"
                   >
-                    <TableCell className="w-[16%] pl-6 py-4 font-semibold text-zinc-200 capitalize print:text-black">
+                    <TableCell className="w-[15%] pl-6 py-4 font-semibold text-zinc-200 capitalize print:text-black">
                       {item.part}
                     </TableCell>
                     <TableCell className="w-[10%] py-4 text-center">
@@ -591,10 +598,10 @@ function RecordItemsTable({ items }: { items: RecordItem[] }) {
                         {item.size}
                       </Badge>
                     </TableCell>
-                    <TableCell className="w-[12%] py-4 text-center font-medium text-zinc-300 print:text-black">
+                    <TableCell className="w-[10%] py-4 text-center font-medium text-zinc-300 print:text-black">
                       {item.item_amount}
                     </TableCell>
-                    <TableCell className="w-[12%] py-4 text-center">
+                    <TableCell className="w-[10%] py-4 text-center">
                       <span
                         className={cn(
                           "font-semibold",
@@ -606,7 +613,19 @@ function RecordItemsTable({ items }: { items: RecordItem[] }) {
                         {item.broken_amount === 0 ? "-" : item.broken_amount}
                       </span>
                     </TableCell>
-                    <TableCell className="w-[12%] py-4 text-center">
+                    <TableCell className="w-[10%] py-4 text-center">
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          item.lost_amount === 0
+                            ? "text-zinc-500"
+                            : "text-rose-455 print:text-rose-600",
+                        )}
+                      >
+                        {item.lost_amount === 0 ? "-" : item.lost_amount}
+                      </span>
+                    </TableCell>
+                    <TableCell className="w-[11%] py-4 text-center">
                       <span
                         className={cn(
                           "font-mono font-bold text-xs",
@@ -620,8 +639,7 @@ function RecordItemsTable({ items }: { items: RecordItem[] }) {
                           : `₹${item.broken_charge.toLocaleString("en-IN")}`}
                       </span>
                     </TableCell>
-
-                    <TableCell className="w-[12%] py-4 text-center">
+                    <TableCell className="w-[11%] py-4 text-center">
                       <span
                         className={cn(
                           "font-mono font-bold text-xs",
@@ -635,7 +653,7 @@ function RecordItemsTable({ items }: { items: RecordItem[] }) {
                           : `₹${item.service_charge.toLocaleString("en-IN")}`}
                       </span>
                     </TableCell>
-                    <TableCell className="w-[12%] py-4 text-center">
+                    <TableCell className="w-[11%] py-4 text-center">
                       <span
                         className={cn(
                           "font-mono font-bold text-xs",
@@ -649,8 +667,8 @@ function RecordItemsTable({ items }: { items: RecordItem[] }) {
                           : `₹${item.lost_charge.toLocaleString("en-IN")}`}
                       </span>
                     </TableCell>
-                    <TableCell className="w-[14%] pr-6 py-4 text-right font-black text-zinc-200 print:text-black">
-                      {item.item_amount + item.broken_amount}
+                    <TableCell className="w-[12%] pr-6 py-4 text-right font-black text-zinc-200 print:text-black">
+                      {item.item_amount + item.broken_amount + (item.lost_amount || 0)}
                     </TableCell>
                   </TableRow>
                 ))}

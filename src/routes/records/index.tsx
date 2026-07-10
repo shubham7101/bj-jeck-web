@@ -1,26 +1,17 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
 import { Route as rootRoute } from "@/routes/__root";
-import {
-  AlertTriangle,
-  ArrowRightLeft,
-  Database,
-  IndianRupee,
-  Plus,
-  Search,
-} from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
 // Components
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { RecordDataGrid } from "@/components/RecordDataGrid";
-import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 // Hooks & Services
 import { useDebounce } from "@/hooks/use-debounce";
-import { themeStyles } from "@/lib/styles";
 import {
   type RecordSearchReq,
   recordSearchReqSchema,
@@ -68,9 +59,7 @@ function RecordPage() {
           : undefined;
 
         // Ensure we don't pass NaN
-        const cleanSiteId = Number.isNaN(siteId || NaN)
-          ? undefined
-          : siteId;
+        const cleanSiteId = Number.isNaN(siteId || NaN) ? undefined : siteId;
         const cleanBillId = Number.isNaN(billId || NaN) ? undefined : billId;
 
         return {
@@ -91,10 +80,10 @@ function RecordPage() {
 
   // --- Queries ---
 
-  const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ["records", "stats"],
-    queryFn: () => recordService.stats(),
-  });
+  // const { data: stats, isLoading: isLoadingStats } = useQuery({
+  //   queryKey: ["records", "stats"],
+  //   queryFn: () => recordService.stats(),
+  // });
 
   const { data, isLoading, isError, error, isPlaceholderData } = useQuery({
     queryKey: ["records", { ...search, page, per_page }],
@@ -177,7 +166,7 @@ function RecordPage() {
           </p>
         </div>
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <form 
+          <form
             onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
@@ -191,7 +180,7 @@ function RecordPage() {
             <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-zinc-500" />
             </div>
-            <Input 
+            <Input
               type="number"
               name="record_id"
               placeholder="Find Chalan No..."
@@ -211,9 +200,7 @@ function RecordPage() {
 
       <div className="h-px w-full bg-linear-to-r from-zinc-800 to-transparent" />
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
-        {/* 1. Yearly Labour */}
+      {/* <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
         <StatsCard
           loading={isLoadingStats}
           title="Yearly Labour"
@@ -226,7 +213,6 @@ function RecordPage() {
           <div className={themeStyles.accentBarEmerald} />
         </StatsCard>
 
-        {/* 2. Yearly Flow */}
         <StatsCard
           loading={isLoadingStats}
           title="Yearly Flow"
@@ -249,7 +235,6 @@ function RecordPage() {
           <div className={themeStyles.accentBarBlue} />
         </StatsCard>
 
-        {/* 3. Damaged Items */}
         <StatsCard
           loading={isLoadingStats}
           title="Damaged Items"
@@ -262,7 +247,6 @@ function RecordPage() {
           <div className={themeStyles.accentBarPrimary} />
         </StatsCard>
 
-        {/* 4. Total Records */}
         <StatsCard
           loading={isLoadingStats}
           title="Total Records"
@@ -274,7 +258,7 @@ function RecordPage() {
         >
           <div className={themeStyles.accentBarZinc} />
         </StatsCard>
-      </div>
+      </div> */}
 
       {isError && error && <ErrorAlert error={error} />}
 

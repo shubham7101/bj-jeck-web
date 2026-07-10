@@ -4,6 +4,7 @@ import {
   BookOpen,
   FileText,
   LayoutDashboard,
+  MapPin,
   Package,
   Receipt,
   User,
@@ -52,9 +53,20 @@ const data = {
           title: "New Customer",
           url: "/customers/new", // POST /customers
         },
+      ],
+    },
+    {
+      title: "Sites",
+      url: "/sites",
+      icon: MapPin,
+      items: [
         {
-          title: "Unbilled Customers",
-          url: "/customers/unbilled", // GET /customers/unbilled
+          title: "All Sites",
+          url: "/sites",
+        },
+        {
+          title: "Unbilled Sites",
+          url: "/sites/unbilled",
         },
       ],
     },

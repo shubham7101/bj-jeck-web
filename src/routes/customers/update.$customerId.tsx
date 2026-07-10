@@ -3,27 +3,20 @@ import { Route as rootRoute } from "@/routes/__root";
 import {
   ArrowLeft,
   Contact,
-  IndianRupee,
-  LayoutList,
   Loader2,
   Plus,
-  RefreshCcw,
   Save,
-  Trash2,
   User,
-  X,
   CreditCard,
-  MapPin,
   Phone,
   PhoneCall,
   UserPlus,
   ShieldCheck,
-  UserX,
   RotateCcw,
   Activity,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useForm, useStore } from "@tanstack/react-form";
+import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 
 import { ErrorAlert } from "@/components/ErrorAlert";
@@ -39,37 +32,16 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { type Customer, customerRateSchema } from "@/schemas/customerSchema";
-import {
-  getSizesForPart,
-  PART_OPTIONS,
-  STANDARD_RATES_SETUP,
-} from "@/schemas/common";
+import { type Customer } from "@/schemas/customerSchema";
 import { customerService } from "@/services/customerService";
 import { createRoute, Link, useRouter } from "@tanstack/react-router";
 
 // --- Schema Definitions ---
 const updateCustomerSchema = z.object({
   name: z.string().min(2).max(100),
-  address: z.string().min(3).max(255),
   mobile_no: z
     .string()
     .length(10, "Mobile number must be exactly 10 digits")
@@ -99,12 +71,9 @@ const updateCustomerSchema = z.object({
     .transform((val) => (val === "" ? null : val))
     .optional(),
   active: z.boolean(),
-  rates: z.array(customerRateSchema).min(5),
 });
 
 type UpdateCustomerPayload = z.infer<typeof updateCustomerSchema>;
-
-const EMPTY_RATE = { part: "full", size: "2.0", rate: 0 };
 
 // --- Route Definition ---
 export const Route = createRoute({
@@ -113,10 +82,7 @@ export const Route = createRoute({
   component: UpdateCustomerRouteWrapper,
   loader: async ({ params }) => {
     const id = Number(params.customerId);
-    const [profile, rates] = await Promise.all([
-      customerService.get(id),
-      customerService.getRates(id).catch(() => null),
-    ]);
+    const profile = await customerService.get(id);
     if (!profile) throw new Error("Customer not found");
     return {
       customerId: id,
@@ -126,10 +92,8 @@ export const Route = createRoute({
         mobile_no_2: profile.mobile_no_2 || "",
         aadhar_card_no: profile.aadhar_card_no || "",
         reference_name: profile.reference_name || "",
-        address: profile.address,
         active: profile.active,
       },
-      rates: Array.isArray(rates) ? rates : [],
       lastUpdated: Date.now(),
     };
   },
@@ -138,31 +102,26 @@ export const Route = createRoute({
 });
 
 function UpdateCustomerRouteWrapper() {
-  const { customerId, profile, rates, lastUpdated } = Route.useLoaderData();
+  const { customerId, profile, lastUpdated } = Route.useLoaderData();
   return (
     <UpdateCustomerPage
       key={lastUpdated}
       customerId={customerId}
       profile={profile}
-      rates={rates}
     />
   );
 }
 
 // --- Main Page Component ---
-function UpdateCustomerPage({ customerId, profile, rates }: any) {
+function UpdateCustomerPage({ customerId, profile }: any) {
   const queryClient = useQueryClient();
   const successRef = useRef<HTMLDivElement>(null);
   const [updatedCustomer, setUpdatedCustomer] = useState<Customer | null>(null);
 
   const mutation = useMutation({
     mutationFn: async (data: UpdateCustomerPayload) => {
-      const { rates: ratesData, ...profileData } = data;
-      await Promise.all([
-        customerService.update(customerId, profileData as any),
-        customerService.updateRates(customerId, { rates: ratesData }),
-      ]);
-      return { id: customerId, ...profileData } as Customer;
+      await customerService.update(customerId, data as any);
+      return { id: customerId, ...data } as Customer;
     },
     onSuccess: (data) => {
       setUpdatedCustomer(data);
@@ -171,10 +130,7 @@ function UpdateCustomerPage({ customerId, profile, rates }: any) {
   });
 
   const form = useForm({
-    defaultValues: {
-      ...profile,
-      rates: rates.length > 0 ? rates : STANDARD_RATES_SETUP,
-    },
+    defaultValues: profile,
     validators: {
       onSubmit: updateCustomerSchema,
     },
@@ -198,7 +154,7 @@ function UpdateCustomerPage({ customerId, profile, rates }: any) {
   }, [updatedCustomer]);
 
   return (
-    <div className="flex-1 px-2 py-6 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 relative">
+    <div className="flex-1 px-2 py-6 sm:p-6 md:p-8 max-w-4xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 relative">
       <div className="relative z-10 space-y-6 sm:space-y-8">
         <Header customerId={customerId} />
 
@@ -215,13 +171,8 @@ function UpdateCustomerPage({ customerId, profile, rates }: any) {
           }}
           className="flex flex-col gap-8 relative"
         >
-          <div className="grid gap-8 grid-cols-1 lg:grid-cols-2 items-start">
-            <div className="space-y-6">
-              <CustomerDetailsForm form={form} />
-            </div>
-            <div className="">
-              <CustomerRatesForm form={form} />
-            </div>
+          <div className="space-y-6">
+            <CustomerDetailsForm form={form} />
           </div>
 
           <FooterActions
@@ -259,7 +210,7 @@ function Header({ customerId }: { customerId: number }) {
             <User className="h-5 w-5 text-emerald-50" />
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-zinc-100 to-zinc-400">
-            Update Customer
+            Update Master Customer
           </h2>
           <Badge
             variant="outline"
@@ -269,7 +220,7 @@ function Header({ customerId }: { customerId: number }) {
           </Badge>
         </div>
         <p className="text-zinc-400/80 max-w-xl text-sm md:text-base font-medium">
-          Manage profile details, configuration, and specific rental rates.
+          Manage master profile details for this client.
         </p>
       </div>
       <div className="flex items-center gap-2">
@@ -308,10 +259,10 @@ function CustomerDetailsForm({ form }: { form: any }) {
           Profile Details
         </CardTitle>
         <CardDescription className="text-zinc-500">
-          Essential contact and identification info.
+          Essential contact and identification info for the master account.
         </CardDescription>
       </CardHeader>
-      <CardContent className="px-3 sm:p-4 space-y-5">
+      <CardContent className="px-3 sm:p-4 space-y-5 mt-2">
         <FormFieldWrapper
           form={form}
           name="name"
@@ -321,52 +272,46 @@ function CustomerDetailsForm({ form }: { form: any }) {
           placeholder="e.g. Rahul Sharma"
         />
 
-        <FormFieldWrapper
-          form={form}
-          name="mobile_no"
-          label="Primary Mobile"
-          icon={Phone}
-          required
-          placeholder="10-digit number"
-          type="numeric"
-          maxLength={10}
-        />
-        <FormFieldWrapper
-          form={form}
-          name="mobile_no_2"
-          label="Alternate Mobile"
-          icon={PhoneCall}
-          placeholder="Optional 10-digit number"
-          type="numeric"
-          maxLength={10}
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <FormFieldWrapper
+            form={form}
+            name="mobile_no"
+            label="Primary Mobile"
+            icon={Phone}
+            required
+            placeholder="10-digit number"
+            type="numeric"
+            maxLength={10}
+          />
+          <FormFieldWrapper
+            form={form}
+            name="mobile_no_2"
+            label="Alternate Mobile"
+            icon={PhoneCall}
+            placeholder="Optional 10-digit number"
+            type="numeric"
+            maxLength={10}
+          />
+        </div>
 
-        <FormFieldWrapper
-          form={form}
-          name="aadhar_card_no"
-          label="Aadhar Card No"
-          icon={CreditCard}
-          placeholder="Optional 12-digit number"
-          type="numeric"
-          maxLength={12}
-        />
-
-        <FormFieldWrapper
-          form={form}
-          name="reference_name"
-          label="Reference Name"
-          icon={UserPlus}
-          placeholder="e.g. Recommended by..."
-        />
-
-        <FormFieldWrapper
-          form={form}
-          name="address"
-          label="Address"
-          icon={MapPin}
-          required
-          placeholder="Site, Area, City"
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <FormFieldWrapper
+            form={form}
+            name="aadhar_card_no"
+            label="Aadhar Card No"
+            icon={CreditCard}
+            placeholder="Optional 12-digit number"
+            type="numeric"
+            maxLength={12}
+          />
+          <FormFieldWrapper
+            form={form}
+            name="reference_name"
+            label="Reference Name"
+            icon={UserPlus}
+            placeholder="e.g. Recommended by..."
+          />
+        </div>
 
         <Separator className="bg-zinc-800/50" />
 
@@ -460,209 +405,6 @@ function FormFieldWrapper({
   );
 }
 
-function CustomerRatesForm({ form }: { form: any }) {
-  const formValues = useStore(form.store, (state: any) => state.values);
-  const formRates = formValues.rates || [];
-
-  return (
-    <Card className="bg-zinc-950/60 border-zinc-800/60 shadow-2xl backdrop-blur-xl relative overflow-hidden flex flex-col h-full min-h-[500px] rounded-2xl">
-      <form.Field name="rates" mode="array">
-        {(field: any) => (
-          <>
-            <CardHeader className="px-3 py-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800/40 bg-zinc-900/20 sm:pb-5">
-              <div className="space-y-1.5">
-                <CardTitle className="text-xl flex items-center gap-2.5 font-bold text-zinc-100 tracking-tight">
-                  <LayoutList className="h-5 w-5 text-emerald-400" />
-                  Inventory Rental Rates
-                </CardTitle>
-                <CardDescription className="text-zinc-500">
-                  Configure custom default pricing for this specific customer.
-                </CardDescription>
-              </div>
-
-              <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full sm:w-auto">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 sm:flex-none h-9 border-zinc-700 bg-zinc-950/50 hover:bg-emerald-950/30 hover:text-emerald-400 hover:border-emerald-500/50 transition-all font-medium"
-                  onClick={() => field.setValue(STANDARD_RATES_SETUP)}
-                >
-                  <RefreshCcw className="mr-2 h-3.5 w-3.5" />
-                  Standard Rates
-                </Button>
-
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => field.pushValue(EMPTY_RATE)}
-                  className="flex-1 sm:flex-none h-9 bg-zinc-100 text-zinc-900 hover:bg-white border-none font-medium transition-all shadow-sm"
-                >
-                  <Plus className="mr-2 h-4 w-4" /> Add Row
-                </Button>
-              </div>
-            </CardHeader>
-
-            {field.state.meta.errors.length > 0 && (
-              <div className="bg-rose-950/30 px-6 py-3 border-b border-rose-900/30 backdrop-blur-sm">
-                <p className="text-sm font-medium text-rose-400 flex items-center">
-                  <X className="w-4 h-4 mr-2" />
-                  {field.state.meta.errors.join(", ")}
-                </p>
-              </div>
-            )}
-
-            <CardContent className="p-0 flex-1 overflow-x-auto relative">
-              <div className="w-full">
-                <Table>
-                  <TableHeader className="bg-zinc-950/80 border-b-zinc-800/50 sticky top-0 z-10 backdrop-blur-md">
-                    <TableRow className="border-none hover:bg-transparent">
-                      <TableHead className="w-[35%] min-w-[150px] pl-6 h-12 text-xs uppercase tracking-wider text-zinc-500 font-bold">
-                        Item Type
-                      </TableHead>
-                      <TableHead className="w-[30%] min-w-[130px] h-12 text-xs uppercase tracking-wider text-zinc-500 font-bold">
-                        Specification
-                      </TableHead>
-                      <TableHead className="w-[25%] min-w-[140px] h-12 text-xs uppercase tracking-wider text-zinc-500 font-bold">
-                        Daily Rate (₹)
-                      </TableHead>
-                      <TableHead className="w-[10%] min-w-[60px] h-12"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="divide-y divide-zinc-800/30">
-                    {field.state.value.map((_: any, index: number) => {
-                      const rowPart = formRates[index]?.part || "full";
-                      const allowedSizes = getSizesForPart(rowPart);
-
-                      return (
-                        <TableRow
-                          key={index}
-                          className="group hover:bg-zinc-800/20 border-zinc-800/30 transition-colors animate-in fade-in duration-300"
-                        >
-                          <TableCell className="pl-6 py-3.5">
-                            <form.Field name={`rates[${index}].part`}>
-                              {(subField: any) => (
-                                <Select
-                                  value={subField.state.value}
-                                  onValueChange={(val) => {
-                                    subField.handleChange(val);
-                                    const defaultSize =
-                                      val === "plate" ? "2x3" : "2.0";
-                                    form.setFieldValue(
-                                      `rates[${index}].size`,
-                                      defaultSize,
-                                    );
-                                  }}
-                                >
-                                  <SelectTrigger className="w-full h-10 border-zinc-800 bg-zinc-950/80 hover:bg-zinc-900 focus:bg-zinc-950 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all shadow-inner font-medium">
-                                    <SelectValue placeholder="Select Part" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-zinc-950 border-zinc-800">
-                                    {PART_OPTIONS.map((opt) => (
-                                      <SelectItem
-                                        key={opt.value}
-                                        value={opt.value}
-                                        className="focus:bg-zinc-800"
-                                      >
-                                        {opt.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </form.Field>
-                          </TableCell>
-
-                          <TableCell className="py-3.5 items-center">
-                            <form.Field name={`rates[${index}].size`}>
-                              {(subField: any) => (
-                                <Select
-                                  value={subField.state.value}
-                                  onValueChange={subField.handleChange}
-                                >
-                                  <SelectTrigger className="w-full h-10 border-zinc-800 bg-zinc-950/80 hover:bg-zinc-900 focus:bg-zinc-950 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all shadow-inner font-medium">
-                                    <SelectValue placeholder="Select Size" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-zinc-950 border-zinc-800">
-                                    {allowedSizes.map((size) => (
-                                      <SelectItem
-                                        key={size}
-                                        value={size}
-                                        className="focus:bg-zinc-800"
-                                      >
-                                        {size}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </form.Field>
-                          </TableCell>
-
-                          <TableCell className="py-3.5">
-                            <form.Field name={`rates[${index}].rate`}>
-                              {(subField: any) => (
-                                <div className="relative group/input">
-                                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-emerald-400 transition-colors pointer-events-none">
-                                    <IndianRupee className="h-4 w-4" />
-                                  </div>
-                                  <Input
-                                    type="number"
-                                    step="0.05"
-                                    min="0"
-                                    className="h-10 pl-9 border-zinc-800 bg-zinc-950/80 hover:bg-zinc-900 focus:bg-zinc-950 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all shadow-inner font-mono text-emerald-50 text-base"
-                                    placeholder="0.00"
-                                    value={subField.state.value || ""}
-                                    onChange={(e) =>
-                                      subField.handleChange(
-                                        Number(e.target.value),
-                                      )
-                                    }
-                                    onFocus={(e) => e.target.select()}
-                                  />
-                                </div>
-                              )}
-                            </form.Field>
-                          </TableCell>
-
-                          <TableCell className="py-3.5 text-right pr-6">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 cursor-pointer rounded-lg"
-                              onClick={() => field.removeValue(index)}
-                              disabled={field.state.value.length === 1}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-
-            <div className="p-4 border-t border-zinc-800/40 bg-zinc-950/50 flex justify-between items-center text-xs text-zinc-400 backdrop-blur-md">
-              <span className="font-semibold bg-zinc-900/80 px-2.5 py-1 rounded-md border border-zinc-800/80 shadow-inner">
-                Total Rates:{" "}
-                <span className="text-emerald-400">
-                  {field.state.value.length}
-                </span>
-              </span>
-              <span className="hidden sm:inline italic opacity-80">
-                Rates apply to new bills only.
-              </span>
-            </div>
-          </>
-        )}
-      </form.Field>
-    </Card>
-  );
-}
-
 function FooterActions({
   form,
   mutation,
@@ -726,17 +468,17 @@ function UpdateCustomerSuccessFeedback({
 }) {
   return (
     <SuccessFeedback
-      title="Customer Updated Successfully!"
+      title="Master Customer Updated!"
       description={
         <span className="flex items-center gap-1.5 text-zinc-300 mt-1">
-          Profile and rates for ID:{" "}
+          Profile for ID:{" "}
           <Badge
             variant="outline"
             className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-mono text-sm px-2"
           >
             #{customer.id}
           </Badge>
-          have been saved.
+          has been saved.
         </span>
       }
       details={[
@@ -790,7 +532,7 @@ function UpdateCustomerSuccessFeedback({
 
 function LoadingSkeleton() {
   return (
-    <div className="flex-1 space-y-8 p-8 max-w-7xl mx-auto">
+    <div className="flex-1 space-y-8 p-8 max-w-4xl mx-auto">
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <Skeleton className="h-10 w-64 bg-zinc-800" />
@@ -798,36 +540,35 @@ function LoadingSkeleton() {
         </div>
         <Skeleton className="h-10 w-32 bg-zinc-800" />
       </div>
-      <div className="grid gap-8 grid-cols-1 lg:grid-cols-12">
-        <Skeleton className="lg:col-span-4 h-96 w-full bg-zinc-900 rounded-xl" />
-        <Skeleton className="lg:col-span-8 h-96 w-full bg-zinc-900 rounded-xl" />
-      </div>
+
+      <Skeleton className="h-[400px] w-full rounded-xl bg-zinc-900/50 border border-zinc-800/50" />
     </div>
   );
 }
 
-function ErrorState({ error }: { error: Error }) {
-  const router = useRouter();
+function ErrorState() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center min-h-[80vh] space-y-6 p-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-center h-24 w-24 rounded-full bg-zinc-900 border border-zinc-800 shadow-xl">
-        <UserX className="h-10 w-10 text-zinc-500" />
+    <div className="flex-1 p-8 max-w-4xl mx-auto">
+      <div className="bg-rose-950/30 border border-rose-900/50 rounded-xl p-8 text-center space-y-4 shadow-xl">
+        <div className="mx-auto w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center">
+          <ArrowLeft className="h-8 w-8 text-rose-400" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-rose-100">
+            Failed to Load Profile
+          </h2>
+          <p className="text-rose-400/80 mt-2">
+            The customer profile could not be found or an error occurred.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          asChild
+          className="mt-4 border-rose-900/50 hover:bg-rose-900/30 hover:text-rose-100"
+        >
+          <Link to="/customers">Return to Directory</Link>
+        </Button>
       </div>
-      <div className="text-center space-y-2 max-w-md">
-        <h2 className="text-2xl font-bold tracking-tight text-white">
-          Customer Load Failed
-        </h2>
-        <p className="text-zinc-400">
-          {error.message || "We couldn't locate this customer."}
-        </p>
-      </div>
-      <Button
-        variant="outline"
-        onClick={() => router.history.go(-1)}
-        className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 cursor-pointer"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
-      </Button>
     </div>
   );
 }

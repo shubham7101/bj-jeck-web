@@ -3,7 +3,8 @@ import { paginationSchema } from "./common";
 
 export const ledgerSchema = z.object({
   id: z.number().gt(0),
-  site_id: z.number().gt(0),
+  site_id: z.number().gt(0).optional().nullable(),
+  customer_id: z.number().gt(0).optional().nullable(),
   date: z.string(),
   amount: z.number().gt(0),
   notes: z.string(),
@@ -12,7 +13,8 @@ export const ledgerSchema = z.object({
 export type Ledger = z.infer<typeof ledgerSchema>;
 
 export const createLedgerSchema = z.object({
-  site_id: z.number().min(1, "Site is required"),
+  site_id: z.number().optional().nullable(),
+  customer_id: z.number().optional().nullable(),
   amount: z.number().min(1, "Amount must be greater than 0"),
   date: z.string().regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY"),
   notes: z.string().optional(),
@@ -24,6 +26,7 @@ export const ledgerSearchReqSchema = z.object({
   page: z.number().optional(),
   per_page: z.number().optional(),
   site_id: z.number().optional(),
+  customer_id: z.number().optional(),
   date: z
     .string()
     .regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY")
@@ -45,9 +48,3 @@ export const ledgerSearchResSchema = z.object({
 });
 export type CustomerSearchRes = z.infer<typeof ledgerSearchResSchema>;
 
-export const ledgerStatsSchema = z.object({
-  total_received: z.number(),
-  year_received: z.number(),
-  total_entries: z.number(),
-});
-export type LedgerStats = z.infer<typeof ledgerStatsSchema>;

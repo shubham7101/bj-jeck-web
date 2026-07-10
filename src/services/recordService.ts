@@ -3,11 +3,9 @@ import {
   type CreateRecord,
   type Record,
   type RecordSearchReq,
-  type RecordStats,
   recordDetailsSchema,
   recordSchema,
   recordSearchResSchema,
-  recordStatsSchema,
 } from "@/schemas/recordSchema";
 
 export const recordService = {
@@ -60,10 +58,5 @@ export const recordService = {
 
   delete: async (id: number) => {
     return apiClient<void>(`/api/records/${id}`, { method: "DELETE" });
-  },
-
-  stats: async (): Promise<RecordStats> => {
-    const data = await apiClient("/api/records/stats");
-    return recordStatsSchema.parse(data);
   },
 };

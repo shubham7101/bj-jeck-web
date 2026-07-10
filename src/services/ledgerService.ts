@@ -4,7 +4,6 @@ import {
   type LedgerSearchReq,
   ledgerSchema,
   ledgerSearchResSchema,
-  ledgerStatsSchema,
 } from "@/schemas/ledgerSchema";
 
 export const ledgerService = {
@@ -24,6 +23,8 @@ export const ledgerService = {
 
     if (payload.site_id)
       params.append("site_id", payload.site_id.toString());
+    if (payload.customer_id)
+      params.append("customer_id", payload.customer_id.toString());
     if (payload.from_date) params.append("from_date", payload.from_date);
     if (payload.to_date) params.append("to_date", payload.to_date);
     if (payload.date) params.append("date", payload.date);
@@ -33,10 +34,6 @@ export const ledgerService = {
     return ledgerSearchResSchema.parse(data);
   },
 
-  stats: async () => {
-    const data = await apiClient("/api/ledger/stats");
-    return ledgerStatsSchema.parse(data);
-  },
 
   delete: async (id: number) => {
     return apiClient<void>(`/api/ledger/${id}`, { method: "DELETE" });

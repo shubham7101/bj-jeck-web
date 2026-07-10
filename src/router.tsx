@@ -5,7 +5,8 @@ import { Route as IndexRoute } from "./routes/index";
 import { Route as RecordsIndexRoute } from "./routes/records/index";
 import { Route as LedgerIndexRoute } from "./routes/ledger/index";
 import { Route as InventoryIndexRoute } from "./routes/inventory/index";
-import { Route as CustomersIndexRoute } from "./routes/sites/index";
+import { Route as SitesIndexRoute } from "./routes/sites/index";
+import { Route as CustomersIndexRoute } from "./routes/customers/index";
 import { Route as BillsIndexRoute } from "./routes/bills/index";
 import { Route as RecordsNewRoute } from "./routes/records/new";
 import { Route as RecordsRecordIdRoute } from "./routes/records/$recordId";
@@ -19,6 +20,9 @@ import { Route as BillsBillIdRoute } from "./routes/bills/$billId";
 import { Route as RecordsUpdateRecordIdRoute } from "./routes/records/update.$recordId";
 import { Route as CustomersUpdateCustomerIdRoute } from "./routes/customers/update.$customerId";
 import { Route as SitesStatementSiteIdRoute } from "./routes/sites/statement.$siteId";
+import { Route as SitesSiteIdRoute } from "./routes/sites/$siteId";
+import { Route as SitesNewRoute } from "./routes/sites/new";
+import { Route as SitesUpdateSiteIdRoute } from "./routes/sites/update.$siteId";
 
 export const routeTree = rootRoute.addChildren([
   IndexRoute,
@@ -27,6 +31,7 @@ export const routeTree = rootRoute.addChildren([
   RecordsIndexRoute,
   LedgerIndexRoute,
   InventoryIndexRoute,
+  SitesIndexRoute,
   CustomersIndexRoute,
   BillsIndexRoute,
   RecordsNewRoute,
@@ -41,6 +46,9 @@ export const routeTree = rootRoute.addChildren([
   RecordsUpdateRecordIdRoute,
   CustomersUpdateCustomerIdRoute,
   SitesStatementSiteIdRoute,
+  SitesSiteIdRoute,
+  SitesNewRoute,
+  SitesUpdateSiteIdRoute,
 ]);
 
 import { createRouter } from "@tanstack/react-router";

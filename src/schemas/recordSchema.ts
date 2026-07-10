@@ -8,6 +8,7 @@ export const recordItemSchema = z.object({
   broken_amount: z.number().min(0),
   broken_charge: z.number().min(0),
   service_charge: z.number().min(0),
+  lost_amount: z.number().min(0),
   lost_charge: z.number().min(0),
 });
 export type RecordItem = z.infer<typeof recordItemSchema>;
@@ -23,9 +24,14 @@ export const recordSchema = z.object({
   total: z.number().min(1),
   labour_charge: z.number().min(0),
   transport_charge: z.number().min(0),
-  vehicle_no: z.string().optional(),
-  vehicle_mobile_no: z.string().length(10).or(z.literal("")).optional(),
-  bill_id: z.number().min(0).optional(),
+  vehicle_no: z.string().nullable().optional(),
+  vehicle_mobile_no: z
+    .string()
+    .length(10)
+    .or(z.literal(""))
+    .nullable()
+    .optional(),
+  bill_id: z.number().min(0).nullable().optional(),
 });
 export type Record = z.infer<typeof recordSchema>;
 
@@ -50,16 +56,6 @@ export const createRecordSchema = recordSchema
     items: z.array(createRecordItemSchema).min(1),
   });
 export type CreateRecord = z.infer<typeof createRecordSchema>;
-
-export const recordStatsSchema = z.object({
-  total_records: z.number().min(0),
-  year_records: z.number().min(0),
-  year_in: z.number().min(0),
-  year_out: z.number().min(0),
-  year_broken: z.number().min(0),
-  year_labour: z.number().min(0),
-});
-export type RecordStats = z.infer<typeof recordStatsSchema>;
 
 export const recordSearchReqSchema = z.object({
   page: z.number().min(1).optional().catch(1),

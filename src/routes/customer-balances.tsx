@@ -45,8 +45,9 @@ export const Route = createRoute({
     const customersWithStats = await Promise.all(
       customers.map(async (c) => {
         try {
-          const stats = await customerService.customerStats(c.id);
-          return { ...c, stats };
+          // const stats = await customerService.customerStats(c.id);
+          // return { ...c, stats };
+          throw new Error("Stats removed");
         } catch (_e) {
           return {
             ...c,

@@ -6,14 +6,10 @@ import {
   type CustomerInventory,
   type CustomerRate,
   type CustomerSearchReq,
-  type CustomerStats,
-  type CustomersStats,
   customerInventorySchema,
   customerRateSchema,
   customerSchema,
   customerSearchResSchema,
-  customerStatsSchema,
-  customersStatsSchema,
   type UpdateCustomer,
   type UpdateCustomerRates,
 } from "@/schemas/customerSchema";
@@ -51,15 +47,7 @@ export const customerService = {
     return customerSchema.parse(data);
   },
 
-  stats: async () => {
-    const data = await apiClient<CustomersStats>("/api/customers/stats");
-    return customersStatsSchema.parse(data);
-  },
 
-  customerStats: async (id: number) => {
-    const data = await apiClient<CustomerStats>(`/api/customers/${id}/stats`);
-    return customerStatsSchema.parse(data);
-  },
 
   setActive: async (id: number, isActive: boolean) => {
     return apiClient<void>(`/api/customers/${id}/active`, {

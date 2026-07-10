@@ -3,24 +3,18 @@ import { Route as rootRoute } from "@/routes/__root";
 import {
   ArrowLeft,
   Contact,
-  IndianRupee,
-  LayoutList,
   Loader2,
   Plus,
-  RefreshCcw,
   Save,
-  Trash2,
   User,
-  X,
   CreditCard,
-  MapPin,
   Phone,
   PhoneCall,
   UserPlus,
   ShieldCheck,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useForm, useStore } from "@tanstack/react-form";
+import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 
 import { ErrorAlert } from "@/components/ErrorAlert";
@@ -35,28 +29,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { type Customer, customerRateSchema } from "@/schemas/customerSchema";
-import {
-  getSizesForPart,
-  PART_OPTIONS,
-  STANDARD_RATES_SETUP,
-} from "@/schemas/common";
+import type { Customer } from "@/schemas/customerSchema";
 import { customerService } from "@/services/customerService";
 import { createRoute, Link } from "@tanstack/react-router";
 
@@ -70,7 +44,6 @@ export const Route = createRoute({
 
 const createCustomerSchema = z.object({
   name: z.string().min(2).max(100),
-  address: z.string().min(3).max(255),
   mobile_no: z
     .string()
     .length(10, "Mobile number must be exactly 10 digits")
@@ -99,13 +72,8 @@ const createCustomerSchema = z.object({
     .nullish()
     .transform((val) => (val === "" ? null : val))
     .optional(),
-  rates: z.array(customerRateSchema).min(5),
 });
 type CreateCustomer = z.infer<typeof createCustomerSchema>;
-
-// --- Constants ---
-
-const EMPTY_RATE = { part: "full", size: "2.0", rate: 0 };
 
 const DEFAULT_VALUES: CreateCustomer = {
   name: "",
@@ -113,8 +81,6 @@ const DEFAULT_VALUES: CreateCustomer = {
   mobile_no_2: "",
   aadhar_card_no: "",
   reference_name: "",
-  address: "",
-  rates: STANDARD_RATES_SETUP,
 };
 
 // --- Main Page Component ---
@@ -125,7 +91,7 @@ function NewCustomerPage() {
   const [createdCustomer, setCreatedCustomer] = useState<Customer | null>(null);
 
   const mutation = useMutation({
-    mutationFn: (data: CreateCustomer) => customerService.create(data),
+    mutationFn: (data: CreateCustomer) => customerService.create(data as any),
     onSuccess: (data) => {
       setCreatedCustomer(data);
       form.reset();
@@ -164,7 +130,7 @@ function NewCustomerPage() {
   };
 
   return (
-    <div className="flex-1 px-2 py-6 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 relative">
+    <div className="flex-1 px-2 py-6 sm:p-6 md:p-8 max-w-4xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 relative">
       <div className="relative z-10 space-y-6 sm:space-y-8">
         <Header />
 
@@ -181,16 +147,8 @@ function NewCustomerPage() {
           }}
           className="flex flex-col gap-8 relative"
         >
-          <div className="grid gap-8 grid-cols-1 lg:grid-cols-2 items-start">
-            {/* Left Column: Personal Information */}
-            <div className="space-y-6">
-              <CustomerDetailsForm form={form} />
-            </div>
-
-            {/* Right Column: Rates */}
-            <div className="">
-              <CustomerRatesForm form={form} />
-            </div>
+          <div className="space-y-6">
+            <CustomerDetailsForm form={form} />
           </div>
 
           <FooterActions
@@ -228,7 +186,7 @@ function Header() {
             <UserPlus className="h-5 w-5 text-emerald-50" />
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-zinc-100 to-zinc-400">
-            New Customer
+            New Master Customer
           </h2>
           <Badge
             variant="outline"
@@ -238,8 +196,8 @@ function Header() {
           </Badge>
         </div>
         <p className="text-zinc-400/80 max-w-xl text-sm md:text-base font-medium">
-          Register a new client profile and configure their standard rental
-          inventory rates.
+          Register a new master client profile. You can add specific sites for
+          this client later.
         </p>
       </div>
       <Button
@@ -265,7 +223,7 @@ function CustomerDetailsForm({ form }: { form: any }) {
           Profile Details
         </CardTitle>
         <CardDescription className="text-zinc-500">
-          Essential contact and identification info.
+          Essential contact and identification info for the master account.
         </CardDescription>
       </CardHeader>
       <CardContent className="px-3 sm:p-4 space-y-5">
@@ -278,52 +236,47 @@ function CustomerDetailsForm({ form }: { form: any }) {
           placeholder="e.g. Rahul Sharma"
         />
 
-        <FormFieldWrapper
-          form={form}
-          name="mobile_no"
-          label="Primary Mobile"
-          icon={Phone}
-          required
-          placeholder="10-digit number"
-          type="numeric"
-          maxLength={10}
-        />
-        <FormFieldWrapper
-          form={form}
-          name="mobile_no_2"
-          label="Alternate Mobile"
-          icon={PhoneCall}
-          placeholder="Optional 10-digit number"
-          type="numeric"
-          maxLength={10}
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <FormFieldWrapper
+            form={form}
+            name="mobile_no"
+            label="Primary Mobile"
+            icon={Phone}
+            required
+            placeholder="10-digit number"
+            type="numeric"
+            maxLength={10}
+          />
+          <FormFieldWrapper
+            form={form}
+            name="mobile_no_2"
+            label="Alternate Mobile"
+            icon={PhoneCall}
+            placeholder="Optional 10-digit number"
+            type="numeric"
+            maxLength={10}
+          />
+        </div>
 
-        <FormFieldWrapper
-          form={form}
-          name="aadhar_card_no"
-          label="Aadhar Card No"
-          icon={CreditCard}
-          placeholder="Optional 12-digit number"
-          type="numeric"
-          maxLength={12}
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <FormFieldWrapper
+            form={form}
+            name="aadhar_card_no"
+            label="Aadhar Card No"
+            icon={CreditCard}
+            placeholder="Optional 12-digit number"
+            type="numeric"
+            maxLength={12}
+          />
 
-        <FormFieldWrapper
-          form={form}
-          name="reference_name"
-          label="Reference Name"
-          icon={UserPlus}
-          placeholder="e.g. Recommended by..."
-        />
-
-        <FormFieldWrapper
-          form={form}
-          name="address"
-          label="Address"
-          icon={MapPin}
-          required
-          placeholder="Site, Area, City"
-        />
+          <FormFieldWrapper
+            form={form}
+            name="reference_name"
+            label="Reference Name"
+            icon={UserPlus}
+            placeholder="e.g. Recommended by..."
+          />
+        </div>
       </CardContent>
     </Card>
   );
@@ -386,209 +339,6 @@ function FormFieldWrapper({
   );
 }
 
-function CustomerRatesForm({ form }: { form: any }) {
-  const formValues = useStore(form.store, (state: any) => state.values);
-  const formRates = formValues.rates || [];
-
-  return (
-    <Card className="bg-zinc-950/60 border-zinc-800/60 shadow-2xl backdrop-blur-xl relative overflow-hidden flex flex-col h-full min-h-[500px] rounded-2xl">
-      <form.Field name="rates" mode="array">
-        {(field: any) => (
-          <>
-            <CardHeader className="px-3 py-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800/40 bg-zinc-900/20 sm:pb-5">
-              <div className="space-y-1.5">
-                <CardTitle className="text-xl flex items-center gap-2.5 font-bold text-zinc-100 tracking-tight">
-                  <LayoutList className="h-5 w-5 text-emerald-400" />
-                  Inventory Rental Rates
-                </CardTitle>
-                <CardDescription className="text-zinc-500">
-                  Configure custom default pricing for this specific customer.
-                </CardDescription>
-              </div>
-
-              <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full sm:w-auto">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 sm:flex-none h-9 border-zinc-700 bg-zinc-950/50 hover:bg-emerald-950/30 hover:text-emerald-400 hover:border-emerald-500/50 transition-all font-medium"
-                  onClick={() => field.setValue(STANDARD_RATES_SETUP)}
-                >
-                  <RefreshCcw className="mr-2 h-3.5 w-3.5" />
-                  Standard Rates
-                </Button>
-
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => field.pushValue(EMPTY_RATE)}
-                  className="flex-1 sm:flex-none h-9 bg-zinc-100 text-zinc-900 hover:bg-white border-none font-medium transition-all shadow-sm"
-                >
-                  <Plus className="mr-2 h-4 w-4" /> Add Row
-                </Button>
-              </div>
-            </CardHeader>
-
-            {field.state.meta.errors.length > 0 && (
-              <div className="bg-rose-950/30 px-6 py-3 border-b border-rose-900/30 backdrop-blur-sm">
-                <p className="text-sm font-medium text-rose-400 flex items-center">
-                  <X className="w-4 h-4 mr-2" />
-                  {field.state.meta.errors.join(", ")}
-                </p>
-              </div>
-            )}
-
-            <CardContent className="p-0 flex-1 overflow-x-auto relative">
-              <div className="w-full">
-                <Table>
-                  <TableHeader className="bg-zinc-950/80 border-b-zinc-800/50 sticky top-0 z-10 backdrop-blur-md">
-                    <TableRow className="border-none hover:bg-transparent">
-                      <TableHead className="w-[35%] min-w-[150px] pl-6 h-12 text-xs uppercase tracking-wider text-zinc-500 font-bold">
-                        Item Type
-                      </TableHead>
-                      <TableHead className="w-[30%] min-w-[130px] h-12 text-xs uppercase tracking-wider text-zinc-500 font-bold">
-                        Specification
-                      </TableHead>
-                      <TableHead className="w-[25%] min-w-[140px] h-12 text-xs uppercase tracking-wider text-zinc-500 font-bold">
-                        Daily Rate (₹)
-                      </TableHead>
-                      <TableHead className="w-[10%] min-w-[60px] h-12"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="divide-y divide-zinc-800/30">
-                    {field.state.value.map((_: any, index: number) => {
-                      const rowPart = formRates[index]?.part || "full";
-                      const allowedSizes = getSizesForPart(rowPart);
-
-                      return (
-                        <TableRow
-                          key={index}
-                          className="group hover:bg-zinc-800/20 border-zinc-800/30 transition-colors animate-in fade-in duration-300"
-                        >
-                          <TableCell className="pl-6 py-3.5">
-                            <form.Field name={`rates[${index}].part`}>
-                              {(subField: any) => (
-                                <Select
-                                  value={subField.state.value}
-                                  onValueChange={(val) => {
-                                    subField.handleChange(val);
-                                    const defaultSize =
-                                      val === "plate" ? "2x3" : "2.0";
-                                    form.setFieldValue(
-                                      `rates[${index}].size`,
-                                      defaultSize,
-                                    );
-                                  }}
-                                >
-                                  <SelectTrigger className="w-full h-10 border-zinc-800 bg-zinc-950/80 hover:bg-zinc-900 focus:bg-zinc-950 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all shadow-inner font-medium">
-                                    <SelectValue placeholder="Select Part" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-zinc-950 border-zinc-800">
-                                    {PART_OPTIONS.map((opt) => (
-                                      <SelectItem
-                                        key={opt.value}
-                                        value={opt.value}
-                                        className="focus:bg-zinc-800"
-                                      >
-                                        {opt.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </form.Field>
-                          </TableCell>
-
-                          <TableCell className="py-3.5 items-center">
-                            <form.Field name={`rates[${index}].size`}>
-                              {(subField: any) => (
-                                <Select
-                                  value={subField.state.value}
-                                  onValueChange={subField.handleChange}
-                                >
-                                  <SelectTrigger className="w-full h-10 border-zinc-800 bg-zinc-950/80 hover:bg-zinc-900 focus:bg-zinc-950 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all shadow-inner font-medium">
-                                    <SelectValue placeholder="Select Size" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-zinc-950 border-zinc-800">
-                                    {allowedSizes.map((size) => (
-                                      <SelectItem
-                                        key={size}
-                                        value={size}
-                                        className="focus:bg-zinc-800"
-                                      >
-                                        {size}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </form.Field>
-                          </TableCell>
-
-                          <TableCell className="py-3.5">
-                            <form.Field name={`rates[${index}].rate`}>
-                              {(subField: any) => (
-                                <div className="relative group/input">
-                                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-emerald-400 transition-colors pointer-events-none">
-                                    <IndianRupee className="h-4 w-4" />
-                                  </div>
-                                  <Input
-                                    type="number"
-                                    step="0.05"
-                                    min="0"
-                                    className="h-10 pl-9 border-zinc-800 bg-zinc-950/80 hover:bg-zinc-900 focus:bg-zinc-950 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all shadow-inner font-mono text-emerald-50 text-base"
-                                    placeholder="0.00"
-                                    value={subField.state.value || ""}
-                                    onChange={(e) =>
-                                      subField.handleChange(
-                                        Number(e.target.value),
-                                      )
-                                    }
-                                    onFocus={(e) => e.target.select()}
-                                  />
-                                </div>
-                              )}
-                            </form.Field>
-                          </TableCell>
-
-                          <TableCell className="py-3.5 text-right pr-6">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 cursor-pointer rounded-lg"
-                              onClick={() => field.removeValue(index)}
-                              disabled={field.state.value.length === 1}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-
-            <div className="p-4 border-t border-zinc-800/40 bg-zinc-950/50 flex justify-between items-center text-xs text-zinc-400 backdrop-blur-md">
-              <span className="font-semibold bg-zinc-900/80 px-2.5 py-1 rounded-md border border-zinc-800/80 shadow-inner">
-                Total Rates:{" "}
-                <span className="text-emerald-400">
-                  {field.state.value.length}
-                </span>
-              </span>
-              <span className="hidden sm:inline italic opacity-80">
-                Rates are automatically applied to daily billing calculations.
-              </span>
-            </div>
-          </>
-        )}
-      </form.Field>
-    </Card>
-  );
-}
-
 function FooterActions({
   form,
   mutation,
@@ -604,7 +354,7 @@ function FooterActions({
         <div className="w-full sm:w-auto text-left">
           <p className="flex items-center text-sm font-medium text-zinc-400">
             <ShieldCheck className="h-4 w-4 mr-2 text-emerald-500" />
-            Ready to create customer profile?
+            Ready to create master customer profile?
           </p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
@@ -652,7 +402,7 @@ function NewCustomerSuccessFeedback({
 }) {
   return (
     <SuccessFeedback
-      title="Customer Created Successfully!"
+      title="Master Customer Created!"
       description={
         <span className="flex items-center gap-1.5 text-zinc-300 mt-1">
           Assigned ID:{" "}
@@ -681,24 +431,16 @@ function NewCustomerSuccessFeedback({
             </p>
           ),
         },
-        {
-          label: "Address",
-          value: (
-            <p className="font-medium text-zinc-300 text-base truncate">
-              {customer.address}
-            </p>
-          ),
-        },
       ]}
       primaryAction={{
         to: "/customers/$customerId",
         params: { customerId: customer.id.toString() },
-        label: "View Profile Dashboard",
+        label: "View Profile",
         icon: User,
       }}
       secondaryAction={{
         onClick: onDismiss,
-        label: "Add Another Customer",
+        label: "Add Another",
         icon: Plus,
       }}
       onDismiss={onDismiss}
