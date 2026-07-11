@@ -19,6 +19,7 @@ export type DetailItem = {
 export type ActionProps = {
   to?: string;
   params?: Record<string, string>;
+  search?: Record<string, any>;
   onClick?: () => void;
   label: string;
   icon: LucideIcon;
@@ -30,6 +31,7 @@ export interface SuccessFeedbackProps {
   details: DetailItem[];
   primaryAction: ActionProps;
   secondaryAction: ActionProps;
+  extraActions?: ActionProps[];
   onDismiss: () => void;
 }
 
@@ -39,6 +41,7 @@ export function SuccessFeedback({
   details,
   primaryAction,
   secondaryAction,
+  extraActions,
   onDismiss,
 }: SuccessFeedbackProps) {
   return (
@@ -96,7 +99,7 @@ export function SuccessFeedback({
               asChild
               className="bg-emerald-600 hover:bg-emerald-500 text-white border-none shadow-lg shadow-emerald-900/20"
             >
-              <Link to={primaryAction.to} params={primaryAction.params}>
+              <Link to={primaryAction.to} params={primaryAction.params} search={primaryAction.search}>
                 <primaryAction.icon className="mr-2 h-4 w-4" />
                 {primaryAction.label}
               </Link>
@@ -117,7 +120,7 @@ export function SuccessFeedback({
               variant="outline"
               className="border-emerald-500/20 text-emerald-400 hover:bg-emerald-950/50 hover:text-emerald-300 bg-transparent"
             >
-              <Link to={secondaryAction.to} params={secondaryAction.params}>
+              <Link to={secondaryAction.to} params={secondaryAction.params} search={secondaryAction.search}>
                 <secondaryAction.icon className="mr-2 h-4 w-4" />
                 {secondaryAction.label}
               </Link>
@@ -132,6 +135,32 @@ export function SuccessFeedback({
               {secondaryAction.label}
             </Button>
           )}
+
+          {extraActions?.map((action, idx) => (
+            action.to ? (
+              <Button
+                key={idx}
+                asChild
+                variant="outline"
+                className="border-emerald-500/20 text-emerald-400 hover:bg-emerald-950/50 hover:text-emerald-300 bg-transparent"
+              >
+                <Link to={action.to} params={action.params} search={action.search}>
+                  <action.icon className="mr-2 h-4 w-4" />
+                  {action.label}
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                key={idx}
+                variant="outline"
+                onClick={action.onClick}
+                className="border-emerald-500/20 text-emerald-400 hover:bg-emerald-950/50 hover:text-emerald-300 bg-transparent cursor-pointer"
+              >
+                <action.icon className="mr-2 h-4 w-4" />
+                {action.label}
+              </Button>
+            )
+          ))}
         </CardFooter>
       </Card>
     </div>

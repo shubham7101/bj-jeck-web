@@ -1,5 +1,5 @@
 import { AlertCircle, Layers, PackageOpen } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,19 +25,21 @@ export interface RateItem {
   rate: number;
 }
 
-export interface SiteInventorySectionProps {
+export interface InventorySectionProps {
   inventory?: InventoryItem[];
   rates?: RateItem[];
   isLoading?: boolean;
   isError?: boolean;
+  headerActions?: ReactNode;
 }
 
-export function SiteInventorySection({
+export function InventorySection({
   inventory = [],
   rates = [],
   isLoading = false,
   isError = false,
-}: SiteInventorySectionProps) {
+  headerActions,
+}: InventorySectionProps) {
   const [combineParts, setCombineParts] = useState(true);
 
   const sortedInventory = useMemo(() => {
@@ -111,23 +113,26 @@ export function SiteInventorySection({
 
   return (
     <Card className="lg:col-span-2 bg-zinc-900/40 border-zinc-800 shadow-xl backdrop-blur-sm overflow-hidden self-start w-full">
-      <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-zinc-800/50">
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between px-4 sm:px-6 pb-4 sm:pb-5">
         <h3 className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
           Current Inventory
         </h3>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setCombineParts(!combineParts)}
-          className={`h-8 text-xs cursor-pointer transition-all ${
-            combineParts
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
-              : "text-zinc-400 border-zinc-800 bg-zinc-950 hover:text-zinc-200 hover:bg-zinc-900"
-          }`}
-        >
-          <Layers className="h-3 w-3 mr-1.5" />
-          {combineParts ? "Uncombine Parts" : "Combine Parts"}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {headerActions}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCombineParts(!combineParts)}
+            className={`h-8 text-xs cursor-pointer transition-all ${
+              combineParts
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                : "text-zinc-400 border-zinc-800 bg-zinc-950 hover:text-zinc-200 hover:bg-zinc-900"
+            }`}
+          >
+            <Layers className="h-3 w-3 mr-1.5" />
+            {combineParts ? "Uncombine Parts" : "Combine Parts"}
+          </Button>
+        </div>
       </div>
       <CardContent className="p-0">
         <Table>
@@ -188,7 +193,7 @@ export function SiteInventorySection({
                         No Items Found
                       </span>
                       <span className="text-xs text-zinc-600">
-                        This site has no active inventory.
+                        No active inventory.
                       </span>
                     </div>
                   </div>

@@ -12,6 +12,7 @@ import {
   PhoneCall,
   UserPlus,
   ShieldCheck,
+  MapPin,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "@tanstack/react-form";
@@ -42,7 +43,7 @@ export const Route = createRoute({
 
 // --- Schema Definitions ---
 
-const createCustomerSchema = z.object({
+export const createCustomerSchema = z.object({
   name: z.string().min(2).max(100),
   mobile_no: z
     .string()
@@ -73,9 +74,9 @@ const createCustomerSchema = z.object({
     .transform((val) => (val === "" ? null : val))
     .optional(),
 });
-type CreateCustomer = z.infer<typeof createCustomerSchema>;
+export type CreateCustomerPayload = z.infer<typeof createCustomerSchema>;
 
-const DEFAULT_VALUES: CreateCustomer = {
+const DEFAULT_VALUES: CreateCustomerPayload = {
   name: "",
   mobile_no: "",
   mobile_no_2: "",
@@ -91,7 +92,7 @@ function NewCustomerPage() {
   const [createdCustomer, setCreatedCustomer] = useState<Customer | null>(null);
 
   const mutation = useMutation({
-    mutationFn: (data: CreateCustomer) => customerService.create(data as any),
+    mutationFn: (data: CreateCustomerPayload) => customerService.create(data),
     onSuccess: (data) => {
       setCreatedCustomer(data);
       form.reset();
@@ -185,15 +186,9 @@ function Header() {
           <div className="h-10 w-10 rounded-xl bg-linear-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
             <UserPlus className="h-5 w-5 text-emerald-50" />
           </div>
-          <h2 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-zinc-100 to-zinc-400">
+          <h2 className="text-2xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-zinc-100 to-zinc-400">
             New Master Customer
           </h2>
-          <Badge
-            variant="outline"
-            className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 px-2 py-0.5"
-          >
-            Setup
-          </Badge>
         </div>
         <p className="text-zinc-400/80 max-w-xl text-sm md:text-base font-medium">
           Register a new master client profile. You can add specific sites for
@@ -217,7 +212,7 @@ function Header() {
 function CustomerDetailsForm({ form }: { form: any }) {
   return (
     <Card className="bg-zinc-950/60 border-zinc-800/60 shadow-2xl backdrop-blur-xl relative overflow-hidden rounded-2xl">
-      <CardHeader className="p-4 border-b border-zinc-800/40 bg-zinc-900/20">
+      <CardHeader className="p-4">
         <CardTitle className="flex items-center text-xl font-bold text-zinc-100 tracking-tight">
           <Contact className="mr-2.5 h-5 w-5 text-emerald-400" />
           Profile Details
@@ -226,7 +221,7 @@ function CustomerDetailsForm({ form }: { form: any }) {
           Essential contact and identification info for the master account.
         </CardDescription>
       </CardHeader>
-      <CardContent className="px-3 sm:p-4 space-y-5">
+      <CardContent className="px-4 sm:p-4 space-y-5">
         <FormFieldWrapper
           form={form}
           name="name"
@@ -319,7 +314,7 @@ function FormFieldWrapper({
                   hasError
                     ? "border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20"
                     : "border-zinc-800 focus:border-emerald-500 focus:ring-emerald-500/20 hover:border-zinc-700"
-                } transition-all duration-300 ${type === "numeric" ? "font-mono" : ""}`}
+                } transition-all duration-300 placeholder:text-sm placeholder:text-zinc-600 ${type === "numeric" ? "font-mono" : ""}`}
                 placeholder={placeholder}
                 inputMode={type === "numeric" ? "numeric" : "text"}
                 maxLength={maxLength}
@@ -443,6 +438,14 @@ function NewCustomerSuccessFeedback({
         label: "Add Another",
         icon: Plus,
       }}
+      extraActions={[
+        {
+          to: "/sites/new",
+          search: { customer_id: customer.id },
+          label: "Add Site",
+          icon: MapPin,
+        },
+      ]}
       onDismiss={onDismiss}
     />
   );

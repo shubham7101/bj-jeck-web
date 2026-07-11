@@ -37,7 +37,7 @@ import type { Site } from "@/schemas/siteSchema";
 import { siteService } from "@/services/siteService";
 import { getInitials } from "@/utils";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { SiteInventorySection } from "@/components/InventorySection";
+import { InventorySection } from "@/components/InventorySection";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -68,8 +68,12 @@ function SiteDetailsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <SiteInventoryContainer id={site.id} />
-        <QuickLinks id={site.id} />
+        <div className="lg:col-span-2 min-w-0">
+          <SiteInventoryContainer id={site.id} />
+        </div>
+        <div className="min-w-0">
+          <QuickLinks id={site.id} />
+        </div>
       </div>
     </div>
   );
@@ -462,7 +466,7 @@ function SiteInventoryContainer({ id }: { id: number }) {
   });
 
   return (
-    <SiteInventorySection
+    <InventorySection
       inventory={inventory}
       rates={rates}
       isLoading={isInventoryLoading || isRatesLoading}

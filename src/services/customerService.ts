@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 import {
-  type CreateCustomer,
   type Customer,
   type CustomerInventory,
   type CustomerRate,
@@ -10,9 +9,10 @@ import {
   customerRateSchema,
   customerSchema,
   customerSearchResSchema,
-  type UpdateCustomer,
   type UpdateCustomerRates,
 } from "@/schemas/customerSchema";
+import type { CreateCustomerPayload } from "@/routes/customers/new";
+import type { UpdateCustomerPayload } from "@/routes/customers/update.$customerId";
 
 export const customerService = {
   search: async (payload: CustomerSearchReq) => {
@@ -39,15 +39,13 @@ export const customerService = {
     return apiClient<void>(`/api/customers/${id}`, { method: "DELETE" });
   },
 
-  create: async (customerData: CreateCustomer) => {
+  create: async (customerData: CreateCustomerPayload) => {
     const data = await apiClient("/api/customers", {
       method: "POST",
       body: JSON.stringify(customerData),
     });
     return customerSchema.parse(data);
   },
-
-
 
   setActive: async (id: number, isActive: boolean) => {
     return apiClient<void>(`/api/customers/${id}/active`, {
@@ -64,7 +62,7 @@ export const customerService = {
     return z.array(customerRateSchema).parse(data);
   },
 
-  update: async (id: number, data: UpdateCustomer) => {
+  update: async (id: number, data: UpdateCustomerPayload) => {
     return apiClient<void>(`/api/customers/${id}`, {
       method: "PUT",
       headers: {

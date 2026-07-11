@@ -40,7 +40,7 @@ import { customerService } from "@/services/customerService";
 import { createRoute, Link, useRouter } from "@tanstack/react-router";
 
 // --- Schema Definitions ---
-const updateCustomerSchema = z.object({
+export const updateCustomerSchema = z.object({
   name: z.string().min(2).max(100),
   mobile_no: z
     .string()
@@ -72,13 +72,12 @@ const updateCustomerSchema = z.object({
     .optional(),
   active: z.boolean(),
 });
-
-type UpdateCustomerPayload = z.infer<typeof updateCustomerSchema>;
+export type UpdateCustomerPayload = z.infer<typeof updateCustomerSchema>;
 
 // --- Route Definition ---
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/customers/update/$customerId",
+  path: "/customers/$customerId/update",
   component: UpdateCustomerRouteWrapper,
   loader: async ({ params }) => {
     const id = Number(params.customerId);
@@ -120,7 +119,7 @@ function UpdateCustomerPage({ customerId, profile }: any) {
 
   const mutation = useMutation({
     mutationFn: async (data: UpdateCustomerPayload) => {
-      await customerService.update(customerId, data as any);
+      await customerService.update(customerId, data);
       return { id: customerId, ...data } as Customer;
     },
     onSuccess: (data) => {
@@ -206,10 +205,10 @@ function Header({ customerId }: { customerId: number }) {
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div className="space-y-1.5">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-linear-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <div className="h-10 w-10 shrink-0 rounded-xl bg-linear-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
             <User className="h-5 w-5 text-emerald-50" />
           </div>
-          <h2 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-zinc-100 to-zinc-400">
+          <h2 className="text-2xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-zinc-100 to-zinc-400">
             Update Master Customer
           </h2>
           <Badge
@@ -253,7 +252,7 @@ function Header({ customerId }: { customerId: number }) {
 function CustomerDetailsForm({ form }: { form: any }) {
   return (
     <Card className="bg-zinc-950/60 border-zinc-800/60 shadow-2xl backdrop-blur-xl relative overflow-hidden rounded-2xl">
-      <CardHeader className="p-4 border-b border-zinc-800/40 bg-zinc-900/20">
+      <CardHeader className="p-4">
         <CardTitle className="flex items-center text-xl font-bold text-zinc-100 tracking-tight">
           <Contact className="mr-2.5 h-5 w-5 text-emerald-400" />
           Profile Details
@@ -262,7 +261,7 @@ function CustomerDetailsForm({ form }: { form: any }) {
           Essential contact and identification info for the master account.
         </CardDescription>
       </CardHeader>
-      <CardContent className="px-3 sm:p-4 space-y-5 mt-2">
+      <CardContent className="px-4 sm:p-4 space-y-5 mt-2">
         <FormFieldWrapper
           form={form}
           name="name"
@@ -385,7 +384,7 @@ function FormFieldWrapper({
                   hasError
                     ? "border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20"
                     : "border-zinc-800 focus:border-emerald-500 focus:ring-emerald-500/20 hover:border-zinc-700"
-                } transition-all duration-300 ${type === "numeric" ? "font-mono" : ""}`}
+                } transition-all duration-300 placeholder:text-sm placeholder:text-zinc-600 ${type === "numeric" ? "font-mono" : ""}`}
                 placeholder={placeholder}
                 inputMode={type === "numeric" ? "numeric" : "text"}
                 maxLength={maxLength}

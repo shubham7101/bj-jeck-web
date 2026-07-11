@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronRight, MapPin, Phone, RotateCcw, Search } from "lucide-react";
+import { ChevronRight, Phone, RotateCcw, Search } from "lucide-react";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,10 +87,7 @@ export function CustomerDataGrid({
 }
 
 function CustomerFilters({ filters, onChange, onReset }: CustomerFiltersProps) {
-  const hasActiveFilters = !!(
-    filters.name ||
-    filters.mobile_no
-  );
+  const hasActiveFilters = !!(filters.name || filters.mobile_no);
 
   return (
     <div className={themeStyles.glassHeader}>
@@ -117,14 +114,6 @@ function CustomerFilters({ filters, onChange, onReset }: CustomerFiltersProps) {
           />
         </div>
         <div className="flex items-center justify-end gap-3 shrink-0 h-11 w-full md:w-auto">
-          {hasActiveFilters && (
-            <Badge
-              variant="outline"
-              className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] uppercase font-bold tracking-wider py-0.5 px-2 animate-pulse mr-auto md:mr-0"
-            >
-              Filters Active
-            </Badge>
-          )}
           <Button
             variant="ghost"
             size="icon"
