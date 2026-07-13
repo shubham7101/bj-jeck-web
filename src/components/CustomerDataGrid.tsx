@@ -1,21 +1,18 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronRight, Phone, RotateCcw, Search } from "lucide-react";
-import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import type {
-  Customer,
-  customerSearchReqSchema,
-} from "@/schemas/customerSchema";
+import type { CustomersFiltersState } from "@/routes/customers";
+import type { Customer } from "@/schemas/customerSchema";
 import { formatDate } from "@/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Badge } from "./ui/badge";
 import {
   PaginationControls,
   type PaginationControlsProps,
 } from "./PaginationControls";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Badge } from "./ui/badge";
 import { Skeleton } from "./ui/skeleton";
 import {
   Table,
@@ -28,13 +25,8 @@ import {
 
 // --- Types ---
 
-type CustomerFiltersState = Pick<
-  z.infer<typeof customerSearchReqSchema>,
-  "name" | "mobile_no"
->;
-
 type CustomerFiltersProps = {
-  filters: CustomerFiltersState;
+  filters: CustomersFiltersState;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onReset: () => void;
 };

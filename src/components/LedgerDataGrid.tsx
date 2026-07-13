@@ -20,6 +20,7 @@ import {
 import { useEffect, useId, useState } from "react";
 import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
+import type { Customer } from "@/schemas/customerSchema";
 import type { Site } from "@/schemas/siteSchema";
 import { formatCurrency, getInitials } from "@/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -52,7 +53,8 @@ import {
 // Define the Ledger Entry shape based on your JSON
 export type LedgerEntry = {
   id: number;
-  site_id: number;
+  site_id?: number | null;
+  customer_id?: number | null;
   amount: number;
   date: string;
   notes?: string;
@@ -62,6 +64,7 @@ export type LedgerEntry = {
 // Define the Search Request shape (Ensure your schema exports match this)
 export type LedgerSearchReq = {
   site_id?: string;
+  customer_id?: string;
   date?: string;
   from_date?: string;
   to_date?: string;
@@ -78,7 +81,7 @@ type LedgerFilterDisableFlags = {
 type LedgerFiltersProps = {
   filters: { [K in keyof LedgerSearchReq]: string };
   disabledFields?: LedgerFilterDisableFlags;
-  onChange: (key: keyof LedgerSearchReq, value: string) => void;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onReset: () => void;
 };
 
@@ -105,7 +108,9 @@ type LedgerDataGridProps = {
   filterProps: LedgerFiltersProps;
   paginationProps: LedgerPaginationProps;
   siteMap?: Map<number, Site>;
-} & Partial<LedgerTableActions>;
+  customerMap?: Map<number, Customer>;
+  navigate: ReturnType<typeof useNavigate>;
+} & Omit<Partial<LedgerTableActions>, "navigate">;
 
 // --- Main Component ---
 
@@ -119,6 +124,7 @@ export function LedgerDataGrid({
   onDelete,
   navigate,
   siteMap,
+  customerMap,
 }: LedgerDataGridProps) {
   return (
     <div
@@ -138,10 +144,11 @@ export function LedgerDataGrid({
         <LedgerTable
           data={data}
           isLoading={isLoading}
-          navigate={navigate!}
+          navigate={navigate}
           processingIds={processingIds}
           onDelete={onDelete}
           siteMap={siteMap}
+          customerMap={customerMap}
         />
         <LedgerPaginationControls
           {...paginationProps}
@@ -172,9 +179,22 @@ function LedgerFilters({
           label="Site ID"
           icon={Hash}
           placeholder="e.g. 55"
-          value={filters.site_id}
-          onChange={(e) => onChange("site_id", e.target.value)}
+          value={filters.site_id || ""}
+          onChange={onChange}
+          name="site_id"
           disabled={disabledFields?.site_id}
+          type="number"
+        />
+
+        {/* Customer ID Filter */}
+        <FilterInput
+          label="Customer ID"
+          icon={Hash}
+          placeholder="e.g. 10"
+          value={filters.customer_id || ""}
+          onChange={onChange}
+          name="customer_id"
+          disabled={disabledFields?.customer_id}
           type="number"
         />
 
@@ -182,7 +202,11 @@ function LedgerFilters({
         <FilterDatePicker
           label="Exact Date"
           value={filters.date}
-          onChange={(val) => onChange("date", val)}
+          onChange={(val) =>
+            onChange({
+              target: { name: "date", value: val },
+            } as React.ChangeEvent<HTMLInputElement>)
+          }
           disabled={disabledFields?.date}
         />
 
@@ -190,7 +214,11 @@ function LedgerFilters({
         <FilterDatePicker
           label="From Date"
           value={filters.from_date}
-          onChange={(val) => onChange("from_date", val)}
+          onChange={(val) =>
+            onChange({
+              target: { name: "from_date", value: val },
+            } as React.ChangeEvent<HTMLInputElement>)
+          }
           placeholder="Start date"
           disabled={disabledFields?.from_date}
         />
@@ -201,7 +229,11 @@ function LedgerFilters({
             <FilterDatePicker
               label="To Date"
               value={filters.to_date}
-              onChange={(val) => onChange("to_date", val)}
+              onChange={(val) =>
+                onChange({
+                  target: { name: "to_date", value: val },
+                } as React.ChangeEvent<HTMLInputElement>)
+              }
               placeholder="End date"
               disabled={disabledFields?.to_date}
             />
@@ -379,6 +411,7 @@ export type LedgerTableProps = {
   data: LedgerEntry[];
   isLoading: boolean;
   siteMap?: Map<number, Site>;
+  customerMap?: Map<number, Customer>;
 } & LedgerTableActions;
 
 export function LedgerTable({
@@ -386,8 +419,8 @@ export function LedgerTable({
   isLoading,
   processingIds = new Set(),
   onDelete,
-  navigate,
   siteMap,
+  customerMap,
 }: LedgerTableProps) {
   if (isLoading) {
     return (
@@ -427,8 +460,10 @@ export function LedgerTable({
           entry={entry}
           isProcessing={processingIds.has(entry.id)}
           onDelete={onDelete}
-          navigate={navigate}
-          site={siteMap?.get(entry.site_id)}
+          site={entry.site_id ? siteMap?.get(entry.site_id) : undefined}
+          customer={
+            entry.customer_id ? customerMap?.get(entry.customer_id) : undefined
+          }
         />
       ))}
     </TableWrapper>
@@ -447,7 +482,7 @@ function TableWrapper({ children }: { children: React.ReactNode }) {
               ID
             </TableHead>
             <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-left pl-4">
-              Site
+              Site / Customer
             </TableHead>
             <TableHead className="h-12 text-zinc-500 uppercase text-xs font-bold text-center">
               Transaction Date
@@ -477,13 +512,28 @@ function LedgerRow({
   isProcessing,
   onDelete,
   site,
+  customer,
 }: {
   entry: LedgerEntry;
   isProcessing: boolean;
   onDelete?: (r: LedgerEntry) => void;
-  navigate: ReturnType<typeof useNavigate>;
   site?: Site;
+  customer?: Customer;
 }) {
+  const isCustomer = !!entry.customer_id;
+  const linkTo = isCustomer ? `/customers/$customerId` : `/sites/$siteId`;
+  const linkParams = isCustomer
+    ? { customerId: entry.customer_id?.toString() || "" }
+    : { siteId: entry.site_id?.toString() || "" };
+
+  const entityName = isCustomer
+    ? customer?.name || `Customer #${entry.customer_id}`
+    : site?.contractor_name || `Site #${entry.site_id}`;
+
+  const entityAvatarAlt = isCustomer ? customer?.name : site?.contractor_name;
+  const entityId = isCustomer ? entry.customer_id : entry.site_id;
+  const entityMobile = isCustomer ? customer?.mobile_no : site?.mobile_no;
+
   return (
     <TableRow
       className={cn(
@@ -496,21 +546,18 @@ function LedgerRow({
         #{entry.id.toString().padStart(4, "0")}
       </TableCell>
 
-      {/* Site Link */}
+      {/* Entity Link */}
       <TableCell className="text-left pl-4">
         <Link
-          to={`/sites/$siteId`}
-          params={{ siteId: entry.site_id.toString() }}
+          to={linkTo as any}
+          params={linkParams as any}
           className="flex items-center gap-3 group/cust hover:opacity-90 transition-opacity"
         >
           <Avatar className="h-8 w-8 border border-zinc-800 shrink-0">
-            <AvatarImage
-              src={undefined}
-              alt={site?.contractor_name}
-            />
+            <AvatarImage src={undefined} alt={entityAvatarAlt} />
             <AvatarFallback className="bg-zinc-850 text-[10px] text-zinc-450 font-bold">
-              {site ? (
-                getInitials(site.contractor_name)
+              {entityAvatarAlt ? (
+                getInitials(entityAvatarAlt)
               ) : (
                 <User className="h-3.5 w-3.5 text-zinc-500" />
               )}
@@ -518,11 +565,11 @@ function LedgerRow({
           </Avatar>
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-semibold text-zinc-200 group-hover/cust:text-emerald-400 truncate max-w-[180px] transition-colors">
-              {site ? site.contractor_name : `Site #${entry.site_id}`}
+              {entityName}
             </span>
             <span className="text-[10px] text-zinc-500 font-mono">
-              ID: #{entry.site_id}{" "}
-              {site?.mobile_no ? `• ${site.mobile_no}` : ""}
+              {isCustomer ? "CUST" : "SITE"} #{entityId}{" "}
+              {entityMobile ? `• ${entityMobile}` : ""}
             </span>
           </div>
         </Link>

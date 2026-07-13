@@ -1,21 +1,20 @@
-import { useStore } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import {
   keepPreviousData,
   useMutation,
-  useQueryClient,
   useQuery,
+  useQueryClient,
 } from "@tanstack/react-query";
-import { createRoute, Link, useRouter } from "@tanstack/react-router";
-import { format, isValid, parse } from "date-fns";
+import { createRoute, Link, useNavigate } from "@tanstack/react-router";
+import { format } from "date-fns";
 import {
   AlertCircle,
   ArrowLeft,
-  Calendar as CalendarIcon,
+  Check,
   ChevronDown,
   ChevronUp,
   FileText,
   Hash,
-  History,
   Loader2,
   Plus,
   Save,
@@ -25,15 +24,14 @@ import {
   Wrench,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { SiteDataGrid } from "@/components/SiteDataGrid";
+import { z } from "zod";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { FormBase } from "@/components/form/FormBase";
-import { useAppForm } from "@/components/form/hooks";
+import { FilterDatePicker } from "@/components/FilterDatePicker";
+import { SiteDataGrid } from "@/components/SiteDataGrid";
 import { SuccessFeedback } from "@/components/SuccessFeedback";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -42,11 +40,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -66,46 +59,251 @@ import {
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
 import { Route as rootRoute } from "@/routes/__root";
-import type { Site } from "@/schemas/siteSchema";
-import { PART_OPTIONS, getSizesForPart } from "@/schemas/common";
+import { getSizesForPart, PART_OPTIONS } from "@/schemas/common";
 import {
-  type CreateRecord,
-  createRecordSchema,
   type Record,
   type RecordDetails,
+  recordItemSchema,
 } from "@/schemas/recordSchema";
-import { siteService } from "@/services/siteService";
+import type { Site } from "@/schemas/siteSchema";
 import { recordService } from "@/services/recordService";
+import { siteService } from "@/services/siteService";
 import { formatDate, getInitials } from "@/utils";
 
 // --- Route Definition ---
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/records/update/$recordId",
+  path: "/records/$record_id/update",
   component: UpdateRecordPage,
-  loader: async ({ params: { recordId } }) => {
-    const record = await recordService.get(Number(recordId));
+  loader: async ({ params: { record_id } }) => {
+    const record = await recordService.get(Number(record_id));
     const site = await siteService.get(record.site_id);
     return { record, site };
   },
   pendingComponent: RecordLoadingSkeleton,
 });
 
+// --- Schema Definitions ---
+
+export const updateRecordSchema = z.object({
+  id: z.number().min(1),
+  site_id: z.number().min(1),
+  date: z.string().regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY"),
+  transaction_type: z.enum(["IN", "OUT"]),
+  total: z.number().min(1),
+  labour_charge: z.number().min(0),
+  transport_charge: z.number().min(0),
+  vehicle_no: z.string().nullable().optional(),
+  vehicle_mobile_no: z
+    .string()
+    .length(10, "Alternate mobile must be exactly 10 digits")
+    .regex(/^\d+$/, "Alternate mobile must contain only digits")
+    .or(z.literal(""))
+    .nullish()
+    .transform((val) => (val === "" ? null : val))
+    .optional(),
+  items: z.array(recordItemSchema).min(1),
+});
+
+export type UpdateRecord = z.infer<typeof updateRecordSchema>;
+
 // --- Constants ---
 const DATE_FORMAT = "dd-MM-yyyy";
 
 // --- Custom Components ---
 
+function FormFieldWrapper({
+  form,
+  name,
+  label,
+  icon: Icon,
+  required,
+  placeholder,
+  type = "text",
+  maxLength,
+  disabled,
+}: any) {
+  return (
+    <form.Field
+      name={name}
+      children={(field: any) => {
+        const hasError = field.state.meta.errors.length > 0;
+        return (
+          <div className="flex flex-col gap-1.5 group">
+            <label className="text-sm font-semibold text-zinc-300 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                {label} {required && <span className="text-rose-500">*</span>}
+              </span>
+            </label>
+            <div className="relative relative-group">
+              {Icon && (
+                <Icon
+                  className={cn(
+                    "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors",
+                    hasError
+                      ? "text-rose-500"
+                      : "text-zinc-500 group-focus-within:text-emerald-500",
+                  )}
+                />
+              )}
+              <Input
+                value={field.state.value ?? ""}
+                onChange={(e) =>
+                  field.handleChange(
+                    type === "number"
+                      ? e.target.value === ""
+                        ? ""
+                        : Number(e.target.value)
+                      : e.target.value,
+                  )
+                }
+                onBlur={field.handleBlur}
+                placeholder={placeholder}
+                type={type}
+                maxLength={maxLength}
+                disabled={disabled}
+                className={cn(
+                  "bg-zinc-950/50 border-zinc-800/50 hover:bg-zinc-900/50 focus:bg-zinc-950 focus:ring-1 transition-all h-10",
+                  Icon ? "pl-10" : "",
+                  hasError
+                    ? "border-rose-500/50 focus:border-rose-500/50 focus:ring-rose-500/50"
+                    : "focus:border-emerald-500/50 focus:ring-emerald-500/50",
+                )}
+              />
+            </div>
+            {hasError && (
+              <span className="text-xs font-medium text-rose-500 animate-in slide-in-from-top-1">
+                {field.state.meta.errors
+                  .map((e: any) => e.message || e)
+                  .join(", ")}
+              </span>
+            )}
+          </div>
+        );
+      }}
+    />
+  );
+}
+
+function TableCellFieldWrapper({
+  field,
+  children,
+}: {
+  field: any;
+  children: React.ReactNode;
+}) {
+  const hasError = field.state.meta.errors.length > 0;
+  return (
+    <div className="flex flex-col gap-1 w-full pb-2">
+      {children}
+      {hasError && (
+        <span className="text-rose-500 text-[10px] leading-tight block animate-in slide-in-from-top-1">
+          {field.state.meta.errors.map((e: any) => e.message || e).join(", ")}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function MobileFieldWrapper({
+  field,
+  label,
+  children,
+}: {
+  field: any;
+  label: string;
+  children: React.ReactNode;
+}) {
+  const hasError = field.state.meta.errors.length > 0;
+  return (
+    <div className="flex flex-col gap-1 w-full mb-2">
+      <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+        {label}
+      </label>
+      <div className="relative">{children}</div>
+      {hasError && (
+        <span className="text-rose-500 text-[10px] leading-tight block animate-in slide-in-from-top-1">
+          {field.state.meta.errors.map((e: any) => e.message || e).join(", ")}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function FormProgressStepper({ currentStep }: { currentStep: number }) {
+  return (
+    <div className="w-full py-2 mb-6">
+      <div className="flex items-start justify-center max-w-sm mx-auto px-2">
+        {/* Step 1 */}
+        <div className="flex flex-col items-center relative w-28 sm:w-32 shrink-0">
+          <div
+            className={cn(
+              "rounded-full transition-all duration-500 flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 border-2 font-bold text-xs sm:text-sm z-10 bg-background",
+              currentStep >= 1
+                ? currentStep > 1
+                  ? "bg-primary border-primary text-primary-foreground"
+                  : "border-primary text-primary shadow-md shadow-primary/20"
+                : "border-muted-foreground/30 text-muted-foreground",
+            )}
+          >
+            {currentStep > 1 ? (
+              <Check className="h-4 w-4 sm:h-5 sm:w-5 stroke-[2.5]" />
+            ) : (
+              "1"
+            )}
+          </div>
+          <span
+            className={cn(
+              "text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider mt-2 sm:mt-2.5 text-center transition-colors leading-tight",
+              currentStep >= 1 ? "text-foreground" : "text-muted-foreground",
+            )}
+          >
+            Select
+            <br className="sm:hidden" /> Site
+          </span>
+        </div>
+
+        {/* Divider */}
+        <div
+          className={cn(
+            "flex-1 border-t-2 transition-all duration-500 mt-4 sm:mt-5 -mx-6 sm:-mx-8 z-0",
+            currentStep >= 2 ? "border-primary" : "border-border",
+          )}
+        />
+
+        {/* Step 2 */}
+        <div className="flex flex-col items-center relative w-28 sm:w-32 shrink-0">
+          <div
+            className={cn(
+              "rounded-full transition-all duration-500 flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 border-2 font-bold text-xs sm:text-sm z-10 bg-background",
+              currentStep >= 2
+                ? "bg-primary border-primary text-primary-foreground shadow-md shadow-primary/20"
+                : "border-muted-foreground/30 text-muted-foreground",
+            )}
+          >
+            2
+          </div>
+          <span
+            className={cn(
+              "text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider mt-2 sm:mt-2.5 text-center transition-colors leading-tight",
+              currentStep >= 2 ? "text-foreground" : "text-muted-foreground",
+            )}
+          >
+            Record
+            <br className="sm:hidden" /> Details
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- Main Component ---
 
 export default function UpdateRecordPage() {
-  const { record, site: initialSite } = Route.useLoaderData() as {
-    record: RecordDetails;
-    site: Site;
-  };
-  const [selectedSite, setSelectedSite] = useState<Site>(initialSite);
-  const [isSelectingSite, setIsSelectingSite] = useState(false);
+  const navigate = useNavigate();
+  const { site, record } = Route.useLoaderData();
   const [updatedRecord, setUpdatedRecord] = useState<Record | null>(null);
   const successRef = useRef<HTMLDivElement>(null);
 
@@ -120,117 +318,50 @@ export default function UpdateRecordPage() {
     }
   }, [updatedRecord]);
 
-  if (isSelectingSite) {
-    return (
-      <div className="flex-1 w-full max-w-6xl mx-auto px-4 py-8 space-y-6">
-        <Button
-          variant="ghost"
-          onClick={() => setIsSelectingSite(false)}
-          className="mb-2"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Cancel Selection
-        </Button>
-        <SiteSelectionStep
-          onSelect={(c) => {
-            setSelectedSite(c);
-            setIsSelectingSite(false);
-          }}
-        />
-      </div>
-    );
-  }
+  const handleSiteSelect = (selected: Site) => {
+    navigate({
+      to: "/records/new",
+      search: { site_id: selected.id },
+    });
+  };
+
+  const handleChangeSite = () => {
+    setUpdatedRecord(null);
+    navigate({
+      to: "/records/new",
+      search: { site_id: undefined },
+    });
+  };
 
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6 max-w-6xl mx-auto pb-20">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight text-zinc-100">
-            Update Record
-          </h2>
-          <p className="text-muted-foreground flex items-center gap-2">
-            <History className="h-4 w-4 text-emerald-500" />
-            Modify details and items for transaction{" "}
-            <Link
-              to={"/records/$recordId"}
-              params={{ recordId: record.id.toString() }}
-              className="text-emerald-500 hover:text-emerald-400 cursor-pointer"
-            >
-              #{record.id}
-            </Link>
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            asChild
-            className="hidden sm:flex cursor-pointer"
-          >
-            <Link to="/records">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      <RecordUpdateForm
-        record={record}
-        site={selectedSite}
-        onSuccess={setUpdatedRecord}
-        onChangeSite={() => setIsSelectingSite(true)}
+    <div className="flex-1 w-full max-w-[100vw] lg:max-w-6xl lg:mx-auto px-2 py-6 sm:p-6 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500 pb-24 overflow-x-hidden min-w-0">
+      <Header
+        step={site ? 2 : 1}
+        hasSite={!!site}
+        onChangeSite={handleChangeSite}
       />
 
+      <FormProgressStepper currentStep={site ? 2 : 1} />
+
+      <div className="pt-4">
+        {!site ? (
+          <SiteSelectionStep onSelect={handleSiteSelect} />
+        ) : (
+          <RecordEntryForm
+            record={record}
+            site={site}
+            onSuccess={setUpdatedRecord}
+            onReset={handleChangeSite}
+          />
+        )}
+      </div>
+
       {updatedRecord && (
-        <div
-          ref={successRef}
-          className="pt-4 animate-in fade-in slide-in-from-bottom-4 duration-500"
-        >
-          <SuccessFeedback
-            title="Record Updated Successfully!"
-            description={`Transaction ID #${updatedRecord.id} has been modified.`}
-            details={[
-              {
-                label: "Date",
-                value: formatDate(updatedRecord.date),
-              },
-              {
-                label: "Type",
-                value: (
-                  <span
-                    className={cn(
-                      "font-bold font-mono inline-flex w-fit text-xs",
-                      updatedRecord.transaction_type === "OUT"
-                        ? "text-rose-600 dark:text-rose-300"
-                        : "text-emerald-600 dark:text-emerald-300",
-                    )}
-                  >
-                    {updatedRecord.transaction_type}
-                  </span>
-                ),
-              },
-              {
-                label: "Total Items",
-                value: (
-                  <span className="font-bold text-foreground">
-                    {updatedRecord.total}
-                  </span>
-                ),
-              },
-            ]}
+        <div ref={successRef}>
+          <NewRecordSuccessFeedback
+            record={updatedRecord}
             onDismiss={() => setUpdatedRecord(null)}
-            primaryAction={{
-              label: "View Updated Record",
-              icon: FileText,
-              onClick: () => {
-                window.location.href = `/records/${updatedRecord.id}`;
-              },
-            }}
-            secondaryAction={{
-              label: "Back to List",
-              icon: ArrowLeft,
-              onClick: () => {
-                window.location.href = `/records`;
-              },
-            }}
+            onReset={handleChangeSite}
           />
         </div>
       )}
@@ -238,22 +369,138 @@ export default function UpdateRecordPage() {
   );
 }
 
-function RecordUpdateForm({
+function Header({
+  step,
+  hasSite,
+  onChangeSite,
+}: {
+  step: number;
+  hasSite: boolean;
+  onChangeSite: () => void;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
+      <div className="space-y-1">
+        <h2 className="text-3xl font-extrabold tracking-tight bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+          New Record
+        </h2>
+        <p className="text-sm text-muted-foreground font-medium">
+          {step === 1
+            ? "Step 1: Locate an active site"
+            : "Step 2: Enter inventory movements and charges"}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        {hasSite && (
+          <Button
+            variant="outline"
+            onClick={onChangeSite}
+            className="hidden sm:flex cursor-pointer border-border hover:bg-muted text-foreground/80 h-9 px-4"
+          >
+            <User className="mr-2 h-4 w-4" /> Change Site
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          asChild
+          className="hidden sm:flex hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer h-9 px-4"
+        >
+          <Link to="/records">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function SiteSelectionStep({ onSelect }: { onSelect: (c: Site) => void }) {
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [filters, setFilters] = useState({
+    contractor_name: "",
+    mobile_no: "",
+    address: "",
+  });
+
+  const debouncedFilters = useDebounce(filters, 500);
+
+  const { data, isLoading, isPlaceholderData } = useQuery({
+    queryKey: ["sites", "select", { page, perPage, ...debouncedFilters }],
+    queryFn: () =>
+      siteService.search({
+        page,
+        per_page: perPage,
+        contractor_name: debouncedFilters.contractor_name || undefined,
+        mobile_no: debouncedFilters.mobile_no || undefined,
+        address: debouncedFilters.address || undefined,
+      }),
+    placeholderData: keepPreviousData,
+  });
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
+    setPage(1);
+  };
+
+  const handleReset = () => {
+    setFilters({ contractor_name: "", mobile_no: "", address: "" });
+    setPage(1);
+  };
+
+  return (
+    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500">
+      <div className="space-y-1 px-1 sm:px-0">
+        <h3 className="text-lg sm:text-xl font-bold text-foreground">
+          Find Site
+        </h3>
+        <p className="text-sm sm:text-base text-muted-foreground">
+          Search for an existing site to register an inventory movement.
+        </p>
+      </div>
+      <div className="bg-background sm:bg-card/60 sm:border border-border/80 sm:shadow-xl relative overflow-hidden animate-in fade-in duration-500 sm:rounded-xl sm:backdrop-blur-md min-w-0">
+        <div className="py-2 sm:p-6 min-w-0 w-full">
+          <SiteDataGrid
+            data={data?.data || []}
+            isLoading={isLoading}
+            isPlaceholderData={isPlaceholderData}
+            filterProps={{
+              filters: filters,
+              onChange: handleFilterChange,
+              onReset: handleReset,
+            }}
+            paginationProps={{
+              currentPage: page,
+              totalPages: data?.pagination.total_pages || 0,
+              perPage: perPage,
+              totalCount: data?.pagination.total_count || 0,
+              onPageChange: setPage,
+              onPerPageChange: setPerPage,
+            }}
+            onSelect={onSelect}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RecordEntryForm({
   record,
   site,
   onSuccess,
-  onChangeSite,
+  onReset,
 }: {
   record: RecordDetails;
   site: Site;
   onSuccess: (data: Record) => void;
-  onChangeSite: () => void;
+  onReset: () => void;
 }) {
   const queryClient = useQueryClient();
-  const router = useRouter();
   const [showTransport, setShowTransport] = useState(false);
 
-  const form = useAppForm({
+  const form = useForm({
     defaultValues: {
       id: record.id,
       site_id: site.id,
@@ -268,9 +515,9 @@ function RecordUpdateForm({
       vehicle_mobile_no: record.vehicle_mobile_no || "",
       bill_id: record.bill_id || undefined,
       items: record.items.map((item) => ({ ...item })),
-    } as CreateRecord,
+    } as UpdateRecord,
     validators: {
-      onSubmit: createRecordSchema,
+      onSubmit: updateRecordSchema,
     },
     onSubmit: async ({ value }) => {
       mutation.mutate(value);
@@ -278,20 +525,20 @@ function RecordUpdateForm({
   });
 
   const mutation = useMutation({
-    mutationFn: (data: CreateRecord) => recordService.update(record.id, data),
+    mutationFn: (data: UpdateRecord) => recordService.update(record.id, data),
     onSuccess: (data) => {
       onSuccess(data);
+      form.reset();
       queryClient.invalidateQueries({ queryKey: ["records"] });
-      queryClient.invalidateQueries({ queryKey: ["sites"] });
-      router.invalidate();
+      queryClient.invalidateQueries({ queryKey: ["sites", site.id] });
     },
   });
 
-  useEffect(() => {
-    if (form.state.values.site_id !== site.id) {
-      form.setFieldValue("site_id", site.id);
-    }
-  }, [site.id, form]);
+  const handleResetForm = () => {
+    form.reset();
+    onReset();
+    mutation.reset();
+  };
 
   // Subscribe to react-form store values reactively to do totals calculations
   const formValues = useStore(form.store, (state: any) => state.values);
@@ -340,10 +587,21 @@ function RecordUpdateForm({
 
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        form.handleSubmit();
+        await form.handleSubmit();
+        setTimeout(() => {
+          const firstError = document.querySelector(
+            ".text-rose-400, .text-rose-500, [class*='border-rose-500']",
+          );
+          if (firstError) {
+            firstError.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }
+        }, 100);
       }}
       className="space-y-6 animate-in slide-in-from-right-4 duration-300 min-w-0 w-full"
     >
@@ -400,7 +658,7 @@ function RecordUpdateForm({
           <Button
             type="button"
             variant="outline"
-            onClick={onChangeSite}
+            onClick={handleResetForm}
             className="sm:hidden w-full cursor-pointer border-border hover:bg-muted text-foreground text-xs h-9 px-3"
           >
             <User className="mr-1.5 h-3.5 w-3.5" /> Change
@@ -408,7 +666,7 @@ function RecordUpdateForm({
           <Button
             type="button"
             variant="outline"
-            onClick={onChangeSite}
+            onClick={handleResetForm}
             className="hidden sm:flex cursor-pointer border-border hover:bg-muted text-foreground h-10 px-4"
           >
             <User className="mr-2 h-4 w-4" /> Change Site
@@ -429,137 +687,109 @@ function RecordUpdateForm({
 
         <CardContent className="space-y-6 pt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <form.Field name="id">
-              {(field) => (
-                <FormBase field={field} label="Chalan No. (Record ID)">
-                  <div className="relative">
-                    <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id={field.name}
-                      type="number"
-                      placeholder="Enter Chalan Number"
-                      className="pl-9 bg-background/50 border-border/80 font-bold text-lg focus:border-primary/50 focus:ring-primary/20 transition-all h-10"
-                      value={field.state.value || ""}
-                      onBlur={field.handleBlur}
-                      onChange={(e) =>
-                        field.handleChange(Number(e.target.value))
-                      }
-                      onWheel={(e) => e.currentTarget.blur()}
-                      autoFocus
-                    />
-                  </div>
-                </FormBase>
-              )}
-            </form.Field>
+            <FormFieldWrapper
+              form={form}
+              name="id"
+              label="Chalan No. (Record ID)"
+              icon={Hash}
+              placeholder="Enter Chalan Number"
+              type="number"
+              disabled={true}
+            />
 
             <form.Field name="date">
               {(field) => {
-                const dateValue =
-                  field.state.value &&
-                  isValid(parse(field.state.value, DATE_FORMAT, new Date()))
-                    ? parse(field.state.value, DATE_FORMAT, new Date())
-                    : undefined;
-
+                const hasError = field.state.meta.errors.length > 0;
                 return (
-                  <FormBase field={field} label="Transaction Date">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal bg-background/50 border-border/80 hover:bg-muted hover:text-foreground focus:border-primary/50 focus:ring-primary/20 transition-all h-10",
-                            !dateValue && "text-muted-foreground",
-                          )}
-                        >
-                          {dateValue ? (
-                            format(dateValue, DATE_FORMAT)
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-auto p-0 bg-popover border border-border shadow-lg rounded-xl"
-                        align="start"
-                      >
-                        <Calendar
-                          mode="single"
-                          selected={dateValue}
-                          onSelect={(date) => {
-                            const dateStr = date
-                              ? format(date, DATE_FORMAT)
-                              : "";
-                            field.handleChange(dateStr);
-                          }}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
-                          autoFocus
-                          className="rounded-xl border-none"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </FormBase>
+                  <div className="flex flex-col gap-1.5 group mb-5">
+                    <label className="text-sm font-semibold text-zinc-300">
+                      Transaction Date
+                    </label>
+                    <FilterDatePicker
+                      value={field.state.value}
+                      max={format(new Date(), "yyyy-MM-dd")}
+                      onChange={(val) => field.handleChange(val)}
+                    />
+                    {hasError && (
+                      <span className="text-xs font-medium text-rose-500 animate-in slide-in-from-top-1">
+                        {field.state.meta.errors
+                          .map((e: any) => e.message || e)
+                          .join(", ")}
+                      </span>
+                    )}
+                  </div>
                 );
               }}
             </form.Field>
 
             <form.Field name="transaction_type">
-              {(field) => (
-                <FormBase field={field} label="Transaction Type">
-                  <div className="relative flex p-1 bg-muted/60 border border-border/85 rounded-lg w-full h-10 items-center">
-                    <div
-                      className={cn(
-                        "absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-md transition-all duration-300 shadow-sm",
-                        field.state.value === "OUT"
-                          ? "left-1 bg-rose-500/15 border border-rose-500/30 dark:bg-rose-950/40"
-                          : "left-[calc(50%+2px)] bg-emerald-500/15 border border-emerald-500/30 dark:bg-emerald-950/40",
-                      )}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => field.handleChange("OUT")}
-                      className={cn(
-                        "flex-1 py-1.5 text-xs font-semibold z-10 text-center rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 h-8",
-                        field.state.value === "OUT"
-                          ? "text-rose-600 dark:text-rose-400"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      <span
+              {(field) => {
+                const hasError = field.state.meta.errors.length > 0;
+                return (
+                  <div className="flex flex-col gap-1.5 group mb-5">
+                    <label className="text-sm font-semibold text-zinc-300">
+                      Transaction Type
+                    </label>
+                    <div className="relative flex p-1 bg-muted/60 border border-border/85 rounded-lg w-full h-10 items-center">
+                      <div
                         className={cn(
-                          "h-2 w-2 rounded-full",
+                          "absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-md transition-all duration-300 shadow-sm",
                           field.state.value === "OUT"
-                            ? "bg-rose-500 animate-pulse"
-                            : "bg-zinc-500/40",
+                            ? "left-1 bg-rose-500/15 border border-rose-500/30 dark:bg-rose-950/40"
+                            : "left-[calc(50%+2px)] bg-emerald-500/15 border border-emerald-500/30 dark:bg-emerald-950/40",
                         )}
                       />
-                      OUT (Delivery)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => field.handleChange("IN")}
-                      className={cn(
-                        "flex-1 py-1.5 text-xs font-semibold z-10 text-center rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 h-8",
-                        field.state.value === "IN"
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      <span
+                      <button
+                        type="button"
+                        onClick={() => field.handleChange("OUT")}
                         className={cn(
-                          "h-2 w-2 rounded-full",
-                          field.state.value === "IN"
-                            ? "bg-emerald-500 animate-pulse"
-                            : "bg-zinc-500/40",
+                          "flex-1 py-1.5 text-xs font-semibold z-10 text-center rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 h-8",
+                          field.state.value === "OUT"
+                            ? "text-rose-600 dark:text-rose-400"
+                            : "text-muted-foreground hover:text-foreground",
                         )}
-                      />
-                      IN (Return)
-                    </button>
+                      >
+                        <span
+                          className={cn(
+                            "h-2 w-2 rounded-full",
+                            field.state.value === "OUT"
+                              ? "bg-rose-500 animate-pulse"
+                              : "bg-zinc-500/40",
+                          )}
+                        />
+                        OUT (Delivery)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => field.handleChange("IN")}
+                        className={cn(
+                          "flex-1 py-1.5 text-xs font-semibold z-10 text-center rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 h-8",
+                          field.state.value === "IN"
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "h-2 w-2 rounded-full",
+                            field.state.value === "IN"
+                              ? "bg-emerald-500 animate-pulse"
+                              : "bg-zinc-500/40",
+                          )}
+                        />
+                        IN (Return)
+                      </button>
+                    </div>
+                    {hasError && (
+                      <span className="text-xs font-medium text-rose-500 animate-in slide-in-from-top-1">
+                        {field.state.meta.errors
+                          .map((e: any) => e.message || e)
+                          .join(", ")}
+                      </span>
+                    )}
                   </div>
-                </FormBase>
-              )}
+                );
+              }}
             </form.Field>
           </div>
 
@@ -587,40 +817,20 @@ function RecordUpdateForm({
 
             {showTransport && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 animate-in slide-in-from-top-2 duration-300">
-                <form.Field name="vehicle_no">
-                  {(field) => (
-                    <FormBase
-                      field={field}
-                      label="Vehicle Number"
-                      className="mb-2"
-                    >
-                      <Input
-                        id={field.name}
-                        placeholder="e.g. GJ-05-AB-1234"
-                        className="bg-background/50 border-border/80 focus:border-primary/50 focus:ring-primary/20 transition-all font-mono"
-                        value={field.state.value || ""}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                      />
-                    </FormBase>
-                  )}
-                </form.Field>
-                <form.Field name="vehicle_mobile_no">
-                  {(field) => (
-                    <FormBase
-                      field={field}
-                      label="Driver Mobile"
-                      className="mb-2"
-                    >
-                      <Input
-                        id={field.name}
-                        placeholder="e.g. 9876543210"
-                        className="bg-background/50 border-border/80 focus:border-primary/50 focus:ring-primary/20 transition-all font-mono"
-                        value={field.state.value || ""}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                      />
-                    </FormBase>
-                  )}
-                </form.Field>
+                <FormFieldWrapper
+                  form={form}
+                  name="vehicle_no"
+                  label="Vehicle Number"
+                  icon={Truck}
+                  placeholder="e.g. GJ-05-AB-1234"
+                />
+                <FormFieldWrapper
+                  form={form}
+                  name="vehicle_mobile_no"
+                  label="Driver Mobile"
+                  icon={User}
+                  placeholder="e.g. 9876543210"
+                />
               </div>
             )}
           </div>
@@ -644,7 +854,9 @@ function RecordUpdateForm({
                   {field.state.meta.errors.length > 0 && (
                     <p className="text-sm font-medium text-rose-500 mt-1 flex items-center gap-1.5">
                       <AlertCircle className="h-4 w-4" />{" "}
-                      {field.state.meta.errors.join(", ")}
+                      {field.state.meta.errors
+                        .map((e: any) => e.message || e)
+                        .join(", ")}
                     </p>
                   )}
                 </div>
@@ -715,7 +927,7 @@ function RecordUpdateForm({
                             <TableCell className="pl-6 py-3.5 align-top">
                               <form.Field name={`items[${index}].part`}>
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <Select
                                       value={subField.state.value}
                                       onValueChange={(val) => {
@@ -735,7 +947,7 @@ function RecordUpdateForm({
                                         );
                                       }}
                                     >
-                                      <SelectTrigger className="border-border/80 bg-background/50 hover:bg-muted/50 focus:border-primary/50 focus:ring-primary/20 transition-all cursor-pointer h-9 text-xs">
+                                      <SelectTrigger className="w-full border-border/80 bg-background/50 hover:bg-muted/50 focus:border-primary/50 focus:ring-primary/20 transition-all cursor-pointer h-9 text-xs">
                                         <SelectValue placeholder="Select Part" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -750,7 +962,7 @@ function RecordUpdateForm({
                                         ))}
                                       </SelectContent>
                                     </Select>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -758,14 +970,14 @@ function RecordUpdateForm({
                             <TableCell className="py-3.5 align-top">
                               <form.Field name={`items[${index}].size`}>
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <Select
                                       value={subField.state.value}
                                       onValueChange={(val) =>
                                         subField.handleChange(val)
                                       }
                                     >
-                                      <SelectTrigger className="border-border/80 bg-background/50 hover:bg-muted/50 focus:border-primary/50 focus:ring-primary/20 transition-all cursor-pointer h-9 text-xs">
+                                      <SelectTrigger className="w-full border-border/80 bg-background/50 hover:bg-muted/50 focus:border-primary/50 focus:ring-primary/20 transition-all cursor-pointer h-9 text-xs">
                                         <SelectValue placeholder="Size" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -780,7 +992,7 @@ function RecordUpdateForm({
                                         ))}
                                       </SelectContent>
                                     </Select>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -788,16 +1000,12 @@ function RecordUpdateForm({
                             <TableCell className="py-3.5 align-top">
                               <form.Field name={`items[${index}].item_amount`}>
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <Input
                                       type="number"
                                       className="border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 focus:border-primary/60 focus:ring-primary/25 transition-all h-9 text-xs font-bold text-center"
                                       placeholder="0"
-                                      value={
-                                        subField.state.value === 0
-                                          ? ""
-                                          : subField.state.value
-                                      }
+                                      value={subField.state.value || ""}
                                       onChange={(e) =>
                                         subField.handleChange(
                                           Number(e.target.value),
@@ -805,7 +1013,7 @@ function RecordUpdateForm({
                                       }
                                       onWheel={(e) => e.currentTarget.blur()}
                                     />
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -815,17 +1023,13 @@ function RecordUpdateForm({
                                 name={`items[${index}].broken_amount`}
                               >
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <div className="flex justify-center">
                                       <Input
                                         type="number"
                                         className="border-rose-500/20 bg-rose-500/5 text-center hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
                                         placeholder="0"
-                                        value={
-                                          subField.state.value === 0
-                                            ? ""
-                                            : subField.state.value
-                                        }
+                                        value={subField.state.value || ""}
                                         onChange={(e) => {
                                           const val = Number(e.target.value);
                                           subField.handleChange(val);
@@ -838,7 +1042,7 @@ function RecordUpdateForm({
                                         onWheel={(e) => e.currentTarget.blur()}
                                       />
                                     </div>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -846,17 +1050,13 @@ function RecordUpdateForm({
                             <TableCell className="py-3.5 align-top text-center">
                               <form.Field name={`items[${index}].lost_amount`}>
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <div className="flex justify-center">
                                       <Input
                                         type="number"
                                         className="border-rose-500/20 bg-rose-500/5 text-center hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
                                         placeholder="0"
-                                        value={
-                                          subField.state.value === 0
-                                            ? ""
-                                            : subField.state.value
-                                        }
+                                        value={subField.state.value || ""}
                                         onChange={(e) => {
                                           const val = Number(e.target.value);
                                           subField.handleChange(val);
@@ -864,7 +1064,7 @@ function RecordUpdateForm({
                                         onWheel={(e) => e.currentTarget.blur()}
                                       />
                                     </div>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -874,7 +1074,7 @@ function RecordUpdateForm({
                                 name={`items[${index}].broken_charge`}
                               >
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <div className="relative flex items-center justify-center">
                                       <span className="absolute left-2.5 text-rose-500 text-xs font-semibold">
                                         ₹
@@ -883,11 +1083,7 @@ function RecordUpdateForm({
                                         type="number"
                                         className="pl-5 border-rose-500/20 bg-rose-500/5 text-center hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
                                         placeholder="0"
-                                        value={
-                                          subField.state.value === 0
-                                            ? ""
-                                            : subField.state.value
-                                        }
+                                        value={subField.state.value || ""}
                                         onChange={(e) =>
                                           subField.handleChange(
                                             Number(e.target.value),
@@ -896,7 +1092,7 @@ function RecordUpdateForm({
                                         onWheel={(e) => e.currentTarget.blur()}
                                       />
                                     </div>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -906,7 +1102,7 @@ function RecordUpdateForm({
                                 name={`items[${index}].service_charge`}
                               >
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <div className="relative flex items-center justify-center">
                                       <span className="absolute left-2.5 text-amber-600 dark:text-amber-400 text-xs font-semibold">
                                         ₹
@@ -915,11 +1111,7 @@ function RecordUpdateForm({
                                         type="number"
                                         className="pl-5 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-center font-bold h-9 text-xs focus:border-amber-500/50 focus:ring-amber-500/10 transition-all"
                                         placeholder="0"
-                                        value={
-                                          subField.state.value === 0
-                                            ? ""
-                                            : subField.state.value
-                                        }
+                                        value={subField.state.value || ""}
                                         onChange={(e) =>
                                           subField.handleChange(
                                             Number(e.target.value),
@@ -928,7 +1120,7 @@ function RecordUpdateForm({
                                         onWheel={(e) => e.currentTarget.blur()}
                                       />
                                     </div>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -936,7 +1128,7 @@ function RecordUpdateForm({
                             <TableCell className="py-3.5 align-top text-center">
                               <form.Field name={`items[${index}].lost_charge`}>
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <div className="relative flex items-center justify-center">
                                       <span className="absolute left-2.5 text-rose-500 text-xs font-semibold">
                                         ₹
@@ -945,11 +1137,7 @@ function RecordUpdateForm({
                                         type="number"
                                         className="pl-5 border-rose-500/20 bg-rose-500/5 text-center hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
                                         placeholder="0"
-                                        value={
-                                          subField.state.value === 0
-                                            ? ""
-                                            : subField.state.value
-                                        }
+                                        value={subField.state.value || ""}
                                         onChange={(e) =>
                                           subField.handleChange(
                                             Number(e.target.value),
@@ -958,7 +1146,7 @@ function RecordUpdateForm({
                                         onWheel={(e) => e.currentTarget.blur()}
                                       />
                                     </div>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -1012,10 +1200,9 @@ function RecordUpdateForm({
                         <div className="grid grid-cols-2 gap-4">
                           <form.Field name={`items[${index}].part`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Part Type"
-                                className="mb-0"
                               >
                                 <Select
                                   value={subField.state.value}
@@ -1036,7 +1223,7 @@ function RecordUpdateForm({
                                     );
                                   }}
                                 >
-                                  <SelectTrigger className="border-border/80 bg-background/50 h-9 text-xs">
+                                  <SelectTrigger className="w-full border-border/80 bg-background/50 h-9 text-xs">
                                     <SelectValue placeholder="Select Part" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -1051,23 +1238,19 @@ function RecordUpdateForm({
                                     ))}
                                   </SelectContent>
                                 </Select>
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                           <form.Field name={`items[${index}].size`}>
                             {(subField) => (
-                              <FormBase
-                                field={subField}
-                                label="Size"
-                                className="mb-0"
-                              >
+                              <MobileFieldWrapper field={subField} label="Size">
                                 <Select
                                   value={subField.state.value}
                                   onValueChange={(val) =>
                                     subField.handleChange(val)
                                   }
                                 >
-                                  <SelectTrigger className="border-border/80 bg-background/50 h-9 text-xs">
+                                  <SelectTrigger className="w-full border-border/80 bg-background/50 h-9 text-xs">
                                     <SelectValue placeholder="Size" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -1082,7 +1265,7 @@ function RecordUpdateForm({
                                     ))}
                                   </SelectContent>
                                 </Select>
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                         </div>
@@ -1090,20 +1273,15 @@ function RecordUpdateForm({
                         <div className="grid grid-cols-3 gap-4">
                           <form.Field name={`items[${index}].item_amount`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Quantity"
-                                className="mb-0"
                               >
                                 <Input
                                   type="number"
                                   className="bg-primary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/40 focus:border-primary/60 focus:ring-primary/20 transition-all h-9 text-xs font-bold text-center"
                                   placeholder="0"
-                                  value={
-                                    subField.state.value === 0
-                                      ? ""
-                                      : subField.state.value
-                                  }
+                                  value={subField.state.value || ""}
                                   onChange={(e) =>
                                     subField.handleChange(
                                       Number(e.target.value),
@@ -1111,25 +1289,20 @@ function RecordUpdateForm({
                                   }
                                   onWheel={(e) => e.currentTarget.blur()}
                                 />
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                           <form.Field name={`items[${index}].broken_amount`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Broken Qty"
-                                className="mb-0"
                               >
                                 <Input
                                   type="number"
                                   className="bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all text-center h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
                                   placeholder="0"
-                                  value={
-                                    subField.state.value === 0
-                                      ? ""
-                                      : subField.state.value
-                                  }
+                                  value={subField.state.value || ""}
                                   onChange={(e) => {
                                     const val = Number(e.target.value);
                                     subField.handleChange(val);
@@ -1140,32 +1313,27 @@ function RecordUpdateForm({
                                   }}
                                   onWheel={(e) => e.currentTarget.blur()}
                                 />
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                           <form.Field name={`items[${index}].lost_amount`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Lost Qty"
-                                className="mb-0"
                               >
                                 <Input
                                   type="number"
                                   className="bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all text-center h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
                                   placeholder="0"
-                                  value={
-                                    subField.state.value === 0
-                                      ? ""
-                                      : subField.state.value
-                                  }
+                                  value={subField.state.value || ""}
                                   onChange={(e) => {
                                     const val = Number(e.target.value);
                                     subField.handleChange(val);
                                   }}
                                   onWheel={(e) => e.currentTarget.blur()}
                                 />
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                         </div>
@@ -1173,10 +1341,9 @@ function RecordUpdateForm({
                         <div className="grid grid-cols-3 gap-3 pt-2 border-t border-border/40">
                           <form.Field name={`items[${index}].broken_charge`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Broken ₹"
-                                className="mb-0"
                               >
                                 <div className="relative">
                                   <span className="absolute left-1.5 top-2 text-[10px] text-rose-500 font-semibold">
@@ -1186,11 +1353,7 @@ function RecordUpdateForm({
                                     type="number"
                                     className="pl-4 pr-1 text-xs bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all text-center h-8 text-rose-600 dark:text-rose-450 font-bold"
                                     placeholder="0"
-                                    value={
-                                      subField.state.value === 0
-                                        ? ""
-                                        : subField.state.value
-                                    }
+                                    value={subField.state.value || ""}
                                     onChange={(e) =>
                                       subField.handleChange(
                                         Number(e.target.value),
@@ -1199,15 +1362,14 @@ function RecordUpdateForm({
                                     onWheel={(e) => e.currentTarget.blur()}
                                   />
                                 </div>
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                           <form.Field name={`items[${index}].service_charge`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Service ₹"
-                                className="mb-0"
                               >
                                 <div className="relative">
                                   <span className="absolute left-1.5 top-2 text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
@@ -1217,11 +1379,7 @@ function RecordUpdateForm({
                                     type="number"
                                     className="pl-4 pr-1 text-xs bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10 focus:border-amber-500/50 focus:ring-amber-500/10 transition-all text-center h-8 text-amber-600 dark:text-amber-400 font-bold"
                                     placeholder="0"
-                                    value={
-                                      subField.state.value === 0
-                                        ? ""
-                                        : subField.state.value
-                                    }
+                                    value={subField.state.value || ""}
                                     onChange={(e) =>
                                       subField.handleChange(
                                         Number(e.target.value),
@@ -1230,15 +1388,14 @@ function RecordUpdateForm({
                                     onWheel={(e) => e.currentTarget.blur()}
                                   />
                                 </div>
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                           <form.Field name={`items[${index}].lost_charge`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Lost ₹"
-                                className="mb-0"
                               >
                                 <div className="relative">
                                   <span className="absolute left-1.5 top-2 text-[10px] text-rose-500 font-semibold">
@@ -1248,11 +1405,7 @@ function RecordUpdateForm({
                                     type="number"
                                     className="pl-4 pr-1 text-xs bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all text-center h-8 text-rose-600 dark:text-rose-450 font-bold"
                                     placeholder="0"
-                                    value={
-                                      subField.state.value === 0
-                                        ? ""
-                                        : subField.state.value
-                                    }
+                                    value={subField.state.value || ""}
                                     onChange={(e) =>
                                       subField.handleChange(
                                         Number(e.target.value),
@@ -1261,7 +1414,7 @@ function RecordUpdateForm({
                                     onWheel={(e) => e.currentTarget.blur()}
                                   />
                                 </div>
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                         </div>
@@ -1290,80 +1443,107 @@ function RecordUpdateForm({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {/* Total Items Quantity Input */}
             <form.Field name="total">
-              {(field) => (
-                <FormBase
-                  field={field}
-                  label="Total Items Quantity"
-                  className="mb-0"
-                >
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    className="bg-primary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/40 focus:border-primary/60 focus:ring-primary/20 transition-all font-bold text-base h-10 px-3 text-foreground"
-                    value={field.state.value === 0 ? "" : field.state.value}
-                    onChange={(e) => {
-                      const val = Number(e.target.value);
-                      field.handleChange(val);
-                      form.setFieldValue(`labour_charge`, val * 3);
-                    }}
-                    onWheel={(e) => e.currentTarget.blur()}
-                  />
-                </FormBase>
-              )}
+              {(field) => {
+                const hasError = field.state.meta.errors.length > 0;
+                return (
+                  <div className="flex flex-col gap-1.5 group">
+                    <label className="text-sm font-semibold text-zinc-300">
+                      Total Items Quantity
+                    </label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      className="bg-primary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/40 focus:border-primary/60 focus:ring-primary/20 transition-all font-bold text-base h-10 px-3 text-foreground"
+                      value={field.state.value || ""}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        field.handleChange(val);
+                        form.setFieldValue(`labour_charge`, val * 3);
+                      }}
+                      onWheel={(e) => e.currentTarget.blur()}
+                    />
+                    {hasError && (
+                      <span className="text-xs font-medium text-rose-500">
+                        {field.state.meta.errors
+                          .map((e: any) => e.message || e)
+                          .join(", ")}
+                      </span>
+                    )}
+                  </div>
+                );
+              }}
             </form.Field>
 
             {/* Labour Charge Input */}
             <form.Field name="labour_charge">
-              {(field) => (
-                <FormBase
-                  field={field}
-                  label="Labour Charge (₹)"
-                  className="mb-0"
-                >
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-emerald-600 dark:text-emerald-400 font-medium">
-                      ₹
-                    </span>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      className="pl-7 bg-emerald-500/5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-base h-10 focus:border-emerald-500/50 focus:ring-emerald-500/10 transition-all"
-                      value={field.state.value === 0 ? "" : field.state.value}
-                      onChange={(e) =>
-                        field.handleChange(Number(e.target.value))
-                      }
-                      onWheel={(e) => e.currentTarget.blur()}
-                    />
+              {(field) => {
+                const hasError = field.state.meta.errors.length > 0;
+                return (
+                  <div className="flex flex-col gap-1.5 group">
+                    <label className="text-sm font-semibold text-zinc-300">
+                      Labour Charge (₹)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                        ₹
+                      </span>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        className="pl-7 bg-emerald-500/5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-base h-10 focus:border-emerald-500/50 focus:ring-emerald-500/10 transition-all"
+                        value={field.state.value || ""}
+                        onChange={(e) =>
+                          field.handleChange(Number(e.target.value))
+                        }
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
+                    </div>
+                    {hasError && (
+                      <span className="text-xs font-medium text-rose-500">
+                        {field.state.meta.errors
+                          .map((e: any) => e.message || e)
+                          .join(", ")}
+                      </span>
+                    )}
                   </div>
-                </FormBase>
-              )}
+                );
+              }}
             </form.Field>
 
             {/* Transport Charge Input */}
             <form.Field name="transport_charge">
-              {(field) => (
-                <FormBase
-                  field={field}
-                  label="Transport Charge (₹)"
-                  className="mb-0"
-                >
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-purple-600 dark:text-purple-400 font-medium">
-                      ₹
-                    </span>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      className="pl-7 bg-purple-500/5 border-purple-500/30 text-purple-600 dark:text-purple-400 font-bold text-base h-10 focus:border-purple-500/50 focus:ring-purple-500/10 transition-all shadow-[0_0_15px_-3px_rgba(168,85,247,0.05)]"
-                      value={field.state.value === 0 ? "" : field.state.value}
-                      onChange={(e) =>
-                        field.handleChange(Number(e.target.value))
-                      }
-                      onWheel={(e) => e.currentTarget.blur()}
-                    />
+              {(field) => {
+                const hasError = field.state.meta.errors.length > 0;
+                return (
+                  <div className="flex flex-col gap-1.5 group">
+                    <label className="text-sm font-semibold text-zinc-300">
+                      Transport Charge (₹)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-purple-600 dark:text-purple-400 font-medium">
+                        ₹
+                      </span>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        className="pl-7 bg-purple-500/5 border-purple-500/30 text-purple-600 dark:text-purple-400 font-bold text-base h-10 focus:border-purple-500/50 focus:ring-purple-500/10 transition-all shadow-[0_0_15px_-3px_rgba(168,85,247,0.05)]"
+                        value={field.state.value || ""}
+                        onChange={(e) =>
+                          field.handleChange(Number(e.target.value))
+                        }
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
+                    </div>
+                    {hasError && (
+                      <span className="text-xs font-medium text-rose-500">
+                        {field.state.meta.errors
+                          .map((e: any) => e.message || e)
+                          .join(", ")}
+                      </span>
+                    )}
                   </div>
-                </FormBase>
-              )}
+                );
+              }}
             </form.Field>
           </div>
         </CardContent>
@@ -1505,10 +1685,7 @@ function RecordUpdateForm({
         <Button
           variant="ghost"
           type="button"
-          onClick={() => {
-            form.reset();
-            mutation.reset();
-          }}
+          onClick={handleResetForm}
           disabled={mutation.isPending}
           className="hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer h-10 px-4 text-xs font-semibold"
         >
@@ -1531,67 +1708,69 @@ function RecordUpdateForm({
   );
 }
 
-function SiteSelectionStep({ onSelect }: { onSelect: (c: Site) => void }) {
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
-  const [filters, setFilters] = useState({
-    contractor_name: "",
-    mobile_no: "",
-    address: "",
-  });
-
-  const debouncedFilters = useDebounce(filters, 500);
-
-  const { data, isLoading, isPlaceholderData } = useQuery({
-    queryKey: ["sites", "select", { page, perPage, ...debouncedFilters }],
-    queryFn: () =>
-      siteService.search({
-        page,
-        per_page: perPage,
-        contractor_name: debouncedFilters.contractor_name || undefined,
-        mobile_no: debouncedFilters.mobile_no || undefined,
-        address: debouncedFilters.address || undefined,
-      }),
-    placeholderData: keepPreviousData,
-  });
-
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
-    setPage(1);
-  };
-
-  const handleReset = () => {
-    setFilters({ contractor_name: "", mobile_no: "", address: "" });
-    setPage(1);
-  };
+function NewRecordSuccessFeedback({
+  record,
+  onDismiss,
+  onReset,
+}: {
+  record: Record;
+  onDismiss: () => void;
+  onReset: () => void;
+}) {
+  if (!record) return null;
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-500">
-      <div className="bg-background sm:bg-card/60 sm:border border-border/80 sm:shadow-xl relative overflow-hidden animate-in fade-in duration-500 sm:rounded-xl sm:backdrop-blur-md min-w-0">
-        <div className="py-2 sm:p-6 min-w-0 w-full">
-          <SiteDataGrid
-            data={data?.data || []}
-            isLoading={isLoading}
-            isPlaceholderData={isPlaceholderData}
-            filterProps={{
-              filters: filters,
-              onChange: handleFilterChange,
-              onReset: handleReset,
-            }}
-            paginationProps={{
-              currentPage: page,
-              totalPages: data?.pagination.total_pages || 0,
-              perPage: perPage,
-              totalCount: data?.pagination.total_count || 0,
-              onPageChange: setPage,
-              onPerPageChange: setPerPage,
-            }}
-            onSelect={onSelect}
-          />
-        </div>
-      </div>
-    </div>
+    <SuccessFeedback
+      title="Record Saved Successfully"
+      description={
+        <>
+          Transaction{" "}
+          <span className="font-mono font-medium text-emerald-600 dark:text-emerald-300 ml-1">
+            #{record.id}
+          </span>{" "}
+          has been recorded successfully.
+        </>
+      }
+      details={[
+        {
+          label: "Date",
+          value: formatDate(record.date),
+        },
+        {
+          label: "Type",
+          value: (
+            <span
+              className={cn(
+                "font-bold font-mono inline-flex w-fit text-xs",
+                record.transaction_type === "OUT"
+                  ? "text-rose-600 dark:text-rose-300"
+                  : "text-emerald-600 dark:text-emerald-300",
+              )}
+            >
+              {record.transaction_type}
+            </span>
+          ),
+        },
+        {
+          label: "Total Items",
+          value: (
+            <span className="font-bold text-foreground">{record.total}</span>
+          ),
+        },
+      ]}
+      primaryAction={{
+        to: "/records/$recordId",
+        params: { recordId: record.id.toString() },
+        label: "View Updated Record Details",
+        icon: FileText,
+      }}
+      secondaryAction={{
+        onClick: onReset,
+        label: "Create Another Record",
+        icon: Plus,
+      }}
+      onDismiss={onDismiss}
+    />
   );
 }
 
@@ -1633,7 +1812,7 @@ function RecordLoadingSkeleton() {
           </div>
           <div className="pt-2 border-t border-border">
             <Skeleton className="h-3 w-48 bg-muted/65 mb-3" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[1, 2].map((i) => (
                 <div key={i} className="space-y-2">
                   <Skeleton className="h-4 w-24 bg-muted/65" />

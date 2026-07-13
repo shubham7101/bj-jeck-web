@@ -31,7 +31,6 @@ export const billParamsSchema = z.object({
   to_date: z.string(),
   record_ids: z.array(z.number()),
 });
-export type BillParams = z.infer<typeof billParamsSchema>;
 
 export const billLineSchema = z.object({
   record_id: z.number(),
@@ -47,7 +46,6 @@ export const billLineSchema = z.object({
   broken_charge: z.number(),
   total: z.number(),
 });
-export type BillLine = z.infer<typeof billLineSchema>;
 
 // 2. Size Category Schema (The leaf node of the data)
 export const sizeCategorySchema = z.object({
@@ -67,7 +65,6 @@ export const billInventorySchema = inventorySchema.pick({
   part: true,
   item_amount: true,
 });
-export type BillInventory = z.infer<typeof billInventorySchema>;
 
 // 3. Bill Details Schema
 export const billDetailsSchema = z.object({
@@ -75,30 +72,18 @@ export const billDetailsSchema = z.object({
   site_id: z.number(),
   from_date: z.string().datetime(),
   to_date: z.string().datetime(),
-  khata_no: z.string(),
+  khata_no: z.string().optional(),
   total: z.number(),
   // UPDATED: Nested structure (Part -> Size -> Data)
-  items_by_size_and_part: z.record(z.string(), sizeCategorySchema),
-  labour_charges: z.record(z.string(), z.number()),
-  transport_charges: z.record(z.string(), z.number()),
-  lost_charges: z.record(z.string(), z.number()),
+  items_by_size_and_part: z.record(z.string(), sizeCategorySchema).nullish(),
+  labour_charges: z.record(z.string(), z.number()).nullish(),
+  transport_charges: z.record(z.string(), z.number()).nullish(),
+  lost_charges: z.record(z.string(), z.number()).nullish(),
   after_inventory: z.array(billInventorySchema).nullish(),
 });
 export type BillDetails = z.infer<typeof billDetailsSchema>;
-
-export const billSearchReqSchema = z.object({
-  page: z.number().optional(),
-  per_page: z.number().optional(),
-  site_id: z.number().optional(),
-  khata_no: z.string().optional(),
-  date: z.string().optional(),
-});
-
-export type BillSearchReq = z.infer<typeof billSearchReqSchema>;
 
 export const billSearchResSchema = z.object({
   pagination: paginationSchema,
   data: z.array(billSchema),
 });
-export type BillSearchRes = z.infer<typeof billSearchResSchema>;
-

@@ -1,32 +1,32 @@
-import { keepPreviousData, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Route as rootRoute } from "@/routes/__root";
+import { useForm, useStore } from "@tanstack/react-form";
 import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { createRoute, Link, useRouter } from "@tanstack/react-router";
+import {
+  Activity,
   ArrowLeft,
+  IndianRupee,
   LayoutList,
   Loader2,
-  Plus,
-  RefreshCcw,
-  Save,
-  Trash2,
-  X,
   MapPin,
   Phone,
   PhoneCall,
-  User,
-  ShieldCheck,
-  IndianRupee,
+  Plus,
+  RefreshCcw,
   RotateCcw,
-  Activity,
+  Save,
+  ShieldCheck,
+  Trash2,
+  User,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useForm, useStore } from "@tanstack/react-form";
 import { z } from "zod";
-
-import { useDebounce } from "@/hooks/use-debounce";
 import { CustomerDataGrid } from "@/components/CustomerDataGrid";
-import { customerService } from "@/services/customerService";
-import { type Customer } from "@/schemas/customerSchema";
-
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { SuccessFeedback } from "@/components/SuccessFeedback";
 import { Badge } from "@/components/ui/badge";
@@ -58,14 +58,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useDebounce } from "@/hooks/use-debounce";
+import { Route as rootRoute } from "@/routes/__root";
 import {
   getSizesForPart,
   PART_OPTIONS,
   STANDARD_RATES_SETUP,
 } from "@/schemas/common";
+import type { Customer } from "@/schemas/customerSchema";
+import { type Site, siteRateSchema } from "@/schemas/siteSchema";
+import { customerService } from "@/services/customerService";
 import { siteService } from "@/services/siteService";
-import { createRoute, Link, useRouter } from "@tanstack/react-router";
-import { siteRateSchema, type Site } from "@/schemas/siteSchema";
 
 // --- Schema Definitions ---
 
@@ -94,16 +97,18 @@ const EMPTY_RATE = { part: "full", size: "2.0", rate: 0 };
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/sites/update/$siteId",
+  path: "/sites/$site_id/update/",
   loader: async ({ params }) => {
-    const id = Number(params.siteId);
+    const id = Number(params.site_id);
     const [site, rates] = await Promise.all([
       siteService.get(id),
       siteService.getRates(id).catch(() => []),
     ]);
     if (!site) throw new Error("Site not found");
-    const customer = await customerService.get(site.customer_id).catch(() => null);
-    
+    const customer = await customerService
+      .get(site.customer_id)
+      .catch(() => null);
+
     return {
       siteId: id,
       site: {
@@ -139,12 +144,19 @@ function UpdateSiteRouteWrapper() {
 
 // --- Main Page Component ---
 
-function UpdateSitePage({ siteId, initialSite, initialCustomer, initialRates }: any) {
+function UpdateSitePage({
+  siteId,
+  initialSite,
+  initialCustomer,
+  initialRates,
+}: any) {
   const queryClient = useQueryClient();
   const successRef = useRef<HTMLDivElement>(null);
   const [updatedSite, setUpdatedSite] = useState<Site | null>(null);
   const [isSelectingCustomer, setIsSelectingCustomer] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(initialCustomer);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    initialCustomer,
+  );
 
   const mutation = useMutation({
     mutationFn: async (data: UpdateSiteWithRates) => {
@@ -198,72 +210,87 @@ function UpdateSitePage({ siteId, initialSite, initialCustomer, initialRates }: 
 
   return (
     <>
-    {isSelectingCustomer ? (
-      <div className="flex-1 w-full max-w-7xl mx-auto px-2 py-6 sm:p-6 md:p-8 space-y-6">
-        <Button
-          variant="ghost"
-          onClick={() => setIsSelectingCustomer(false)}
-          className="mb-2"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Cancel Selection
-        </Button>
-        <CustomerSelectionStep
-          onSelect={(c) => {
-            setSelectedCustomer(c);
-            form.setFieldValue("customer_id", c.id);
-            setIsSelectingCustomer(false);
-          }}
-        />
-      </div>
-    ) : (
-      <div className="flex-1 px-2 py-6 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 relative">
-      <div className="relative z-10 space-y-6 sm:space-y-8">
-        <Header siteId={siteId} />
-
-        <Separator className="bg-zinc-800/50" />
-
-        {mutation.isError && <ErrorAlert error={mutation.error} />}
-
-        <form
-          autoComplete="off"
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            form.handleSubmit();
-          }}
-          className="flex flex-col gap-8 relative"
-        >
-          <div className="grid gap-8 grid-cols-1 lg:grid-cols-2 items-start">
-            <div className="space-y-6">
-              <SiteDetailsForm form={form} selectedCustomer={selectedCustomer} onChangeCustomer={() => setIsSelectingCustomer(true)} />
-            </div>
-
-            <div className="">
-              <SiteRatesForm form={form} />
-            </div>
-          </div>
-
-          <FooterActions
-            form={form}
-            mutation={mutation}
-            onReset={() => form.reset()}
-          />
-        </form>
-
-        {updatedSite && (
-          <div
-            ref={successRef}
-            className="pt-8 animate-in fade-in duration-500"
+      {isSelectingCustomer ? (
+        <div className="flex-1 w-full max-w-7xl mx-auto px-2 py-6 sm:p-6 md:p-8 space-y-6">
+          <Button
+            variant="ghost"
+            onClick={() => setIsSelectingCustomer(false)}
+            className="mb-2"
           >
-            <UpdateSiteSuccessFeedback
-              site={updatedSite}
-              onDismiss={() => setUpdatedSite(null)}
-            />
+            <ArrowLeft className="mr-2 h-4 w-4" /> Cancel Selection
+          </Button>
+          <CustomerSelectionStep
+            onSelect={(c) => {
+              setSelectedCustomer(c);
+              form.setFieldValue("customer_id", c.id);
+              setIsSelectingCustomer(false);
+            }}
+          />
+        </div>
+      ) : (
+        <div className="flex-1 px-2 py-6 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 relative">
+          <div className="relative z-10 space-y-6 sm:space-y-8">
+            <Header siteId={siteId} />
+
+            <Separator className="bg-zinc-800/50" />
+
+            {mutation.isError && <ErrorAlert error={mutation.error} />}
+
+            <form
+              autoComplete="off"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                await form.handleSubmit();
+                setTimeout(() => {
+                  const firstError = document.querySelector(
+                    ".text-rose-400, [class*='border-rose-500']",
+                  );
+                  if (firstError) {
+                    firstError.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center",
+                    });
+                  }
+                }, 100);
+              }}
+              className="flex flex-col gap-8 relative"
+            >
+              <div className="grid gap-8 grid-cols-1 lg:grid-cols-2 items-start">
+                <div className="space-y-6">
+                  <SiteDetailsForm
+                    form={form}
+                    selectedCustomer={selectedCustomer}
+                    onChangeCustomer={() => setIsSelectingCustomer(true)}
+                  />
+                </div>
+
+                <div className="">
+                  <SiteRatesForm form={form} />
+                </div>
+              </div>
+
+              <FooterActions
+                form={form}
+                mutation={mutation}
+                onReset={() => form.reset()}
+              />
+            </form>
+
+            {updatedSite && (
+              <div
+                ref={successRef}
+                className="pt-8 animate-in fade-in duration-500"
+              >
+                <UpdateSiteSuccessFeedback
+                  site={updatedSite}
+                  onDismiss={() => setUpdatedSite(null)}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </div>
-    )}
+        </div>
+      )}
     </>
   );
 }
@@ -317,10 +344,18 @@ function Header({ siteId }: { siteId: number }) {
   );
 }
 
-function SiteDetailsForm({ form, selectedCustomer, onChangeCustomer }: { form: any; selectedCustomer: any; onChangeCustomer: () => void }) {
+function SiteDetailsForm({
+  form,
+  selectedCustomer,
+  onChangeCustomer,
+}: {
+  form: any;
+  selectedCustomer: any;
+  onChangeCustomer: () => void;
+}) {
   return (
     <Card className="bg-zinc-950/60 border-zinc-800/60 shadow-2xl backdrop-blur-xl relative overflow-hidden rounded-2xl">
-      <CardHeader className="p-4 border-b border-zinc-800/40 bg-zinc-900/20">
+      <CardHeader className="p-4">
         <CardTitle className="flex items-center text-xl font-bold text-zinc-100 tracking-tight">
           <MapPin className="mr-2.5 h-5 w-5 text-blue-400" />
           Site Information
@@ -331,14 +366,22 @@ function SiteDetailsForm({ form, selectedCustomer, onChangeCustomer }: { form: a
       </CardHeader>
       <CardContent className="px-3 sm:p-4 space-y-5 mt-2">
         <form.Field name="customer_id">
-          {(field: any) => <input type="hidden" name={field.name} value={field.state.value} />}
+          {(field: any) => (
+            <input type="hidden" name={field.name} value={field.state.value} />
+          )}
         </form.Field>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-lg border border-zinc-800/60 bg-zinc-950/40">
-          <div>
-            <Label className="text-xs text-zinc-500 uppercase tracking-wider mb-1 block">Master Customer</Label>
-            <div className="font-medium text-zinc-200">
-              {selectedCustomer ? selectedCustomer.name : <span className="italic text-zinc-600">Loading...</span>}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 sm:p-4 rounded-xl border border-zinc-800/60 bg-zinc-900/30 sm:bg-zinc-950/40 gap-3 sm:gap-4 w-full transition-all">
+          <div className="w-full sm:w-auto min-w-0 flex-1">
+            <Label className="text-[10px] sm:text-xs text-zinc-500 uppercase tracking-wider mb-1 block">
+              Master Customer
+            </Label>
+            <div className="font-medium text-sm sm:text-base text-zinc-200 truncate pr-2">
+              {selectedCustomer ? (
+                selectedCustomer.name
+              ) : (
+                <span className="italic text-zinc-600">Loading...</span>
+              )}
             </div>
           </div>
           <Button
@@ -346,7 +389,7 @@ function SiteDetailsForm({ form, selectedCustomer, onChangeCustomer }: { form: a
             variant="outline"
             size="sm"
             onClick={onChangeCustomer}
-            className="mt-2 sm:mt-0 bg-zinc-900 border-zinc-700 hover:bg-zinc-800 text-xs h-8"
+            className="w-full sm:w-auto shrink-0 bg-zinc-900/80 border-zinc-700 hover:bg-zinc-800 hover:text-white text-xs h-9 sm:h-8 shadow-sm transition-colors"
           >
             Change Customer
           </Button>
@@ -462,7 +505,7 @@ function FormFieldWrapper({
                   hasError
                     ? "border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20"
                     : "border-zinc-800 focus:border-blue-500 focus:ring-blue-500/20 hover:border-zinc-700"
-                } transition-all duration-300 ${type === "numeric" ? "font-mono" : ""}`}
+                } transition-all duration-300 placeholder:text-sm placeholder:text-zinc-600 ${type === "numeric" ? "font-mono" : ""}`}
                 placeholder={placeholder}
                 inputMode={type === "numeric" ? "numeric" : "text"}
                 maxLength={maxLength}
@@ -491,7 +534,7 @@ function SiteRatesForm({ form }: { form: any }) {
       <form.Field name="rates" mode="array">
         {(field: any) => (
           <>
-            <CardHeader className="px-3 py-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800/40 bg-zinc-900/20 sm:pb-5">
+            <CardHeader className="px-3 py-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:pb-5">
               <div className="space-y-1.5">
                 <CardTitle className="text-xl flex items-center gap-2.5 font-bold text-zinc-100 tracking-tight">
                   <LayoutList className="h-5 w-5 text-blue-400" />
@@ -839,7 +882,9 @@ function CustomerSelectionStep({
 
   return (
     <div className="space-y-4 animate-in fade-in">
-      <h3 className="text-2xl font-bold tracking-tight">Select Master Customer</h3>
+      <h3 className="text-2xl font-bold tracking-tight">
+        Select Master Customer
+      </h3>
       <CustomerDataGrid
         data={data?.data || []}
         isLoading={isLoading}

@@ -1,29 +1,61 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
 import { Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
-
-// Components
+import z from "zod";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { RecordDataGrid } from "@/components/RecordDataGrid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-// Hooks & Services
 import { useDebounce } from "@/hooks/use-debounce";
-import {
-  type RecordSearchReq,
-  recordSearchReqSchema,
-} from "@/schemas/recordSchema";
+import { Route as rootRoute } from "@/routes/__root";
 import { recordService } from "@/services/recordService";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/records/",
   component: RecordPage,
-  validateSearch: (search) => recordSearchReqSchema.parse(search),
+  validateSearch: (search) => recordSearchPayload.parse(search),
 });
+
+export const recordSearchPayload = z.object({
+  page: z.number().min(1).optional().catch(1),
+  per_page: z.number().min(1).max(100).optional().catch(10),
+  from_date: z
+    .string()
+    .regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY")
+    .optional(),
+  to_date: z
+    .string()
+    .regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY")
+    .optional(),
+  date: z
+    .string()
+    .regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY")
+    .optional(),
+  vehicle_no: z.string().optional(),
+  vehicle_mobile_no: z.string().optional(),
+  site_id: z.coerce.number().optional(),
+  bill_id: z.coerce.number().optional(),
+});
+export type RecordSearchPayload = z.infer<typeof recordSearchPayload>;
+
+export type RecordsFiltersState = Omit<
+  Pick<
+    RecordSearchPayload,
+    | "from_date"
+    | "to_date"
+    | "date"
+    | "vehicle_no"
+    | "vehicle_mobile_no"
+    | "site_id"
+    | "bill_id"
+  >,
+  "site_id" | "bill_id"
+> & {
+  site_id: string;
+  bill_id: string;
+};
 
 function RecordPage() {
   const search = Route.useSearch();
@@ -32,9 +64,7 @@ function RecordPage() {
   const page = search.page ?? 1;
   const per_page = search.per_page ?? 25;
 
-  const [localFilters, setLocalFilters] = useState<{
-    [K in keyof RecordSearchReq]: string;
-  }>({
+  const [localFilters, setLocalFilters] = useState<RecordsFiltersState>({
     from_date: search.from_date || "",
     to_date: search.to_date || "",
     site_id: search.site_id ? search.site_id.toString() : "",
@@ -61,6 +91,18 @@ function RecordPage() {
         // Ensure we don't pass NaN
         const cleanSiteId = Number.isNaN(siteId || NaN) ? undefined : siteId;
         const cleanBillId = Number.isNaN(billId || NaN) ? undefined : billId;
+
+        const filtersChanged =
+          prev.from_date !== (debouncedFilters.from_date || undefined) ||
+          prev.to_date !== (debouncedFilters.to_date || undefined) ||
+          prev.site_id !== cleanSiteId ||
+          prev.date !== (debouncedFilters.date || undefined) ||
+          prev.vehicle_no !== (debouncedFilters.vehicle_no || undefined) ||
+          prev.vehicle_mobile_no !==
+            (debouncedFilters.vehicle_mobile_no || undefined) ||
+          prev.bill_id !== cleanBillId;
+
+        if (!filtersChanged) return prev;
 
         return {
           ...prev,
@@ -104,10 +146,11 @@ function RecordPage() {
 
   // --- Handlers ---
 
-  const handleFilterChange = (key: keyof RecordSearchReq, value: string) => {
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setLocalFilters((prev) => ({
       ...prev,
-      [key]: value,
+      [name as keyof RecordsFiltersState]: value,
     }));
   };
 

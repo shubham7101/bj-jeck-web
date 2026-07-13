@@ -1,27 +1,33 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Route as rootRoute } from "@/routes/__root";
+import { useForm, useStore } from "@tanstack/react-form";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { createRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
+  IndianRupee,
   LayoutList,
   Loader2,
-  Plus,
-  RefreshCcw,
-  Save,
-  Trash2,
-  X,
   MapPin,
   Phone,
   PhoneCall,
-  User,
+  Plus,
+  RefreshCcw,
+  Save,
   ShieldCheck,
-  IndianRupee,
+  Trash2,
+  User,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useForm, useStore } from "@tanstack/react-form";
 import { z } from "zod";
-
+import { CustomerDataGrid } from "@/components/CustomerDataGrid";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { SuccessFeedback } from "@/components/SuccessFeedback";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,7 +45,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import {
   Table,
   TableBody,
@@ -48,15 +53,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useDebounce } from "@/hooks/use-debounce";
+import { cn } from "@/lib/utils";
+import { Route as rootRoute } from "@/routes/__root";
 import {
   getSizesForPart,
   PART_OPTIONS,
   STANDARD_RATES_SETUP,
 } from "@/schemas/common";
+import type { Customer } from "@/schemas/customerSchema";
+import { type Site, siteRateSchema } from "@/schemas/siteSchema";
 import { customerService } from "@/services/customerService";
 import { siteService } from "@/services/siteService";
-import { createRoute, Link, useNavigate } from "@tanstack/react-router";
-import { siteRateSchema, type Site } from "@/schemas/siteSchema";
+import { getInitials } from "@/utils";
 
 const newSiteSearchSchema = z.object({
   customer_id: z.number().optional(),
@@ -119,12 +128,19 @@ function NewSitePage() {
   const successRef = useRef<HTMLDivElement>(null);
   const [createdSite, setCreatedSite] = useState<Site | null>(null);
 
-  // If no customer is passed, we should ideally ask them to select one, but for now we'll just redirect to customers
-  useEffect(() => {
-    if (!customer) {
-      navigate({ to: "/customers" });
-    }
-  }, [customer, navigate]);
+  const handleCustomerSelect = (selected: Customer) => {
+    navigate({
+      to: "/sites/new",
+      search: { customer_id: selected.id },
+    });
+  };
+
+  const handleChangeCustomer = () => {
+    navigate({
+      to: "/sites/new",
+      search: { customer_id: undefined },
+    });
+  };
 
   const mutation = useMutation({
     mutationFn: async (data: CreateSiteWithRates) => {
@@ -184,53 +200,105 @@ function NewSitePage() {
     mutation.reset();
   };
 
-  if (!customer) return null;
-
   return (
-    <div className="flex-1 px-2 py-6 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 relative">
+    <div className="flex-1 w-full max-w-[100vw] lg:max-w-6xl lg:mx-auto px-2 py-4 sm:py-6 sm:p-6 md:p-8 space-y-4 sm:space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-24 overflow-x-hidden min-w-0">
       <div className="relative z-10 space-y-6 sm:space-y-8">
-        <Header customerName={customer.name} />
+        <Header
+          step={customer ? 2 : 1}
+          hasCustomer={!!customer}
+          onChangeCustomer={handleChangeCustomer}
+        />
 
-        <Separator className="bg-zinc-800/50" />
-
-        {mutation.isError && <ErrorAlert error={mutation.error} />}
-
-        <form
-          autoComplete="off"
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            form.handleSubmit();
-          }}
-          className="flex flex-col gap-8 relative"
-        >
-          <div className="grid gap-8 grid-cols-1 lg:grid-cols-2 items-start">
-            <div className="space-y-6">
-              <SiteDetailsForm form={form} customer={customer} />
+        {!customer ? (
+          <CustomerSelectionStep onSelect={handleCustomerSelect} />
+        ) : (
+          <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+            {/* Customer Header Info */}
+            <div className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 p-4 rounded-lg shadow-sm">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-9 w-9 border border-zinc-800">
+                  <AvatarFallback className="bg-zinc-800 text-xs text-zinc-300">
+                    {getInitials(customer.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h4 className="text-sm font-semibold text-zinc-100 hover:underline">
+                    <Link
+                      to="/customers/$customerId"
+                      params={{ customerId: customer.id.toString() }}
+                    >
+                      {customer.name}
+                    </Link>
+                  </h4>
+                  <p className="text-xs text-zinc-400">
+                    ID: #{customer.id} • {customer.mobile_no}
+                  </p>
+                </div>
+              </div>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "pl-2 pr-2.5 py-1 rounded-full border",
+                  customer.active
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                    : "bg-zinc-800 text-zinc-400 border-zinc-700",
+                )}
+              >
+                {customer.active ? "Active" : "Inactive"}
+              </Badge>
             </div>
 
-            <div className="">
-              <SiteRatesForm form={form} />
-            </div>
-          </div>
+            {mutation.isError && <ErrorAlert error={mutation.error} />}
 
-          <FooterActions
-            form={form}
-            mutation={mutation}
-            onReset={handleReset}
-          />
-        </form>
+            <form
+              autoComplete="off"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                await form.handleSubmit();
+                setTimeout(() => {
+                  const firstError = document.querySelector(
+                    ".text-rose-400, [class*='border-rose-500']",
+                  );
+                  if (firstError) {
+                    firstError.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center",
+                    });
+                  }
+                }, 100);
+              }}
+              className="flex flex-col gap-8 relative"
+            >
+              <div className="grid gap-8 grid-cols-1 lg:grid-cols-2 items-start">
+                <div className="space-y-6">
+                  <SiteDetailsForm form={form} customer={customer} />
+                </div>
 
-        {/* Success Notification */}
-        {createdSite && (
-          <div
-            ref={successRef}
-            className="pt-8 animate-in fade-in duration-500"
-          >
-            <NewSiteSuccessFeedback
-              site={createdSite}
-              onDismiss={() => setCreatedSite(null)}
-            />
+                <div className="">
+                  <SiteRatesForm form={form} />
+                </div>
+              </div>
+
+              <FooterActions
+                form={form}
+                mutation={mutation}
+                onReset={handleReset}
+              />
+            </form>
+
+            {/* Success Notification */}
+            {createdSite && (
+              <div
+                ref={successRef}
+                className="pt-8 animate-in fade-in duration-500"
+              >
+                <NewSiteSuccessFeedback
+                  site={createdSite}
+                  onDismiss={() => setCreatedSite(null)}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -240,7 +308,15 @@ function NewSitePage() {
 
 // --- Sub-components ---
 
-function Header({ customerName }: { customerName: string }) {
+function Header({
+  step,
+  hasCustomer,
+  onChangeCustomer,
+}: {
+  step: number;
+  hasCustomer: boolean;
+  onChangeCustomer: () => void;
+}) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div className="space-y-1.5">
@@ -249,29 +325,35 @@ function Header({ customerName }: { customerName: string }) {
             <MapPin className="h-5 w-5 text-blue-50" />
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-zinc-100 to-zinc-400">
-            New Site
+            Create New Site
           </h2>
-          <Badge
-            variant="outline"
-            className="border-blue-500/30 text-blue-400 bg-blue-500/10 px-2 py-0.5"
-          >
-            {customerName}
-          </Badge>
         </div>
         <p className="text-zinc-400/80 max-w-xl text-sm md:text-base font-medium">
-          Register a new project site and configure its standard rental rates.
+          {step === 1
+            ? "Step 1: Select a Master Customer"
+            : "Step 2: Site Details"}
         </p>
       </div>
-      <Button
-        variant="outline"
-        asChild
-        className="hidden sm:flex border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 hover:text-white backdrop-blur-md transition-all shadow-sm"
-      >
-        <Link to="/sites">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Sites
-        </Link>
-      </Button>
+      <div className="flex items-center gap-2">
+        {hasCustomer && (
+          <Button
+            variant="outline"
+            onClick={onChangeCustomer}
+            className="hidden sm:flex cursor-pointer border-zinc-700 bg-zinc-950/50 hover:bg-zinc-800 text-zinc-300"
+          >
+            <User className="mr-2 h-4 w-4" /> Change Customer
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          asChild
+          className="hidden sm:flex hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer"
+        >
+          <Link to="/sites">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Sites
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }
@@ -279,7 +361,7 @@ function Header({ customerName }: { customerName: string }) {
 function SiteDetailsForm({ form, customer }: { form: any; customer: any }) {
   return (
     <Card className="bg-zinc-950/60 border-zinc-800/60 shadow-2xl backdrop-blur-xl relative overflow-hidden rounded-2xl">
-      <CardHeader className="p-4 border-b border-zinc-800/40 bg-zinc-900/20">
+      <CardHeader className="p-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <CardTitle className="flex items-center text-xl font-bold text-zinc-100 tracking-tight">
@@ -387,7 +469,7 @@ function FormFieldWrapper({
                   hasError
                     ? "border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20"
                     : "border-zinc-800 focus:border-blue-500 focus:ring-blue-500/20 hover:border-zinc-700"
-                } transition-all duration-300 ${type === "numeric" ? "font-mono" : ""}`}
+                } transition-all duration-300 placeholder:text-sm placeholder:text-zinc-600 ${type === "numeric" ? "font-mono" : ""}`}
                 placeholder={placeholder}
                 inputMode={type === "numeric" ? "numeric" : "text"}
                 maxLength={maxLength}
@@ -416,7 +498,7 @@ function SiteRatesForm({ form }: { form: any }) {
       <form.Field name="rates" mode="array">
         {(field: any) => (
           <>
-            <CardHeader className="px-3 py-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800/40 bg-zinc-900/20 sm:pb-5">
+            <CardHeader className="px-3 py-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:pb-5">
               <div className="space-y-1.5">
                 <CardTitle className="text-xl flex items-center gap-2.5 font-bold text-zinc-100 tracking-tight">
                   <LayoutList className="h-5 w-5 text-blue-400" />
@@ -600,7 +682,8 @@ function SiteRatesForm({ form }: { form: any }) {
                 </span>
               </span>
               <span className="hidden sm:inline italic opacity-80">
-                Note: Changing rates later will also affect previously stored bills.
+                Note: Changing rates later will also affect previously stored
+                bills.
               </span>
             </div>
           </>
@@ -722,5 +805,76 @@ function NewSiteSuccessFeedback({
       }}
       onDismiss={onDismiss}
     />
+  );
+}
+
+function CustomerSelectionStep({
+  onSelect,
+}: {
+  onSelect: (customer: Customer) => void;
+}) {
+  const [filters, setFilters] = useState<{
+    name: string;
+    mobile_no: string;
+  }>({
+    name: "",
+    mobile_no: "",
+  });
+  const debouncedFilters = useDebounce(filters, 500);
+  const [page, setPage] = useState(1);
+  const perPage = 10;
+
+  const { data, isLoading, isPlaceholderData } = useQuery({
+    queryKey: ["customers", { ...debouncedFilters, page, perPage }],
+    queryFn: () =>
+      customerService.search({
+        ...debouncedFilters,
+        page,
+        per_page: perPage,
+      }),
+    placeholderData: keepPreviousData,
+  });
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="space-y-1">
+        <h3 className="text-xl font-bold text-zinc-100">
+          Find Master Customer
+        </h3>
+        <p className="text-zinc-400">
+          Search for an existing customer to associate with the new site.
+        </p>
+      </div>
+      <Card className="bg-zinc-900/40 border-zinc-800 backdrop-blur-sm shadow-xl relative overflow-hidden min-w-0">
+        <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-emerald-400/50" />
+        <CardContent className="p-2 sm:p-6 pt-4 sm:pt-6 min-w-0">
+          <div className="min-w-0 w-full">
+            <CustomerDataGrid
+              data={data?.data || []}
+              isLoading={isLoading}
+              isPlaceholderData={isPlaceholderData}
+              filterProps={{
+                filters,
+                onChange: (e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    [e.target.name]: e.target.value,
+                  })),
+                onReset: () => setFilters({ name: "", mobile_no: "" }),
+              }}
+              paginationProps={{
+                currentPage: page,
+                totalPages: data?.pagination.total_pages || 0,
+                totalCount: data?.pagination.total_count || 0,
+                perPage,
+                onPageChange: setPage,
+                onPerPageChange: () => {},
+              }}
+              onSelect={onSelect}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

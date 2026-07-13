@@ -1,8 +1,8 @@
 import { apiClient } from "@/lib/api-client";
+import type { RecordSearchPayload } from "@/routes/records";
+import type { CreateRecord } from "@/routes/records/new";
 import {
-  type CreateRecord,
   type Record,
-  type RecordSearchReq,
   recordDetailsSchema,
   recordSchema,
   recordSearchResSchema,
@@ -17,7 +17,7 @@ export const recordService = {
     return recordSchema.parse(data);
   },
 
-  search: async (payload: RecordSearchReq) => {
+  search: async (payload: RecordSearchPayload) => {
     const params = new URLSearchParams({
       page: (payload.page ?? 1).toString(),
       per_page: (payload.per_page ?? 10).toString(),
@@ -30,8 +30,7 @@ export const recordService = {
     if (payload.vehicle_mobile_no)
       params.append("vehicle_mobile_no", payload.vehicle_mobile_no);
 
-    if (payload.site_id)
-      params.append("site_id", payload.site_id.toString());
+    if (payload.site_id) params.append("site_id", payload.site_id.toString());
     if (payload.bill_id) params.append("bill_id", payload.bill_id.toString());
 
     const data = await apiClient(`/api/records?${params}`);

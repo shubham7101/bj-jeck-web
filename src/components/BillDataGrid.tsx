@@ -11,16 +11,16 @@ import {
 import { useId } from "react";
 import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import type { Bill, BillSearchReq } from "@/schemas/billSchema"; // Assuming you export the schema type here
+import type { BillFiltersState } from "@/routes/bills";
+import type { Bill } from "@/schemas/billSchema"; // Assuming you export the schema type here
 import { formatCurrency } from "@/utils";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import { FilterDatePicker } from "./FilterDatePicker";
 import {
   PaginationControls,
   type PaginationControlsProps,
 } from "./PaginationControls";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 import { Skeleton } from "./ui/skeleton";
 import {
   Table,
@@ -32,8 +32,8 @@ import {
 } from "./ui/table";
 
 type BillFiltersProps = {
-  filters: { [K in keyof BillSearchReq]: string };
-  onChange: (key: keyof BillSearchReq, value: string) => void;
+  filters: BillFiltersState;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onReset: () => void;
 };
 
@@ -93,8 +93,9 @@ function BillFilters({ filters, onChange, onReset }: BillFiltersProps) {
           icon={Hash}
           placeholder="e.g. 55"
           value={filters.site_id}
-          onChange={(e) => onChange("site_id", e.target.value)}
+          onChange={onChange}
           type="number"
+          name="site_id"
         />
 
         {/* Khata No */}
@@ -103,7 +104,8 @@ function BillFilters({ filters, onChange, onReset }: BillFiltersProps) {
           icon={FileText}
           placeholder="e.g. 3 12"
           value={filters.khata_no}
-          onChange={(e) => onChange("khata_no", e.target.value)}
+          onChange={onChange}
+          name="khata_no"
         />
 
         {/* Date */}
@@ -111,21 +113,17 @@ function BillFilters({ filters, onChange, onReset }: BillFiltersProps) {
           <FilterDatePicker
             label="To Date"
             value={filters.date}
-            onChange={(val) => onChange("date", val)}
+            onChange={(val) =>
+              onChange({
+                target: { name: "date", value: val },
+              } as React.ChangeEvent<HTMLInputElement>)
+            }
             placeholder="Date"
           />
         </div>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3 justify-end shrink-0 h-10 pb-0.5">
-          {hasActiveFilters && (
-            <Badge
-              variant="outline"
-              className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] uppercase font-bold tracking-wider py-0.5 px-2 animate-pulse"
-            >
-              Filters Active
-            </Badge>
-          )}
           <Button
             variant="ghost"
             size="icon"

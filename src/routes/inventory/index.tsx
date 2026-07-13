@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { createRoute } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
 import {
   AlertCircle,
   ArrowDownLeft,
@@ -35,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Route as rootRoute } from "@/routes/__root";
 import { inventoryService } from "@/services/inventoryService";
 
 export const Route = createRoute({
@@ -376,154 +376,154 @@ function InventoryOverviewPage() {
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table className="min-w-[600px]">
-                <TableHeader className="bg-zinc-950/40 border-b border-zinc-800/80 sticky top-0 z-10">
-                  <TableRow className="border-zinc-800 hover:bg-transparent">
-                    <TableHead className="w-1/4 pl-6 h-12 text-zinc-400 uppercase text-[10px] font-black tracking-wider">
-                      Part Category
-                    </TableHead>
-                    <TableHead className="w-1/4 h-12 text-zinc-400 uppercase text-[10px] font-black tracking-wider">
-                      Size / Dimension
-                    </TableHead>
-                    <TableHead className="w-1/4 h-12 text-zinc-400 uppercase text-[10px] font-black tracking-wider">
-                      Stock Status
-                    </TableHead>
-                    <TableHead className="w-1/4 text-right pr-6 h-12 text-zinc-400 uppercase text-[10px] font-black tracking-wider">
-                      Current Amount
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    [1, 2, 3, 4, 5].map((i) => (
-                      <TableRow key={i} className="border-zinc-850">
-                        <TableCell className="pl-6 h-14">
-                          <Skeleton className="h-5 w-24 bg-zinc-800/60" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-16 bg-zinc-800/60 rounded-full" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-5 w-32 bg-zinc-800/60 rounded-md" />
-                        </TableCell>
-                        <TableCell className="text-right pr-6">
-                          <Skeleton className="h-5 w-12 bg-zinc-800/60 ml-auto" />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : isError ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-44 text-center">
-                        <div className="flex flex-col items-center justify-center text-rose-500 gap-3">
-                          <AlertCircle className="h-8 w-8" />
-                          <div className="space-y-1">
-                            <span className="text-sm font-semibold block">
-                              Failed to Fetch Inventory
-                            </span>
-                            <span className="text-xs text-zinc-550 block">
-                              Please check backend API connection status.
-                            </span>
-                          </div>
-                        </div>
-                      </TableCell>
+                  <TableHeader className="bg-zinc-950/40 border-b border-zinc-800/80 sticky top-0 z-10">
+                    <TableRow className="border-zinc-800 hover:bg-transparent">
+                      <TableHead className="w-1/4 pl-6 h-12 text-zinc-400 uppercase text-[10px] font-black tracking-wider">
+                        Part Category
+                      </TableHead>
+                      <TableHead className="w-1/4 h-12 text-zinc-400 uppercase text-[10px] font-black tracking-wider">
+                        Size / Dimension
+                      </TableHead>
+                      <TableHead className="w-1/4 h-12 text-zinc-400 uppercase text-[10px] font-black tracking-wider">
+                        Stock Status
+                      </TableHead>
+                      <TableHead className="w-1/4 text-right pr-6 h-12 text-zinc-400 uppercase text-[10px] font-black tracking-wider">
+                        Current Amount
+                      </TableHead>
                     </TableRow>
-                  ) : filteredInventory.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-44 text-center">
-                        <div className="flex flex-col items-center justify-center gap-3 text-zinc-550">
-                          <Package className="h-8 w-8 text-zinc-700" />
-                          <div className="space-y-1">
-                            <span className="text-sm font-semibold text-zinc-400 block">
-                              No Inventory Items Found
-                            </span>
-                            <span className="text-xs text-zinc-650 block">
-                              No matching sizes or part categories match
-                              filters.
-                            </span>
-                          </div>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredInventory.map((item, idx) => {
-                      const meta = getPartMeta(item.part);
-                      const amount = item.item_amount;
-
-                      // Status helper logic
-                      let statusLabel = "Out of Stock";
-                      let statusColor =
-                        "bg-zinc-800 text-zinc-400 border-zinc-700";
-                      let dotColor = "bg-zinc-500";
-
-                      if (amount > 0) {
-                        statusLabel = "Available (In-House)";
-                        statusColor =
-                          "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-                        dotColor = "bg-emerald-500 animate-pulse";
-                      } else if (amount < 0) {
-                        statusLabel = "Dispatched (Rented)";
-                        statusColor =
-                          "bg-amber-500/10 text-amber-400 border-amber-500/20";
-                        dotColor = "bg-amber-500 animate-pulse";
-                      }
-
-                      return (
-                        <TableRow
-                          key={`${item.part}-${item.size}-${idx}`}
-                          className="border-zinc-800/80 hover:bg-zinc-950/20 transition-all"
-                        >
-                          {/* Part Category */}
-                          <TableCell className="pl-6 h-14 font-medium text-zinc-200">
-                            <Badge
-                              variant="outline"
-                              className={`${meta.badgeClass} font-semibold px-2 py-0.5 rounded text-[10px]`}
-                            >
-                              {meta.label}
-                            </Badge>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      [1, 2, 3, 4, 5].map((i) => (
+                        <TableRow key={i} className="border-zinc-850">
+                          <TableCell className="pl-6 h-14">
+                            <Skeleton className="h-5 w-24 bg-zinc-800/60" />
                           </TableCell>
-
-                          {/* Size / Dimension */}
                           <TableCell>
-                            <Badge
-                              variant="outline"
-                              className="bg-zinc-950 text-zinc-300 border-zinc-800 text-xs font-mono font-bold tracking-tight"
-                            >
-                              {item.size}
-                            </Badge>
+                            <Skeleton className="h-6 w-16 bg-zinc-800/60 rounded-full" />
                           </TableCell>
-
-                          {/* Status */}
                           <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={`${statusColor} flex items-center w-fit gap-1.5 px-2 py-0.5 text-[10px]`}
-                            >
-                              <span
-                                className={`h-1.5 w-1.5 rounded-full ${dotColor}`}
-                              />
-                              {statusLabel}
-                            </Badge>
+                            <Skeleton className="h-5 w-32 bg-zinc-800/60 rounded-md" />
                           </TableCell>
-
-                          {/* Amount */}
                           <TableCell className="text-right pr-6">
-                            <span
-                              className={`font-mono text-sm font-bold tabular-nums tracking-tight ${
-                                amount > 0
-                                  ? "text-emerald-400"
-                                  : amount < 0
-                                    ? "text-rose-400"
-                                    : "text-zinc-550"
-                              }`}
-                            >
-                              {amount > 0 ? `+${amount}` : amount}
-                            </span>
+                            <Skeleton className="h-5 w-12 bg-zinc-800/60 ml-auto" />
                           </TableCell>
                         </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
+                      ))
+                    ) : isError ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-44 text-center">
+                          <div className="flex flex-col items-center justify-center text-rose-500 gap-3">
+                            <AlertCircle className="h-8 w-8" />
+                            <div className="space-y-1">
+                              <span className="text-sm font-semibold block">
+                                Failed to Fetch Inventory
+                              </span>
+                              <span className="text-xs text-zinc-550 block">
+                                Please check backend API connection status.
+                              </span>
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredInventory.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-44 text-center">
+                          <div className="flex flex-col items-center justify-center gap-3 text-zinc-550">
+                            <Package className="h-8 w-8 text-zinc-700" />
+                            <div className="space-y-1">
+                              <span className="text-sm font-semibold text-zinc-400 block">
+                                No Inventory Items Found
+                              </span>
+                              <span className="text-xs text-zinc-650 block">
+                                No matching sizes or part categories match
+                                filters.
+                              </span>
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredInventory.map((item, idx) => {
+                        const meta = getPartMeta(item.part);
+                        const amount = item.item_amount;
+
+                        // Status helper logic
+                        let statusLabel = "Out of Stock";
+                        let statusColor =
+                          "bg-zinc-800 text-zinc-400 border-zinc-700";
+                        let dotColor = "bg-zinc-500";
+
+                        if (amount > 0) {
+                          statusLabel = "Available (In-House)";
+                          statusColor =
+                            "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                          dotColor = "bg-emerald-500 animate-pulse";
+                        } else if (amount < 0) {
+                          statusLabel = "Dispatched (Rented)";
+                          statusColor =
+                            "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                          dotColor = "bg-amber-500 animate-pulse";
+                        }
+
+                        return (
+                          <TableRow
+                            key={`${item.part}-${item.size}-${idx}`}
+                            className="border-zinc-800/80 hover:bg-zinc-950/20 transition-all"
+                          >
+                            {/* Part Category */}
+                            <TableCell className="pl-6 h-14 font-medium text-zinc-200">
+                              <Badge
+                                variant="outline"
+                                className={`${meta.badgeClass} font-semibold px-2 py-0.5 rounded text-[10px]`}
+                              >
+                                {meta.label}
+                              </Badge>
+                            </TableCell>
+
+                            {/* Size / Dimension */}
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className="bg-zinc-950 text-zinc-300 border-zinc-800 text-xs font-mono font-bold tracking-tight"
+                              >
+                                {item.size}
+                              </Badge>
+                            </TableCell>
+
+                            {/* Status */}
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={`${statusColor} flex items-center w-fit gap-1.5 px-2 py-0.5 text-[10px]`}
+                              >
+                                <span
+                                  className={`h-1.5 w-1.5 rounded-full ${dotColor}`}
+                                />
+                                {statusLabel}
+                              </Badge>
+                            </TableCell>
+
+                            {/* Amount */}
+                            <TableCell className="text-right pr-6">
+                              <span
+                                className={`font-mono text-sm font-bold tabular-nums tracking-tight ${
+                                  amount > 0
+                                    ? "text-emerald-400"
+                                    : amount < 0
+                                      ? "text-rose-400"
+                                      : "text-zinc-550"
+                                }`}
+                              >
+                                {amount > 0 ? `+${amount}` : amount}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>

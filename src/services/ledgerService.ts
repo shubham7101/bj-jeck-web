@@ -1,7 +1,7 @@
 import { apiClient } from "@/lib/api-client";
+import type { LedgerSearchPayload } from "@/routes/ledger";
 import {
   type CreateLedger,
-  type LedgerSearchReq,
   ledgerSchema,
   ledgerSearchResSchema,
 } from "@/schemas/ledgerSchema";
@@ -15,14 +15,13 @@ export const ledgerService = {
     return ledgerSchema.parse(data);
   },
 
-  search: async (payload: LedgerSearchReq) => {
+  search: async (payload: LedgerSearchPayload) => {
     const params = new URLSearchParams({
       page: (payload.page ?? 1).toString(),
       per_page: (payload.per_page ?? 10).toString(),
     });
 
-    if (payload.site_id)
-      params.append("site_id", payload.site_id.toString());
+    if (payload.site_id) params.append("site_id", payload.site_id.toString());
     if (payload.customer_id)
       params.append("customer_id", payload.customer_id.toString());
     if (payload.from_date) params.append("from_date", payload.from_date);
@@ -33,7 +32,6 @@ export const ledgerService = {
 
     return ledgerSearchResSchema.parse(data);
   },
-
 
   delete: async (id: number) => {
     return apiClient<void>(`/api/ledger/${id}`, { method: "DELETE" });

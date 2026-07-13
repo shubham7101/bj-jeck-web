@@ -1,22 +1,22 @@
+import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Route as rootRoute } from "@/routes/__root";
+import { createRoute, Link, useRouter } from "@tanstack/react-router";
 import {
+  Activity,
   ArrowLeft,
   Contact,
-  Loader2,
-  Plus,
-  Save,
-  User,
   CreditCard,
+  Loader2,
   Phone,
   PhoneCall,
-  UserPlus,
-  ShieldCheck,
+  Plus,
   RotateCcw,
-  Activity,
+  Save,
+  ShieldCheck,
+  User,
+  UserPlus,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 
 import { ErrorAlert } from "@/components/ErrorAlert";
@@ -35,9 +35,9 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { type Customer } from "@/schemas/customerSchema";
+import { Route as rootRoute } from "@/routes/__root";
+import type { Customer } from "@/schemas/customerSchema";
 import { customerService } from "@/services/customerService";
-import { createRoute, Link, useRouter } from "@tanstack/react-router";
 
 // --- Schema Definitions ---
 export const updateCustomerSchema = z.object({
@@ -77,10 +77,10 @@ export type UpdateCustomerPayload = z.infer<typeof updateCustomerSchema>;
 // --- Route Definition ---
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/customers/$customerId/update",
+  path: "/customers/$customer_id/update",
   component: UpdateCustomerRouteWrapper,
   loader: async ({ params }) => {
-    const id = Number(params.customerId);
+    const id = Number(params.customer_id);
     const profile = await customerService.get(id);
     if (!profile) throw new Error("Customer not found");
     return {
@@ -163,10 +163,21 @@ function UpdateCustomerPage({ customerId, profile }: any) {
 
         <form
           autoComplete="off"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            form.handleSubmit();
+            await form.handleSubmit();
+            setTimeout(() => {
+              const firstError = document.querySelector(
+                ".text-rose-400, [class*='border-rose-500']",
+              );
+              if (firstError) {
+                firstError.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center",
+                });
+              }
+            }, 100);
           }}
           className="flex flex-col gap-8 relative"
         >

@@ -1,7 +1,6 @@
-import { createRoute, useRouter, Link } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
+import { createRoute, Link, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Printer, RotateCcw } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,14 +18,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Route as rootRoute } from "@/routes/__root";
 import type { CustomerRate } from "@/schemas/customerSchema";
-import { customerService } from "@/services/customerService";
+import { siteService } from "@/services/siteService";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/customer-rates",
   loader: async () => {
-    const firstPage = await customerService.search({ page: 1, per_page: 100 });
+    const firstPage = await siteService.search({ page: 1, per_page: 100 });
     let customers = firstPage.data;
 
     if (firstPage.pagination.total_pages > 1) {
@@ -35,7 +35,7 @@ export const Route = createRoute({
         (_, i) => i + 2,
       );
       const resPromises = remainingPages.map((page) =>
-        customerService.search({ page, per_page: 100 }),
+        siteService.search({ page, per_page: 100 }),
       );
       const results = await Promise.all(resPromises);
       for (const res of results) {
@@ -46,7 +46,7 @@ export const Route = createRoute({
     const customersWithRates = await Promise.all(
       customers.map(async (c) => {
         try {
-          const rates = await customerService.getRates(c.id);
+          const rates = await siteService.getRates(c.id);
           return { ...c, rates };
         } catch (_e) {
           return { ...c, rates: [] };
@@ -192,7 +192,9 @@ function CustomersRatesPage() {
             <h1 className="text-base sm:text-lg font-bold text-slate-800 truncate">
               Customers Rates
             </h1>
-            <p className="text-xs text-slate-500 truncate">View and print rates</p>
+            <p className="text-xs text-slate-500 truncate">
+              View and print rates
+            </p>
           </div>
         </div>
 
@@ -211,7 +213,9 @@ function CustomersRatesPage() {
             />
           </div>
           <div className="flex items-center gap-2 flex-1 sm:flex-none">
-            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">To ID:</span>
+            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">
+              To ID:
+            </span>
             <Input
               type="number"
               value={toId}
@@ -325,7 +329,7 @@ function CustomersRatesPage() {
                       params={{ customerId: customer.id.toString() }}
                       className="hover:underline hover:text-emerald-600 transition-colors"
                     >
-                      {customer.name}
+                      {customer.contractor_name}
                     </Link>
                   </TableCell>
                   <TableCell className="border-r border-slate-200 sm:border-slate-300 py-1.5 px-3 text-left text-slate-600 max-w-[200px] truncate">

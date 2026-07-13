@@ -1,29 +1,28 @@
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
+import type { SiteSearchPayload } from "@/routes/sites";
 import {
-  type Site,
-  siteSchema,
-  type CreateSiteReq,
-  type UpdateSiteReq,
-  type SiteRate,
-  siteRateSchema,
   type CreateSiteRatesReq,
-  type UpdateSiteRatesReq,
-  type SiteInventory,
+  type CreateSiteReq,
   siteInventorySchema,
+  siteRateSchema,
+  siteSchema,
   siteSearchResSchema,
-  type SiteSearchReq
+  type UpdateSiteRatesReq,
+  type UpdateSiteReq,
 } from "@/schemas/siteSchema";
 
 export const siteService = {
-  search: async (payload: SiteSearchReq) => {
+  search: async (payload: SiteSearchPayload) => {
     const params = new URLSearchParams({
       page: (payload.page ?? 1).toString(),
       per_page: (payload.per_page ?? 10).toString(),
     });
 
-    if (payload.customer_id) params.append("customer_id", payload.customer_id.toString());
-    if (payload.contractor_name) params.append("contractor_name", payload.contractor_name);
+    if (payload.customer_id)
+      params.append("customer_id", payload.customer_id.toString());
+    if (payload.contractor_name)
+      params.append("contractor_name", payload.contractor_name);
     if (payload.address) params.append("address", payload.address);
     if (payload.mobile_no) params.append("mobile_no", payload.mobile_no);
 
@@ -119,5 +118,5 @@ export const siteService = {
   getActiveByCustomer: async (customerId: number) => {
     const data = await apiClient(`/api/customers/${customerId}/sites/active`);
     return z.array(siteSchema).parse(data);
-  }
+  },
 };

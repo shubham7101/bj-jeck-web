@@ -1,21 +1,21 @@
+import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Route as rootRoute } from "@/routes/__root";
+import { createRoute, Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
   Contact,
-  Loader2,
-  Plus,
-  Save,
-  User,
   CreditCard,
+  Loader2,
+  MapPin,
   Phone,
   PhoneCall,
-  UserPlus,
+  Plus,
+  Save,
   ShieldCheck,
-  MapPin,
+  User,
+  UserPlus,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 
 import { ErrorAlert } from "@/components/ErrorAlert";
@@ -31,9 +31,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Route as rootRoute } from "@/routes/__root";
 import type { Customer } from "@/schemas/customerSchema";
 import { customerService } from "@/services/customerService";
-import { createRoute, Link } from "@tanstack/react-router";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -141,10 +141,21 @@ function NewCustomerPage() {
 
         <form
           autoComplete="off"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            form.handleSubmit();
+            await form.handleSubmit();
+            setTimeout(() => {
+              const firstError = document.querySelector(
+                ".text-rose-400, [class*='border-rose-500']",
+              );
+              if (firstError) {
+                firstError.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center",
+                });
+              }
+            }, 100);
           }}
           className="flex flex-col gap-8 relative"
         >

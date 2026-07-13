@@ -1,4 +1,4 @@
-import { useStore } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import {
   keepPreviousData,
   useMutation,
@@ -6,12 +6,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { createRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
-import { format, isValid, parse } from "date-fns";
+import { format } from "date-fns";
 import {
   AlertCircle,
   ArrowLeft,
-  Calendar as CalendarIcon,
   Check,
   ChevronDown,
   ChevronUp,
@@ -27,15 +25,13 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
-import { SiteDataGrid } from "@/components/SiteDataGrid";
-import { FormBase } from "@/components/form/FormBase";
-import { useAppForm } from "@/components/form/hooks";
-import { SuccessFeedback } from "@/components/SuccessFeedback";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { FilterDatePicker } from "@/components/FilterDatePicker";
+import { SiteDataGrid } from "@/components/SiteDataGrid";
+import { SuccessFeedback } from "@/components/SuccessFeedback";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -44,11 +40,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -67,15 +58,12 @@ import {
 } from "@/components/ui/table";
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
+import { Route as rootRoute } from "@/routes/__root";
+import { getSizesForPart, PART_OPTIONS } from "@/schemas/common";
+import { type Record, recordItemSchema } from "@/schemas/recordSchema";
 import type { Site } from "@/schemas/siteSchema";
-import { PART_OPTIONS, getSizesForPart } from "@/schemas/common";
-import {
-  type CreateRecord,
-  createRecordSchema,
-  type Record,
-} from "@/schemas/recordSchema";
-import { siteService } from "@/services/siteService";
 import { recordService } from "@/services/recordService";
+import { siteService } from "@/services/siteService";
 import { formatDate, getInitials } from "@/utils";
 
 // --- Route Definition ---
@@ -102,6 +90,29 @@ export const Route = createRoute({
   },
   pendingComponent: RecordLoadingSkeleton,
 });
+
+// --- Schema Definitions ---
+
+export const createRecordSchema = z.object({
+  id: z.number().min(1),
+  site_id: z.number().min(1),
+  date: z.string().regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY"),
+  transaction_type: z.enum(["IN", "OUT"]),
+  total: z.number().min(1),
+  labour_charge: z.number().min(0),
+  transport_charge: z.number().min(0),
+  vehicle_no: z.string().nullable().optional(),
+  vehicle_mobile_no: z
+    .string()
+    .length(10, "Alternate mobile must be exactly 10 digits")
+    .regex(/^\d+$/, "Alternate mobile must contain only digits")
+    .or(z.literal(""))
+    .nullish()
+    .transform((val) => (val === "" ? null : val))
+    .optional(),
+  items: z.array(recordItemSchema).min(1),
+});
+export type CreateRecord = z.infer<typeof createRecordSchema>;
 
 // --- Constants ---
 const DATE_FORMAT = "dd-MM-yyyy";
@@ -130,6 +141,122 @@ const DEFAULT_FORM_VALUES: Partial<CreateRecord> = {
 };
 
 // --- Custom Components ---
+
+function FormFieldWrapper({
+  form,
+  name,
+  label,
+  icon: Icon,
+  required,
+  placeholder,
+  type = "text",
+  maxLength,
+}: any) {
+  return (
+    <form.Field
+      name={name}
+      children={(field: any) => {
+        const hasError = field.state.meta.errors.length > 0;
+        return (
+          <div className="flex flex-col gap-1.5 group">
+            <label className="text-sm font-semibold text-zinc-300 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                {label} {required && <span className="text-rose-500">*</span>}
+              </span>
+            </label>
+            <div className="relative relative-group">
+              {Icon && (
+                <Icon
+                  className={cn(
+                    "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors",
+                    hasError
+                      ? "text-rose-500"
+                      : "text-zinc-500 group-focus-within:text-emerald-500",
+                  )}
+                />
+              )}
+              <Input
+                value={field.state.value ?? ""}
+                onChange={(e) =>
+                  field.handleChange(
+                    type === "number"
+                      ? e.target.value === ""
+                        ? ""
+                        : Number(e.target.value)
+                      : e.target.value,
+                  )
+                }
+                onBlur={field.handleBlur}
+                placeholder={placeholder}
+                type={type}
+                maxLength={maxLength}
+                className={cn(
+                  "bg-zinc-950/50 border-zinc-800/50 hover:bg-zinc-900/50 focus:bg-zinc-950 focus:ring-1 transition-all h-10",
+                  Icon ? "pl-10" : "",
+                  hasError
+                    ? "border-rose-500/50 focus:border-rose-500/50 focus:ring-rose-500/50"
+                    : "focus:border-emerald-500/50 focus:ring-emerald-500/50",
+                )}
+              />
+            </div>
+            {hasError && (
+              <span className="text-xs font-medium text-rose-500 animate-in slide-in-from-top-1">
+                {field.state.meta.errors
+                  .map((e: any) => e.message || e)
+                  .join(", ")}
+              </span>
+            )}
+          </div>
+        );
+      }}
+    />
+  );
+}
+
+function TableCellFieldWrapper({
+  field,
+  children,
+}: {
+  field: any;
+  children: React.ReactNode;
+}) {
+  const hasError = field.state.meta.errors.length > 0;
+  return (
+    <div className="flex flex-col gap-1 w-full pb-2">
+      {children}
+      {hasError && (
+        <span className="text-rose-500 text-[10px] leading-tight block animate-in slide-in-from-top-1">
+          {field.state.meta.errors.map((e: any) => e.message || e).join(", ")}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function MobileFieldWrapper({
+  field,
+  label,
+  children,
+}: {
+  field: any;
+  label: string;
+  children: React.ReactNode;
+}) {
+  const hasError = field.state.meta.errors.length > 0;
+  return (
+    <div className="flex flex-col gap-1 w-full mb-2">
+      <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+        {label}
+      </label>
+      <div className="relative">{children}</div>
+      {hasError && (
+        <span className="text-rose-500 text-[10px] leading-tight block animate-in slide-in-from-top-1">
+          {field.state.meta.errors.map((e: any) => e.message || e).join(", ")}
+        </span>
+      )}
+    </div>
+  );
+}
 
 function FormProgressStepper({ currentStep }: { currentStep: number }) {
   return (
@@ -397,7 +524,7 @@ function RecordEntryForm({
   const queryClient = useQueryClient();
   const [showTransport, setShowTransport] = useState(false);
 
-  const form = useAppForm({
+  const form = useForm({
     defaultValues: {
       ...DEFAULT_FORM_VALUES,
       site_id: site.id,
@@ -479,10 +606,21 @@ function RecordEntryForm({
 
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        form.handleSubmit();
+        await form.handleSubmit();
+        setTimeout(() => {
+          const firstError = document.querySelector(
+            ".text-rose-400, .text-rose-500, [class*='border-rose-500']",
+          );
+          if (firstError) {
+            firstError.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }
+        }, 100);
       }}
       className="space-y-6 animate-in slide-in-from-right-4 duration-300 min-w-0 w-full"
     >
@@ -568,137 +706,108 @@ function RecordEntryForm({
 
         <CardContent className="space-y-6 pt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <form.Field name="id">
-              {(field) => (
-                <FormBase field={field} label="Chalan No. (Record ID)">
-                  <div className="relative">
-                    <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id={field.name}
-                      type="number"
-                      placeholder="Enter Chalan Number"
-                      className="pl-9 bg-background/50 border-border/80 font-bold text-lg focus:border-primary/50 focus:ring-primary/20 transition-all h-10"
-                      value={field.state.value || ""}
-                      onBlur={field.handleBlur}
-                      onChange={(e) =>
-                        field.handleChange(Number(e.target.value))
-                      }
-                      onWheel={(e) => e.currentTarget.blur()}
-                      autoFocus
-                    />
-                  </div>
-                </FormBase>
-              )}
-            </form.Field>
+            <FormFieldWrapper
+              form={form}
+              name="id"
+              label="Chalan No. (Record ID)"
+              icon={Hash}
+              placeholder="Enter Chalan Number"
+              type="number"
+            />
 
             <form.Field name="date">
               {(field) => {
-                const dateValue =
-                  field.state.value &&
-                  isValid(parse(field.state.value, DATE_FORMAT, new Date()))
-                    ? parse(field.state.value, DATE_FORMAT, new Date())
-                    : undefined;
-
+                const hasError = field.state.meta.errors.length > 0;
                 return (
-                  <FormBase field={field} label="Transaction Date">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal bg-background/50 border-border/80 hover:bg-muted hover:text-foreground focus:border-primary/50 focus:ring-primary/20 transition-all h-10",
-                            !dateValue && "text-muted-foreground",
-                          )}
-                        >
-                          {dateValue ? (
-                            format(dateValue, DATE_FORMAT)
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-auto p-0 bg-popover border border-border shadow-lg rounded-xl"
-                        align="start"
-                      >
-                        <Calendar
-                          mode="single"
-                          selected={dateValue}
-                          onSelect={(date) => {
-                            const dateStr = date
-                              ? format(date, DATE_FORMAT)
-                              : "";
-                            field.handleChange(dateStr);
-                          }}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
-                          autoFocus
-                          className="rounded-xl border-none"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </FormBase>
+                  <div className="flex flex-col gap-1.5 group mb-5">
+                    <label className="text-sm font-semibold text-zinc-300">
+                      Transaction Date
+                    </label>
+                    <FilterDatePicker
+                      value={field.state.value}
+                      max={format(new Date(), "yyyy-MM-dd")}
+                      onChange={(val) => field.handleChange(val)}
+                    />
+                    {hasError && (
+                      <span className="text-xs font-medium text-rose-500 animate-in slide-in-from-top-1">
+                        {field.state.meta.errors
+                          .map((e: any) => e.message || e)
+                          .join(", ")}
+                      </span>
+                    )}
+                  </div>
                 );
               }}
             </form.Field>
 
             <form.Field name="transaction_type">
-              {(field) => (
-                <FormBase field={field} label="Transaction Type">
-                  <div className="relative flex p-1 bg-muted/60 border border-border/85 rounded-lg w-full h-10 items-center">
-                    <div
-                      className={cn(
-                        "absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-md transition-all duration-300 shadow-sm",
-                        field.state.value === "OUT"
-                          ? "left-1 bg-rose-500/15 border border-rose-500/30 dark:bg-rose-950/40"
-                          : "left-[calc(50%+2px)] bg-emerald-500/15 border border-emerald-500/30 dark:bg-emerald-950/40",
-                      )}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => field.handleChange("OUT")}
-                      className={cn(
-                        "flex-1 py-1.5 text-xs font-semibold z-10 text-center rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 h-8",
-                        field.state.value === "OUT"
-                          ? "text-rose-600 dark:text-rose-400"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      <span
+              {(field) => {
+                const hasError = field.state.meta.errors.length > 0;
+                return (
+                  <div className="flex flex-col gap-1.5 group mb-5">
+                    <label className="text-sm font-semibold text-zinc-300">
+                      Transaction Type
+                    </label>
+                    <div className="relative flex p-1 bg-muted/60 border border-border/85 rounded-lg w-full h-10 items-center">
+                      <div
                         className={cn(
-                          "h-2 w-2 rounded-full",
+                          "absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-md transition-all duration-300 shadow-sm",
                           field.state.value === "OUT"
-                            ? "bg-rose-500 animate-pulse"
-                            : "bg-zinc-500/40",
+                            ? "left-1 bg-rose-500/15 border border-rose-500/30 dark:bg-rose-950/40"
+                            : "left-[calc(50%+2px)] bg-emerald-500/15 border border-emerald-500/30 dark:bg-emerald-950/40",
                         )}
                       />
-                      OUT (Delivery)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => field.handleChange("IN")}
-                      className={cn(
-                        "flex-1 py-1.5 text-xs font-semibold z-10 text-center rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 h-8",
-                        field.state.value === "IN"
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      <span
+                      <button
+                        type="button"
+                        onClick={() => field.handleChange("OUT")}
                         className={cn(
-                          "h-2 w-2 rounded-full",
-                          field.state.value === "IN"
-                            ? "bg-emerald-500 animate-pulse"
-                            : "bg-zinc-500/40",
+                          "flex-1 py-1.5 text-xs font-semibold z-10 text-center rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 h-8",
+                          field.state.value === "OUT"
+                            ? "text-rose-600 dark:text-rose-400"
+                            : "text-muted-foreground hover:text-foreground",
                         )}
-                      />
-                      IN (Return)
-                    </button>
+                      >
+                        <span
+                          className={cn(
+                            "h-2 w-2 rounded-full",
+                            field.state.value === "OUT"
+                              ? "bg-rose-500 animate-pulse"
+                              : "bg-zinc-500/40",
+                          )}
+                        />
+                        OUT (Delivery)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => field.handleChange("IN")}
+                        className={cn(
+                          "flex-1 py-1.5 text-xs font-semibold z-10 text-center rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 h-8",
+                          field.state.value === "IN"
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "h-2 w-2 rounded-full",
+                            field.state.value === "IN"
+                              ? "bg-emerald-500 animate-pulse"
+                              : "bg-zinc-500/40",
+                          )}
+                        />
+                        IN (Return)
+                      </button>
+                    </div>
+                    {hasError && (
+                      <span className="text-xs font-medium text-rose-500 animate-in slide-in-from-top-1">
+                        {field.state.meta.errors
+                          .map((e: any) => e.message || e)
+                          .join(", ")}
+                      </span>
+                    )}
                   </div>
-                </FormBase>
-              )}
+                );
+              }}
             </form.Field>
           </div>
 
@@ -726,40 +835,20 @@ function RecordEntryForm({
 
             {showTransport && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 animate-in slide-in-from-top-2 duration-300">
-                <form.Field name="vehicle_no">
-                  {(field) => (
-                    <FormBase
-                      field={field}
-                      label="Vehicle Number"
-                      className="mb-2"
-                    >
-                      <Input
-                        id={field.name}
-                        placeholder="e.g. GJ-05-AB-1234"
-                        className="bg-background/50 border-border/80 focus:border-primary/50 focus:ring-primary/20 transition-all font-mono"
-                        value={field.state.value || ""}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                      />
-                    </FormBase>
-                  )}
-                </form.Field>
-                <form.Field name="vehicle_mobile_no">
-                  {(field) => (
-                    <FormBase
-                      field={field}
-                      label="Driver Mobile"
-                      className="mb-2"
-                    >
-                      <Input
-                        id={field.name}
-                        placeholder="e.g. 9876543210"
-                        className="bg-background/50 border-border/80 focus:border-primary/50 focus:ring-primary/20 transition-all font-mono"
-                        value={field.state.value || ""}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                      />
-                    </FormBase>
-                  )}
-                </form.Field>
+                <FormFieldWrapper
+                  form={form}
+                  name="vehicle_no"
+                  label="Vehicle Number"
+                  icon={Truck}
+                  placeholder="e.g. GJ-05-AB-1234"
+                />
+                <FormFieldWrapper
+                  form={form}
+                  name="vehicle_mobile_no"
+                  label="Driver Mobile"
+                  icon={User}
+                  placeholder="e.g. 9876543210"
+                />
               </div>
             )}
           </div>
@@ -783,7 +872,9 @@ function RecordEntryForm({
                   {field.state.meta.errors.length > 0 && (
                     <p className="text-sm font-medium text-rose-500 mt-1 flex items-center gap-1.5">
                       <AlertCircle className="h-4 w-4" />{" "}
-                      {field.state.meta.errors.join(", ")}
+                      {field.state.meta.errors
+                        .map((e: any) => e.message || e)
+                        .join(", ")}
                     </p>
                   )}
                 </div>
@@ -854,7 +945,7 @@ function RecordEntryForm({
                             <TableCell className="pl-6 py-3.5 align-top">
                               <form.Field name={`items[${index}].part`}>
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <Select
                                       value={subField.state.value}
                                       onValueChange={(val) => {
@@ -874,7 +965,7 @@ function RecordEntryForm({
                                         );
                                       }}
                                     >
-                                      <SelectTrigger className="border-border/80 bg-background/50 hover:bg-muted/50 focus:border-primary/50 focus:ring-primary/20 transition-all cursor-pointer h-9 text-xs">
+                                      <SelectTrigger className="w-full border-border/80 bg-background/50 hover:bg-muted/50 focus:border-primary/50 focus:ring-primary/20 transition-all cursor-pointer h-9 text-xs">
                                         <SelectValue placeholder="Select Part" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -889,7 +980,7 @@ function RecordEntryForm({
                                         ))}
                                       </SelectContent>
                                     </Select>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -897,14 +988,14 @@ function RecordEntryForm({
                             <TableCell className="py-3.5 align-top">
                               <form.Field name={`items[${index}].size`}>
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <Select
                                       value={subField.state.value}
                                       onValueChange={(val) =>
                                         subField.handleChange(val)
                                       }
                                     >
-                                      <SelectTrigger className="border-border/80 bg-background/50 hover:bg-muted/50 focus:border-primary/50 focus:ring-primary/20 transition-all cursor-pointer h-9 text-xs">
+                                      <SelectTrigger className="w-full border-border/80 bg-background/50 hover:bg-muted/50 focus:border-primary/50 focus:ring-primary/20 transition-all cursor-pointer h-9 text-xs">
                                         <SelectValue placeholder="Size" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -919,7 +1010,7 @@ function RecordEntryForm({
                                         ))}
                                       </SelectContent>
                                     </Select>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -927,16 +1018,12 @@ function RecordEntryForm({
                             <TableCell className="py-3.5 align-top">
                               <form.Field name={`items[${index}].item_amount`}>
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <Input
                                       type="number"
                                       className="border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 focus:border-primary/60 focus:ring-primary/25 transition-all h-9 text-xs font-bold text-center"
                                       placeholder="0"
-                                      value={
-                                        subField.state.value === 0
-                                          ? ""
-                                          : subField.state.value
-                                      }
+                                      value={subField.state.value || ""}
                                       onChange={(e) =>
                                         subField.handleChange(
                                           Number(e.target.value),
@@ -944,7 +1031,7 @@ function RecordEntryForm({
                                       }
                                       onWheel={(e) => e.currentTarget.blur()}
                                     />
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -954,17 +1041,13 @@ function RecordEntryForm({
                                 name={`items[${index}].broken_amount`}
                               >
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <div className="flex justify-center">
                                       <Input
                                         type="number"
                                         className="border-rose-500/20 bg-rose-500/5 text-center hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
                                         placeholder="0"
-                                        value={
-                                          subField.state.value === 0
-                                            ? ""
-                                            : subField.state.value
-                                        }
+                                        value={subField.state.value || ""}
                                         onChange={(e) => {
                                           const val = Number(e.target.value);
                                           subField.handleChange(val);
@@ -977,7 +1060,7 @@ function RecordEntryForm({
                                         onWheel={(e) => e.currentTarget.blur()}
                                       />
                                     </div>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -985,17 +1068,13 @@ function RecordEntryForm({
                             <TableCell className="py-3.5 align-top text-center">
                               <form.Field name={`items[${index}].lost_amount`}>
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <div className="flex justify-center">
                                       <Input
                                         type="number"
                                         className="border-rose-500/20 bg-rose-500/5 text-center hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
                                         placeholder="0"
-                                        value={
-                                          subField.state.value === 0
-                                            ? ""
-                                            : subField.state.value
-                                        }
+                                        value={subField.state.value || ""}
                                         onChange={(e) => {
                                           const val = Number(e.target.value);
                                           subField.handleChange(val);
@@ -1003,7 +1082,7 @@ function RecordEntryForm({
                                         onWheel={(e) => e.currentTarget.blur()}
                                       />
                                     </div>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -1013,7 +1092,7 @@ function RecordEntryForm({
                                 name={`items[${index}].broken_charge`}
                               >
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <div className="relative flex items-center justify-center">
                                       <span className="absolute left-2.5 text-rose-500 text-xs font-semibold">
                                         ₹
@@ -1022,11 +1101,7 @@ function RecordEntryForm({
                                         type="number"
                                         className="pl-5 border-rose-500/20 bg-rose-500/5 text-center hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
                                         placeholder="0"
-                                        value={
-                                          subField.state.value === 0
-                                            ? ""
-                                            : subField.state.value
-                                        }
+                                        value={subField.state.value || ""}
                                         onChange={(e) =>
                                           subField.handleChange(
                                             Number(e.target.value),
@@ -1035,7 +1110,7 @@ function RecordEntryForm({
                                         onWheel={(e) => e.currentTarget.blur()}
                                       />
                                     </div>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -1045,7 +1120,7 @@ function RecordEntryForm({
                                 name={`items[${index}].service_charge`}
                               >
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <div className="relative flex items-center justify-center">
                                       <span className="absolute left-2.5 text-amber-600 dark:text-amber-400 text-xs font-semibold">
                                         ₹
@@ -1054,11 +1129,7 @@ function RecordEntryForm({
                                         type="number"
                                         className="pl-5 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-center font-bold h-9 text-xs focus:border-amber-500/50 focus:ring-amber-500/10 transition-all"
                                         placeholder="0"
-                                        value={
-                                          subField.state.value === 0
-                                            ? ""
-                                            : subField.state.value
-                                        }
+                                        value={subField.state.value || ""}
                                         onChange={(e) =>
                                           subField.handleChange(
                                             Number(e.target.value),
@@ -1067,7 +1138,7 @@ function RecordEntryForm({
                                         onWheel={(e) => e.currentTarget.blur()}
                                       />
                                     </div>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -1075,7 +1146,7 @@ function RecordEntryForm({
                             <TableCell className="py-3.5 align-top text-center">
                               <form.Field name={`items[${index}].lost_charge`}>
                                 {(subField) => (
-                                  <FormBase field={subField} className="mb-0">
+                                  <TableCellFieldWrapper field={subField}>
                                     <div className="relative flex items-center justify-center">
                                       <span className="absolute left-2.5 text-rose-500 text-xs font-semibold">
                                         ₹
@@ -1084,11 +1155,7 @@ function RecordEntryForm({
                                         type="number"
                                         className="pl-5 border-rose-500/20 bg-rose-500/5 text-center hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
                                         placeholder="0"
-                                        value={
-                                          subField.state.value === 0
-                                            ? ""
-                                            : subField.state.value
-                                        }
+                                        value={subField.state.value || ""}
                                         onChange={(e) =>
                                           subField.handleChange(
                                             Number(e.target.value),
@@ -1097,7 +1164,7 @@ function RecordEntryForm({
                                         onWheel={(e) => e.currentTarget.blur()}
                                       />
                                     </div>
-                                  </FormBase>
+                                  </TableCellFieldWrapper>
                                 )}
                               </form.Field>
                             </TableCell>
@@ -1151,10 +1218,9 @@ function RecordEntryForm({
                         <div className="grid grid-cols-2 gap-4">
                           <form.Field name={`items[${index}].part`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Part Type"
-                                className="mb-0"
                               >
                                 <Select
                                   value={subField.state.value}
@@ -1175,7 +1241,7 @@ function RecordEntryForm({
                                     );
                                   }}
                                 >
-                                  <SelectTrigger className="border-border/80 bg-background/50 h-9 text-xs">
+                                  <SelectTrigger className="w-full border-border/80 bg-background/50 h-9 text-xs">
                                     <SelectValue placeholder="Select Part" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -1190,23 +1256,19 @@ function RecordEntryForm({
                                     ))}
                                   </SelectContent>
                                 </Select>
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                           <form.Field name={`items[${index}].size`}>
                             {(subField) => (
-                              <FormBase
-                                field={subField}
-                                label="Size"
-                                className="mb-0"
-                              >
+                              <MobileFieldWrapper field={subField} label="Size">
                                 <Select
                                   value={subField.state.value}
                                   onValueChange={(val) =>
                                     subField.handleChange(val)
                                   }
                                 >
-                                  <SelectTrigger className="border-border/80 bg-background/50 h-9 text-xs">
+                                  <SelectTrigger className="w-full border-border/80 bg-background/50 h-9 text-xs">
                                     <SelectValue placeholder="Size" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -1221,7 +1283,7 @@ function RecordEntryForm({
                                     ))}
                                   </SelectContent>
                                 </Select>
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                         </div>
@@ -1229,20 +1291,15 @@ function RecordEntryForm({
                         <div className="grid grid-cols-3 gap-4">
                           <form.Field name={`items[${index}].item_amount`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Quantity"
-                                className="mb-0"
                               >
                                 <Input
                                   type="number"
                                   className="bg-primary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/40 focus:border-primary/60 focus:ring-primary/20 transition-all h-9 text-xs font-bold text-center"
                                   placeholder="0"
-                                  value={
-                                    subField.state.value === 0
-                                      ? ""
-                                      : subField.state.value
-                                  }
+                                  value={subField.state.value || ""}
                                   onChange={(e) =>
                                     subField.handleChange(
                                       Number(e.target.value),
@@ -1250,25 +1307,20 @@ function RecordEntryForm({
                                   }
                                   onWheel={(e) => e.currentTarget.blur()}
                                 />
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                           <form.Field name={`items[${index}].broken_amount`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Broken Qty"
-                                className="mb-0"
                               >
                                 <Input
                                   type="number"
                                   className="bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all text-center h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
                                   placeholder="0"
-                                  value={
-                                    subField.state.value === 0
-                                      ? ""
-                                      : subField.state.value
-                                  }
+                                  value={subField.state.value || ""}
                                   onChange={(e) => {
                                     const val = Number(e.target.value);
                                     subField.handleChange(val);
@@ -1279,32 +1331,27 @@ function RecordEntryForm({
                                   }}
                                   onWheel={(e) => e.currentTarget.blur()}
                                 />
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                           <form.Field name={`items[${index}].lost_amount`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Lost Qty"
-                                className="mb-0"
                               >
                                 <Input
                                   type="number"
                                   className="bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all text-center h-9 text-xs text-rose-600 dark:text-rose-450 font-bold"
                                   placeholder="0"
-                                  value={
-                                    subField.state.value === 0
-                                      ? ""
-                                      : subField.state.value
-                                  }
+                                  value={subField.state.value || ""}
                                   onChange={(e) => {
                                     const val = Number(e.target.value);
                                     subField.handleChange(val);
                                   }}
                                   onWheel={(e) => e.currentTarget.blur()}
                                 />
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                         </div>
@@ -1312,10 +1359,9 @@ function RecordEntryForm({
                         <div className="grid grid-cols-3 gap-3 pt-2 border-t border-border/40">
                           <form.Field name={`items[${index}].broken_charge`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Broken ₹"
-                                className="mb-0"
                               >
                                 <div className="relative">
                                   <span className="absolute left-1.5 top-2 text-[10px] text-rose-500 font-semibold">
@@ -1325,11 +1371,7 @@ function RecordEntryForm({
                                     type="number"
                                     className="pl-4 pr-1 text-xs bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all text-center h-8 text-rose-600 dark:text-rose-450 font-bold"
                                     placeholder="0"
-                                    value={
-                                      subField.state.value === 0
-                                        ? ""
-                                        : subField.state.value
-                                    }
+                                    value={subField.state.value || ""}
                                     onChange={(e) =>
                                       subField.handleChange(
                                         Number(e.target.value),
@@ -1338,15 +1380,14 @@ function RecordEntryForm({
                                     onWheel={(e) => e.currentTarget.blur()}
                                   />
                                 </div>
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                           <form.Field name={`items[${index}].service_charge`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Service ₹"
-                                className="mb-0"
                               >
                                 <div className="relative">
                                   <span className="absolute left-1.5 top-2 text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
@@ -1356,11 +1397,7 @@ function RecordEntryForm({
                                     type="number"
                                     className="pl-4 pr-1 text-xs bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10 focus:border-amber-500/50 focus:ring-amber-500/10 transition-all text-center h-8 text-amber-600 dark:text-amber-400 font-bold"
                                     placeholder="0"
-                                    value={
-                                      subField.state.value === 0
-                                        ? ""
-                                        : subField.state.value
-                                    }
+                                    value={subField.state.value || ""}
                                     onChange={(e) =>
                                       subField.handleChange(
                                         Number(e.target.value),
@@ -1369,15 +1406,14 @@ function RecordEntryForm({
                                     onWheel={(e) => e.currentTarget.blur()}
                                   />
                                 </div>
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                           <form.Field name={`items[${index}].lost_charge`}>
                             {(subField) => (
-                              <FormBase
+                              <MobileFieldWrapper
                                 field={subField}
                                 label="Lost ₹"
-                                className="mb-0"
                               >
                                 <div className="relative">
                                   <span className="absolute left-1.5 top-2 text-[10px] text-rose-500 font-semibold">
@@ -1387,11 +1423,7 @@ function RecordEntryForm({
                                     type="number"
                                     className="pl-4 pr-1 text-xs bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10 focus:border-rose-500/50 focus:ring-rose-500/10 transition-all text-center h-8 text-rose-600 dark:text-rose-450 font-bold"
                                     placeholder="0"
-                                    value={
-                                      subField.state.value === 0
-                                        ? ""
-                                        : subField.state.value
-                                    }
+                                    value={subField.state.value || ""}
                                     onChange={(e) =>
                                       subField.handleChange(
                                         Number(e.target.value),
@@ -1400,7 +1432,7 @@ function RecordEntryForm({
                                     onWheel={(e) => e.currentTarget.blur()}
                                   />
                                 </div>
-                              </FormBase>
+                              </MobileFieldWrapper>
                             )}
                           </form.Field>
                         </div>
@@ -1429,80 +1461,107 @@ function RecordEntryForm({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {/* Total Items Quantity Input */}
             <form.Field name="total">
-              {(field) => (
-                <FormBase
-                  field={field}
-                  label="Total Items Quantity"
-                  className="mb-0"
-                >
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    className="bg-primary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/40 focus:border-primary/60 focus:ring-primary/20 transition-all font-bold text-base h-10 px-3 text-foreground"
-                    value={field.state.value === 0 ? "" : field.state.value}
-                    onChange={(e) => {
-                      const val = Number(e.target.value);
-                      field.handleChange(val);
-                      form.setFieldValue(`labour_charge`, val * 3);
-                    }}
-                    onWheel={(e) => e.currentTarget.blur()}
-                  />
-                </FormBase>
-              )}
+              {(field) => {
+                const hasError = field.state.meta.errors.length > 0;
+                return (
+                  <div className="flex flex-col gap-1.5 group">
+                    <label className="text-sm font-semibold text-zinc-300">
+                      Total Items Quantity
+                    </label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      className="bg-primary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/40 focus:border-primary/60 focus:ring-primary/20 transition-all font-bold text-base h-10 px-3 text-foreground"
+                      value={field.state.value || ""}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        field.handleChange(val);
+                        form.setFieldValue(`labour_charge`, val * 3);
+                      }}
+                      onWheel={(e) => e.currentTarget.blur()}
+                    />
+                    {hasError && (
+                      <span className="text-xs font-medium text-rose-500">
+                        {field.state.meta.errors
+                          .map((e: any) => e.message || e)
+                          .join(", ")}
+                      </span>
+                    )}
+                  </div>
+                );
+              }}
             </form.Field>
 
             {/* Labour Charge Input */}
             <form.Field name="labour_charge">
-              {(field) => (
-                <FormBase
-                  field={field}
-                  label="Labour Charge (₹)"
-                  className="mb-0"
-                >
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-emerald-600 dark:text-emerald-400 font-medium">
-                      ₹
-                    </span>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      className="pl-7 bg-emerald-500/5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-base h-10 focus:border-emerald-500/50 focus:ring-emerald-500/10 transition-all"
-                      value={field.state.value === 0 ? "" : field.state.value}
-                      onChange={(e) =>
-                        field.handleChange(Number(e.target.value))
-                      }
-                      onWheel={(e) => e.currentTarget.blur()}
-                    />
+              {(field) => {
+                const hasError = field.state.meta.errors.length > 0;
+                return (
+                  <div className="flex flex-col gap-1.5 group">
+                    <label className="text-sm font-semibold text-zinc-300">
+                      Labour Charge (₹)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                        ₹
+                      </span>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        className="pl-7 bg-emerald-500/5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-base h-10 focus:border-emerald-500/50 focus:ring-emerald-500/10 transition-all"
+                        value={field.state.value || ""}
+                        onChange={(e) =>
+                          field.handleChange(Number(e.target.value))
+                        }
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
+                    </div>
+                    {hasError && (
+                      <span className="text-xs font-medium text-rose-500">
+                        {field.state.meta.errors
+                          .map((e: any) => e.message || e)
+                          .join(", ")}
+                      </span>
+                    )}
                   </div>
-                </FormBase>
-              )}
+                );
+              }}
             </form.Field>
 
             {/* Transport Charge Input */}
             <form.Field name="transport_charge">
-              {(field) => (
-                <FormBase
-                  field={field}
-                  label="Transport Charge (₹)"
-                  className="mb-0"
-                >
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-purple-600 dark:text-purple-400 font-medium">
-                      ₹
-                    </span>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      className="pl-7 bg-purple-500/5 border-purple-500/30 text-purple-600 dark:text-purple-400 font-bold text-base h-10 focus:border-purple-500/50 focus:ring-purple-500/10 transition-all shadow-[0_0_15px_-3px_rgba(168,85,247,0.05)]"
-                      value={field.state.value === 0 ? "" : field.state.value}
-                      onChange={(e) =>
-                        field.handleChange(Number(e.target.value))
-                      }
-                      onWheel={(e) => e.currentTarget.blur()}
-                    />
+              {(field) => {
+                const hasError = field.state.meta.errors.length > 0;
+                return (
+                  <div className="flex flex-col gap-1.5 group">
+                    <label className="text-sm font-semibold text-zinc-300">
+                      Transport Charge (₹)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-purple-600 dark:text-purple-400 font-medium">
+                        ₹
+                      </span>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        className="pl-7 bg-purple-500/5 border-purple-500/30 text-purple-600 dark:text-purple-400 font-bold text-base h-10 focus:border-purple-500/50 focus:ring-purple-500/10 transition-all shadow-[0_0_15px_-3px_rgba(168,85,247,0.05)]"
+                        value={field.state.value || ""}
+                        onChange={(e) =>
+                          field.handleChange(Number(e.target.value))
+                        }
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
+                    </div>
+                    {hasError && (
+                      <span className="text-xs font-medium text-rose-500">
+                        {field.state.meta.errors
+                          .map((e: any) => e.message || e)
+                          .join(", ")}
+                      </span>
+                    )}
                   </div>
-                </FormBase>
-              )}
+                );
+              }}
             </form.Field>
           </div>
         </CardContent>

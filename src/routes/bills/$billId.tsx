@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createRoute, Link, useRouter } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
 import { format } from "date-fns";
 import {
   ArrowDownLeft,
@@ -38,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Route as rootRoute } from "@/routes/__root";
 import type { BillDetails, SizeCategory } from "@/schemas/billSchema";
 import { billService } from "@/services/billService";
 import { siteService } from "@/services/siteService";
@@ -441,14 +441,14 @@ function ClosingStockPanel({
                   className="border-zinc-800 hover:bg-zinc-900/40 transition-colors print:border-zinc-300 print:hover:bg-transparent"
                 >
                   <TableCell className="pl-6 font-medium text-zinc-200 capitalize print:text-black">
-                    {item.part == "full" ? "jeck" : item.part}
+                    {item.part === "full" ? "jeck" : item.part}
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
                       className="bg-zinc-900 border-zinc-700 text-zinc-400 font-normal print:bg-white print:text-black print:border-zinc-400"
                     >
-                      {item.part != "plate" ? "2x" + item.size : item.size}
+                      {item.part !== "plate" ? `2x${item.size}` : item.size}
                     </Badge>
                   </TableCell>
                   <TableCell
@@ -479,7 +479,7 @@ function LedgerTable({
 }) {
   if (part === "full") {
     part = "jeck";
-    size = "2x" + size;
+    size = `2x${size}`;
   }
   const sizeSubtotal =
     (data.lines || []).reduce((acc, line) => acc + line.total, 0) +

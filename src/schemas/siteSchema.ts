@@ -43,7 +43,6 @@ export const createSiteRateReqSchema = z.object({
   size: z.string(),
   rate: z.number().min(0),
 });
-export type CreateSiteRateReq = z.infer<typeof createSiteRateReqSchema>;
 
 export const createSiteRatesReqSchema = z.object({
   rates: z.array(createSiteRateReqSchema).min(1),
@@ -55,21 +54,10 @@ export const updateSiteRatesReqSchema = z.object({
 });
 export type UpdateSiteRatesReq = z.infer<typeof updateSiteRatesReqSchema>;
 
-export const siteSearchReqSchema = z.object({
-  page: z.number().min(1).optional().catch(1),
-  per_page: z.number().min(1).max(100).optional().catch(10),
-  customer_id: z.number().optional(),
-  contractor_name: z.string().optional().catch(""),
-  address: z.string().optional().catch(""),
-  mobile_no: z.string().optional().catch(""),
-});
-export type SiteSearchReq = z.infer<typeof siteSearchReqSchema>;
-
 export const siteSearchResSchema = z.object({
   pagination: paginationSchema,
   data: z.array(siteSchema),
 });
-export type SiteSearchRes = z.infer<typeof siteSearchResSchema>;
 
 export const siteInventorySchema = z.object({
   item_amount: z.number(),

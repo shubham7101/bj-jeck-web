@@ -1,31 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
-import { format, parse } from "date-fns";
-import {
-  ArrowLeft,
-  Calendar as CalendarIcon,
-  UserCheck,
-  Users,
-  UserX,
-} from "lucide-react";
+import { format, lastDayOfMonth, parse, subMonths } from "date-fns";
+import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
-import { SiteDataGrid } from "@/components/SiteDataGrid";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { StatsCard } from "@/components/StatsCard";
+import { FilterDatePicker } from "@/components/FilterDatePicker";
+import { SiteDataGrid } from "@/components/SiteDataGrid";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { Route as rootRoute } from "@/routes/__root";
 import { siteService } from "@/services/siteService";
 
 const unbilledSearchSchema = z.object({
-  date: z.string().optional(),
+  date: z
+    .string()
+    .default(() =>
+      format(lastDayOfMonth(subMonths(new Date(), 1)), "yyyy-MM-dd"),
+    ),
 });
 
 export const Route = createRoute({
@@ -89,11 +80,6 @@ function RouteComponent() {
     return nameMatch && mobileMatch && addressMatch;
   });
 
-  // Compute stats in real-time from the filtered list (or full list)
-  const totalCount = data?.length ?? 0;
-  const activeCount = data?.filter((c) => c.active).length ?? 0;
-  const inactiveCount = data?.filter((c) => !c.active).length ?? 0;
-
   return (
     <div className="flex-1 space-y-6 px-2 py-6 sm:p-6 md:p-8 md:pt-6 animate-in fade-in duration-500 overflow-x-hidden">
       {/* Header Section */}
@@ -123,36 +109,6 @@ function RouteComponent() {
 
       <div className="h-px w-full bg-linear-to-r from-zinc-800 to-transparent" />
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-3">
-        <StatsCard
-          loading={isLoading}
-          title="Total Unbilled Sites"
-          value={totalCount}
-          subText="With pending records"
-          icon={<Users className="h-4 w-4 text-amber-400" />}
-          className="col-span-2 md:col-span-1 bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
-        />
-        <StatsCard
-          loading={isLoading}
-          title="Active Sites"
-          value={activeCount}
-          subText="Currently renting items"
-          icon={<UserCheck className="h-4 w-4 text-emerald-500" />}
-          className="bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
-        </StatsCard>
-        <StatsCard
-          loading={isLoading}
-          title="Inactive Sites"
-          value={inactiveCount}
-          subText="Pending records but inactive"
-          icon={<UserX className="h-4 w-4 text-rose-500" />}
-          className="bg-zinc-900/40 border-zinc-800/60 backdrop-blur-xl shadow-xl"
-        />
-      </div>
-
       {/* Date Filter Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800/60 shadow-lg backdrop-blur-xl">
         <div className="flex flex-col gap-1 text-center sm:text-left">
@@ -164,62 +120,52 @@ function RouteComponent() {
           </span>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full sm:w-60 justify-start text-left font-normal bg-zinc-950/50 border-zinc-800 hover:bg-zinc-900/50 focus:ring-1 focus:ring-emerald-500/50 rounded-xl transition-all cursor-pointer",
-                  !dateParam && "text-zinc-500",
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4 text-zinc-500 shrink-0" />
-                <span className="truncate">
-                  {dateParam
-                    ? format(
-                        parse(dateParam, "yyyy-MM-dd", new Date()),
-                        "dd MMM yyyy",
-                      )
-                    : "All Dates"}
-                </span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-auto p-0 bg-zinc-950 border-zinc-800"
-              align="end"
-            >
-              <Calendar
-                mode="single"
-                selected={
-                  dateParam
-                    ? parse(dateParam, "yyyy-MM-dd", new Date())
-                    : undefined
-                }
-                onSelect={(date) => {
+          <div className="w-full sm:w-60">
+            <FilterDatePicker
+              placeholder="All Dates"
+              value={
+                dateParam
+                  ? format(
+                      parse(dateParam, "yyyy-MM-dd", new Date()),
+                      "dd-MM-yyyy",
+                    )
+                  : ""
+              }
+              onChange={(newDateStr) => {
+                if (newDateStr) {
+                  const parsedDate = parse(
+                    newDateStr,
+                    "dd-MM-yyyy",
+                    new Date(),
+                  );
                   navigate({
                     search: (prev) => ({
                       ...prev,
-                      date: date ? format(date, "yyyy-MM-dd") : undefined,
+                      date: format(parsedDate, "yyyy-MM-dd"),
                     }),
                     replace: true,
                   });
-                }}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+                } else {
+                  navigate({
+                    search: (prev) => ({ ...prev, date: "" }),
+                    replace: true,
+                  });
+                }
+              }}
+            />
+          </div>
           {dateParam && (
             <Button
               variant="ghost"
               onClick={() =>
                 navigate({
-                  search: (prev) => ({ ...prev, date: undefined }),
+                  search: (prev) => ({ ...prev, date: "" }),
                   replace: true,
                 })
               }
               className="w-full sm:w-auto text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 hover:text-rose-300 border border-rose-500/20 rounded-xl px-3 h-10 cursor-pointer"
             >
-              Reset Date
+              Clear Date
             </Button>
           )}
         </div>

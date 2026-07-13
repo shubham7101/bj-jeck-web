@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createRoute, Link, useRouter } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
 import {
   AlertCircle,
   AlertTriangle,
@@ -14,7 +13,6 @@ import {
   Layers,
   Loader2,
   Package,
-  Printer,
   Smartphone,
   Trash,
   Trash2,
@@ -22,6 +20,8 @@ import {
   Wrench,
   Zap,
 } from "lucide-react";
+import { useState } from "react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,10 +38,11 @@ import {
 } from "@/components/ui/table";
 import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import type { Site } from "@/schemas/siteSchema";
+import { Route as rootRoute } from "@/routes/__root";
 import type { RecordDetails, RecordItem } from "@/schemas/recordSchema";
-import { siteService } from "@/services/siteService";
+import type { Site } from "@/schemas/siteSchema";
 import { recordService } from "@/services/recordService";
+import { siteService } from "@/services/siteService";
 
 // Define the route
 export const Route = createRoute({
@@ -77,15 +78,10 @@ function RecordHeader({ record }: { record: RecordDetails }) {
     },
   });
 
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const handleDelete = () => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete Record #${record.id}? Inventory will be reverted.`,
-      )
-    ) {
-      return;
-    }
-    deleteMutation.mutate(record.id);
+    setShowConfirm(true);
   };
 
   const isTypeIn = record.transaction_type === "IN";
@@ -129,17 +125,17 @@ function RecordHeader({ record }: { record: RecordDetails }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
-        <Button
+        {/* <Button
           variant="outline"
           onClick={() => window.print()}
           className="h-9 border-zinc-805 bg-zinc-950 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer text-xs font-semibold"
         >
           <Printer className="mr-1.5 h-3.5 w-3.5" />
           Print Chalan
-        </Button>
+        </Button> */}
         <Link
-          to="/records/update/$recordId"
-          params={{ recordId: record.id.toString() }}
+          to="/records/$record_id/update"
+          params={{ record_id: record.id.toString() }}
           disabled={isBilled}
           className={cn(isBilled && "pointer-events-none opacity-50")}
         >
@@ -181,6 +177,19 @@ function RecordHeader({ record }: { record: RecordDetails }) {
           Delete
         </Button>
       </div>
+
+      <ConfirmDialog
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={() => {
+          deleteMutation.mutate(record.id);
+          setShowConfirm(false);
+        }}
+        title="Delete Record"
+        description={`Are you sure you want to permanently delete Record #${record.id}? Inventory values will be reverted.`}
+        confirmText="Delete"
+        isPending={deleteMutation.isPending}
+      />
     </div>
   );
 }
@@ -196,10 +205,7 @@ function SiteInfoBar({
     <div className={themeStyles.customerInfoBar}>
       <div className="flex items-center gap-4">
         <Avatar className="h-12 w-12 border-2 border-primary/20 shadow-inner print:hidden">
-          <AvatarImage
-            src={undefined}
-            alt={site?.contractor_name || "Site"}
-          />
+          <AvatarImage src={undefined} alt={site?.contractor_name || "Site"} />
           <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
             {site ? getInitials(site.contractor_name) : "SI"}
           </AvatarFallback>
@@ -254,14 +260,6 @@ function SiteInfoBar({
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-2 self-end sm:self-center print:hidden">
-        <Badge
-          variant="outline"
-          className="bg-primary/10 text-primary border-primary/20 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm"
-        >
-          Site Profile
-        </Badge>
-      </div>
     </div>
   );
 }
@@ -283,26 +281,26 @@ function GeneralInfoCard({ record }: { record: RecordDetails }) {
       <CardContent className="pt-6 space-y-6 flex-1">
         {/* Vehicle Details */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 bg-zinc-950/40 rounded-xl border border-zinc-800 hover:border-blue-500/20 transition-all flex flex-col justify-between h-20 shadow-inner print:border-zinc-300 print:bg-transparent">
+          <div className="p-4 bg-zinc-950/40 rounded-xl border border-zinc-800 hover:border-blue-500/20 transition-all flex flex-col justify-between h-full min-h-20 gap-2 shadow-inner print:border-zinc-300 print:bg-transparent">
             <div className="flex items-center gap-2 text-zinc-500 print:text-zinc-600">
               <Truck className="h-3.5 w-3.5 text-blue-400 print:hidden" />
               <span className="text-[10px] uppercase font-bold tracking-wider">
                 Vehicle No
               </span>
             </div>
-            <p className="text-base font-bold font-mono text-zinc-200 print:text-black">
+            <p className="text-base font-bold font-mono text-zinc-200 mt-2 wrap-break-word print:text-black">
               {record.vehicle_no || "Not Specified"}
             </p>
           </div>
 
-          <div className="p-4 bg-zinc-950/40 rounded-xl border border-zinc-800 hover:border-blue-500/20 transition-all flex flex-col justify-between h-20 shadow-inner print:border-zinc-300 print:bg-transparent">
+          <div className="p-4 bg-zinc-950/40 rounded-xl border border-zinc-800 hover:border-blue-500/20 transition-all flex flex-col justify-between h-full min-h-20 gap-2 shadow-inner print:border-zinc-300 print:bg-transparent">
             <div className="flex items-center gap-2 text-zinc-500 print:text-zinc-650">
               <Smartphone className="h-3.5 w-3.5 text-blue-400 print:hidden" />
               <span className="text-[10px] uppercase font-bold tracking-wider">
                 Driver Contact
               </span>
             </div>
-            <p className="text-base font-bold font-mono text-zinc-200 print:text-black">
+            <p className="text-base font-bold font-mono text-zinc-200 mt-2 wrap-break-word print:text-black">
               {record.vehicle_mobile_no || "Not Specified"}
             </p>
           </div>
@@ -312,36 +310,36 @@ function GeneralInfoCard({ record }: { record: RecordDetails }) {
 
         {/* Billing Status Card */}
         <div className="space-y-2">
-          <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">
-            Chalan Billing Details
-          </span>
           {record.bill_id ? (
-            <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-r from-emerald-950/30 to-emerald-900/10 border border-emerald-900/30 group hover:border-emerald-500/40 transition-all shadow-sm print:border-zinc-300 print:bg-transparent">
-              <div className="flex items-center gap-3.5">
-                <div className="bg-emerald-950/50 p-2.5 rounded-lg border border-emerald-800/50 shadow-inner print:hidden">
-                  <FileText className="h-4 w-4 text-emerald-400" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[9px] uppercase font-bold text-emerald-500 tracking-widest">
-                    Included in Bill
-                  </span>
-                  <span className="text-sm font-semibold text-emerald-100 flex items-center gap-1.5 print:text-black">
-                    Invoice{" "}
-                    <span className="text-emerald-400 print:text-black">
-                      #{record.bill_id}
+            <Link
+              to="/bills/$billId"
+              params={{ billId: record.bill_id.toString() }}
+              className="block outline-none"
+              title="View Bill"
+            >
+              <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-r from-emerald-950/30 to-emerald-900/10 border border-emerald-900/30 group hover:border-emerald-500/40 hover:bg-emerald-950/20 transition-all shadow-sm cursor-pointer print:border-zinc-300 print:bg-transparent">
+                <div className="flex items-center gap-3.5">
+                  <div className="bg-emerald-950/50 p-2.5 rounded-lg border border-emerald-800/50 shadow-inner group-hover:border-emerald-500/30 transition-colors print:hidden">
+                    <FileText className="h-4 w-4 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] uppercase font-bold text-emerald-500 tracking-widest">
+                      Included in Bill
                     </span>
-                  </span>
+                    <span className="text-sm font-semibold text-emerald-100 flex items-center gap-1.5 print:text-black">
+                      Invoice{" "}
+                      <span className="text-emerald-400 print:text-black">
+                        #{record.bill_id}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-2 text-emerald-400 group-hover:text-emerald-300 group-hover:bg-emerald-900/30 rounded-lg transition-colors print:hidden">
+                  <ArrowUpRight className="h-4 w-4" />
                 </div>
               </div>
-              <Link
-                to="/bills/$billId"
-                params={{ billId: record.bill_id.toString() }}
-                className="p-2.5 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950 rounded-lg transition-colors border border-transparent hover:border-emerald-800/50 shadow-sm print:hidden"
-                title="View Bill"
-              >
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </div>
+            </Link>
           ) : (
             <div className="flex items-center gap-3.5 p-4 rounded-xl bg-zinc-950/40 border border-zinc-800/60 border-dashed hover:bg-zinc-900/40 transition-colors print:border-zinc-300 print:bg-transparent">
               <div className="bg-zinc-900/80 p-2.5 rounded-lg border border-zinc-800 print:hidden">
@@ -409,7 +407,7 @@ function FinancialInfoCard({ record }: { record: RecordDetails }) {
         {/* 2x3 responsive charges grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {/* 1. Labour */}
-          <div className="p-3 bg-zinc-950/40 border border-zinc-800 hover:border-emerald-500/20 transition-all rounded-xl flex flex-col justify-between h-20 shadow-inner print:border-zinc-300 print:bg-transparent">
+          <div className="p-3 bg-zinc-950/40 border border-zinc-800 hover:border-emerald-500/20 transition-all rounded-xl flex flex-col justify-between h-full min-h-20 gap-2 shadow-inner print:border-zinc-300 print:bg-transparent">
             <div className="flex items-center justify-between text-zinc-500 print:text-zinc-650">
               <span className="text-[9px] font-bold uppercase tracking-wider">
                 Labour
@@ -425,7 +423,7 @@ function FinancialInfoCard({ record }: { record: RecordDetails }) {
           </div>
 
           {/* 2. Transport */}
-          <div className="p-3 bg-zinc-950/40 border border-zinc-800 hover:border-purple-500/20 transition-all rounded-xl flex flex-col justify-between h-20 shadow-inner print:border-zinc-300 print:bg-transparent">
+          <div className="p-3 bg-zinc-950/40 border border-zinc-800 hover:border-purple-500/20 transition-all rounded-xl flex flex-col justify-between h-full min-h-20 gap-2 shadow-inner print:border-zinc-300 print:bg-transparent">
             <div className="flex items-center justify-between text-zinc-500 print:text-zinc-650">
               <span className="text-[9px] font-bold uppercase tracking-wider">
                 Transport
@@ -441,7 +439,7 @@ function FinancialInfoCard({ record }: { record: RecordDetails }) {
           </div>
 
           {/* 3. Broken */}
-          <div className="p-3 bg-zinc-950/40 border border-zinc-800 hover:border-rose-500/20 transition-all rounded-xl flex flex-col justify-between h-20 shadow-inner print:border-zinc-300 print:bg-transparent">
+          <div className="p-3 bg-zinc-950/40 border border-zinc-800 hover:border-rose-500/20 transition-all rounded-xl flex flex-col justify-between h-full min-h-20 gap-2 shadow-inner print:border-zinc-300 print:bg-transparent">
             <div className="flex items-center justify-between text-zinc-500 print:text-zinc-650">
               <span className="text-[9px] font-bold uppercase tracking-wider">
                 Broken
@@ -459,7 +457,7 @@ function FinancialInfoCard({ record }: { record: RecordDetails }) {
           </div>
 
           {/* 4. Service */}
-          <div className="p-3 bg-zinc-950/40 border border-zinc-800 hover:border-amber-500/20 transition-all rounded-xl flex flex-col justify-between h-20 shadow-inner print:border-zinc-300 print:bg-transparent">
+          <div className="p-3 bg-zinc-950/40 border border-zinc-800 hover:border-amber-500/20 transition-all rounded-xl flex flex-col justify-between h-full min-h-20 gap-2 shadow-inner print:border-zinc-300 print:bg-transparent">
             <div className="flex items-center justify-between text-zinc-500 print:text-zinc-650">
               <span className="text-[9px] font-bold uppercase tracking-wider">
                 Service
@@ -475,7 +473,7 @@ function FinancialInfoCard({ record }: { record: RecordDetails }) {
           </div>
 
           {/* 5. Lost */}
-          <div className="p-3 bg-zinc-950/40 border border-zinc-800 hover:border-rose-600/20 transition-all rounded-xl flex flex-col justify-between h-20 shadow-inner print:border-zinc-300 print:bg-transparent">
+          <div className="p-3 bg-zinc-950/40 border border-zinc-800 hover:border-rose-600/20 transition-all rounded-xl flex flex-col justify-between h-full min-h-20 gap-2 shadow-inner print:border-zinc-300 print:bg-transparent">
             <div className="flex items-center justify-between text-zinc-500 print:text-zinc-650">
               <span className="text-[9px] font-bold uppercase tracking-wider">
                 Lost
@@ -493,7 +491,7 @@ function FinancialInfoCard({ record }: { record: RecordDetails }) {
           </div>
 
           {/* 6. Total Qty */}
-          <div className="p-3 bg-zinc-950/40 border border-zinc-800 hover:border-blue-500/20 transition-all rounded-xl flex flex-col justify-between h-20 shadow-inner print:border-zinc-300 print:bg-transparent">
+          <div className="p-3 bg-zinc-950/40 border border-zinc-800 hover:border-blue-500/20 transition-all rounded-xl flex flex-col justify-between h-full min-h-20 gap-2 shadow-inner print:border-zinc-300 print:bg-transparent">
             <div className="flex items-center justify-between text-zinc-500 print:text-zinc-650">
               <span className="text-[9px] font-bold uppercase tracking-wider">
                 Total Qty
@@ -668,7 +666,9 @@ function RecordItemsTable({ items }: { items: RecordItem[] }) {
                       </span>
                     </TableCell>
                     <TableCell className="w-[12%] pr-6 py-4 text-right font-black text-zinc-200 print:text-black">
-                      {item.item_amount + item.broken_amount + (item.lost_amount || 0)}
+                      {item.item_amount +
+                        item.broken_amount +
+                        (item.lost_amount || 0)}
                     </TableCell>
                   </TableRow>
                 ))}

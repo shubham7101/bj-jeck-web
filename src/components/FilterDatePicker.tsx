@@ -1,18 +1,18 @@
 import {
   format,
+  isAfter,
+  isBefore,
   isValid,
   parse,
-  isBefore,
-  isAfter,
   startOfDay,
 } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import type React from "react";
 import { useId, useState } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { cn } from "@/lib/utils";
 
 const DATE_FORMAT = "dd-MM-yyyy";
 
@@ -38,7 +38,7 @@ export function FilterDatePicker({
   const inputId = useId();
   const [open, setOpen] = useState(false);
 
-  let dateValue: Date | undefined ;
+  let dateValue: Date | undefined;
   if (value && isValid(parse(value, DATE_FORMAT, new Date()))) {
     dateValue = parse(value, DATE_FORMAT, new Date());
   }

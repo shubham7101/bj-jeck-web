@@ -6,14 +6,12 @@ export const paginationSchema = z.object({
   total_pages: z.number(),
   total_count: z.number(),
 });
-export type Pagination = z.infer<typeof paginationSchema>;
 
 export const inventorySchema = z.object({
   part: z.string(),
   size: z.string(),
   item_amount: z.number(),
 });
-export type Inventory = z.infer<typeof inventorySchema>;
 
 export const PART_OPTIONS = [
   { label: "Full Jack", value: "full" },

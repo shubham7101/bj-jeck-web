@@ -13,16 +13,17 @@ import {
 import { useId } from "react";
 import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import type { Record, RecordSearchReq } from "@/schemas/recordSchema";
+import type { RecordsFiltersState } from "@/routes/records";
+import type { Record } from "@/schemas/recordSchema";
 import { formatCurrency, formatDate } from "@/utils";
 import { FilterDatePicker } from "./FilterDatePicker";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import {
   PaginationControls,
   type PaginationControlsProps,
 } from "./PaginationControls";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 import { Skeleton } from "./ui/skeleton";
 import {
   Table,
@@ -34,8 +35,8 @@ import {
 } from "./ui/table";
 
 type RecordFiltersProps = {
-  filters: { [K in keyof RecordSearchReq]: string };
-  onChange: (key: keyof RecordSearchReq, value: string) => void;
+  filters: RecordsFiltersState;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onReset: () => void;
 };
 
@@ -91,8 +92,9 @@ function RecordFilters({ filters, onChange, onReset }: RecordFiltersProps) {
           icon={Hash}
           placeholder="e.g. 55"
           value={filters.site_id}
-          onChange={(e) => onChange("site_id", e.target.value)}
+          onChange={onChange}
           type="number"
+          name="site_id"
         />
 
         {/* Vehicle No */}
@@ -101,7 +103,8 @@ function RecordFilters({ filters, onChange, onReset }: RecordFiltersProps) {
           icon={Truck}
           placeholder="e.g. GJ-05..."
           value={filters.vehicle_no}
-          onChange={(e) => onChange("vehicle_no", e.target.value)}
+          onChange={onChange}
+          name="vehicle_no"
         />
 
         {/* Mobile */}
@@ -110,21 +113,30 @@ function RecordFilters({ filters, onChange, onReset }: RecordFiltersProps) {
           icon={Smartphone}
           placeholder="e.g. 98765..."
           value={filters.vehicle_mobile_no}
-          onChange={(e) => onChange("vehicle_mobile_no", e.target.value)}
+          onChange={onChange}
+          name="vehicle_mobile_no"
         />
 
         {/* Exact Date */}
         <FilterDatePicker
           label="Exact Date"
           value={filters.date}
-          onChange={(val) => onChange("date", val)}
+          onChange={(val) =>
+            onChange({
+              target: { name: "date", value: val },
+            } as React.ChangeEvent<HTMLInputElement>)
+          }
         />
 
         {/* From Date */}
         <FilterDatePicker
           label="From Date"
           value={filters.from_date}
-          onChange={(val) => onChange("from_date", val)}
+          onChange={(val) =>
+            onChange({
+              target: { name: "from_date", value: val },
+            } as React.ChangeEvent<HTMLInputElement>)
+          }
           placeholder="Start date"
         />
 
@@ -132,7 +144,11 @@ function RecordFilters({ filters, onChange, onReset }: RecordFiltersProps) {
         <FilterDatePicker
           label="To Date"
           value={filters.to_date}
-          onChange={(val) => onChange("to_date", val)}
+          onChange={(val) =>
+            onChange({
+              target: { name: "to_date", value: val },
+            } as React.ChangeEvent<HTMLInputElement>)
+          }
           placeholder="End date"
         />
 
@@ -142,20 +158,13 @@ function RecordFilters({ filters, onChange, onReset }: RecordFiltersProps) {
           icon={Hash}
           placeholder="e.g. 1024"
           value={filters.bill_id}
-          onChange={(e) => onChange("bill_id", e.target.value)}
+          onChange={onChange}
           type="number"
+          name="bill_id"
         />
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3 lg:col-span-1 justify-end">
-          {hasActiveFilters && (
-            <Badge
-              variant="outline"
-              className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] uppercase font-bold tracking-wider py-0.5 px-2 animate-pulse"
-            >
-              Filters Active
-            </Badge>
-          )}
           <Button
             variant="ghost"
             size="icon"
@@ -316,17 +325,17 @@ function RecordRow({ record }: { record: Record }) {
             {record.total || 0}
             <Package className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-400" />
           </span>
-          <div className="flex flex-col gap-0.5">
-            {record.labour_charge > 0 && (
-              <span className="text-[9px] text-emerald-400 font-bold tracking-wide uppercase px-1 rounded bg-emerald-500/5">
-                L: {formatCurrency(record.labour_charge || 0)}
-              </span>
-            )}
-            {record.transport_charge > 0 && (
-              <span className="text-[9px] text-purple-400 font-bold tracking-wide uppercase px-1 rounded bg-purple-500/5">
-                T: {formatCurrency(record.transport_charge || 0)}
-              </span>
-            )}
+          <div className="flex flex-col gap-0.5 min-w-[70px]">
+            <span
+              className={cn(
+                "text-[9px] font-bold tracking-wide uppercase px-1 rounded",
+                record.labour_charge > 0
+                  ? "text-emerald-400 bg-emerald-500/5"
+                  : "invisible",
+              )}
+            >
+              L: {formatCurrency(record.labour_charge || 0)}
+            </span>
           </div>
         </div>
       </TableCell>
@@ -339,7 +348,8 @@ function RecordRow({ record }: { record: Record }) {
             onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-950 text-zinc-450 border border-zinc-800 text-[10px] font-semibold hover:border-zinc-700 hover:text-zinc-200 transition-colors shadow-sm"
           >
-            <Hash className="h-3 w-3" />#{record.bill_id}
+            <Hash className="h-3 w-3" />
+            {record.bill_id}
           </Link>
         ) : (
           <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider bg-zinc-950/60 px-2 py-0.5 rounded border border-zinc-800 border-dashed">

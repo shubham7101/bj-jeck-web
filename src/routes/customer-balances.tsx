@@ -1,7 +1,6 @@
-import { createRoute, useRouter, Link } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
+import { createRoute, Link, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Printer, RotateCcw } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Route as rootRoute } from "@/routes/__root";
 import { customerService } from "@/services/customerService";
 
 export const Route = createRoute({
@@ -175,7 +175,9 @@ function CustomersBalancesPage() {
             />
           </div>
           <div className="flex items-center gap-2 flex-1 sm:flex-none">
-            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">To ID:</span>
+            <span className="text-xs font-semibold text-slate-500 hidden sm:inline">
+              To ID:
+            </span>
             <Input
               type="number"
               value={toId}

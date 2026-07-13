@@ -5,7 +5,6 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
 import {
   AlertCircle,
   ArrowLeft,
@@ -27,17 +26,17 @@ import {
   UserX,
 } from "lucide-react";
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { InventorySection } from "@/components/InventorySection";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import { Route as rootRoute } from "@/routes/__root";
 import type { Site } from "@/schemas/siteSchema";
 import { siteService } from "@/services/siteService";
 import { getInitials } from "@/utils";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { InventorySection } from "@/components/InventorySection";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -168,23 +167,29 @@ function SiteHeader({ site }: { site: Site }) {
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
         <div className="grid grid-cols-2 lg:flex gap-2 w-full lg:w-auto">
-          <Link to="/records/new" search={undefined}>
+          <Link
+            to="/records/new"
+            search={(prev) => ({ ...prev, site_id: site.id })}
+          >
             <Button className="w-full bg-white text-zinc-950 hover:bg-zinc-200 font-semibold shadow-lg shadow-zinc-950/20 transition-all cursor-pointer">
-              <Truck className="mr-2 h-4 w-4" /> New Record
+              <Truck className="mr-2 h-4 w-4" /> Record
             </Button>
           </Link>
 
-          <Link to="/ledger/new" search={undefined}>
+          <Link
+            to="/ledger/new"
+            search={{ customer_id: site.customer_id, site_id: site.id }}
+          >
             <Button
               variant="outline"
               className="w-full border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 hover:border-emerald-500/50 transition-all cursor-pointer"
             >
-              <Coins className="mr-2 h-4 w-4" /> Receive Payment
+              <Coins className="mr-2 h-4 w-4" /> Payment
             </Button>
           </Link>
           <Link
-            to="/sites/statement/$siteId"
-            params={{ siteId: site.id.toString() }}
+            to="/sites/$site_id/statement"
+            params={{ site_id: site.id.toString() }}
           >
             <Button
               variant="outline"
@@ -193,7 +198,10 @@ function SiteHeader({ site }: { site: Site }) {
               <ClipboardList className="mr-2 h-4 w-4" /> Statement
             </Button>
           </Link>
-          <Link to="/bills/new" search={undefined}>
+          <Link
+            to="/bills/new"
+            search={(prev) => ({ ...prev, site_id: site.id })}
+          >
             <Button
               variant="outline"
               className="w-full border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer"
@@ -206,8 +214,8 @@ function SiteHeader({ site }: { site: Site }) {
         {/* Edit & Delete Group */}
         <div className="flex items-center justify-end gap-1 border-t border-zinc-800/50 sm:border-none pt-3 sm:pt-0 sm:pl-1">
           <Link
-            to="/sites/update/$siteId"
-            params={{ siteId: site.id.toString() }}
+            to="/sites/$site_id/update"
+            params={{ site_id: site.id.toString() }}
           >
             <Button
               variant="ghost"
@@ -255,7 +263,7 @@ function SiteHeader({ site }: { site: Site }) {
 function SiteContactCard({ site }: { site: Site }) {
   return (
     <Card className="bg-zinc-900/40 border-zinc-800 shadow-xl backdrop-blur-sm relative overflow-hidden flex flex-col justify-between h-full group/card transition-colors">
-      <CardContent className="py-2 sm:py-4 relative z-10 flex-1 flex flex-col">
+      <CardContent className="px-4 sm:py-2 sm:px-6 relative z-10 flex-1 flex flex-col">
         <div className="flex items-center gap-5 mb-auto pb-6">
           <Avatar className="h-16 w-16 border-2 border-zinc-800 shadow-md transition-transform group-hover/card:scale-105 duration-300 z-30 bg-zinc-950">
             <AvatarFallback className="bg-zinc-800 text-xl font-bold text-zinc-300">
@@ -371,7 +379,7 @@ function SiteRatesCard({ id }: { id: number }) {
             Daily Rental Rates
           </CardTitle>
         </div>
-        <Link to="/sites/update/$siteId" params={{ siteId: id.toString() }}>
+        <Link to="/sites/$site_id/update" params={{ site_id: id.toString() }}>
           <Button
             size="sm"
             variant="ghost"
@@ -414,8 +422,8 @@ function SiteRatesCard({ id }: { id: number }) {
             <div className="col-span-2 text-center py-4 text-zinc-500 italic text-sm">
               No rates configured.
               <Link
-                to="/sites/update/$siteId"
-                params={{ siteId: id.toString() }}
+                to="/sites/$site_id/update"
+                params={{ site_id: id.toString() }}
                 className="block mt-2 text-emerald-500 underline hover:text-emerald-400"
               >
                 Set Rates
@@ -479,7 +487,7 @@ function QuickLinks({ id }: { id: number }) {
   const LINKS = [
     {
       to: "/records" as const,
-      search: undefined,
+      search: { site_id: id },
       params: undefined,
       icon: History,
       title: "Record History",
@@ -487,31 +495,22 @@ function QuickLinks({ id }: { id: number }) {
       colorClass: "text-blue-400",
     },
     {
-      to: "/sites/statement/$siteId" as const,
-      search: undefined,
-      params: { siteId: id.toString() },
-      icon: ClipboardList,
-      title: "Account Statement",
-      subtitle: "Print combined ledger statement",
-      colorClass: "text-indigo-400",
-    },
-    {
-      to: "/ledger" as const,
-      search: undefined,
-      params: undefined,
-      icon: Coins,
-      title: "Payment Ledger",
-      subtitle: "View payment history",
-      colorClass: "text-emerald-400",
-    },
-    {
       to: "/bills" as const,
-      search: undefined,
+      search: { site_id: id },
       params: undefined,
       icon: FileText,
       title: "Generated Bills",
       subtitle: "View past bills",
       colorClass: "text-amber-400",
+    },
+    {
+      to: "/ledger" as const,
+      search: { site_id: id },
+      params: undefined,
+      icon: Coins,
+      title: "Payment Ledger",
+      subtitle: "View payment history",
+      colorClass: "text-emerald-400",
     },
   ];
 

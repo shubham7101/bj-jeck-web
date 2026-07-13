@@ -43,14 +43,17 @@ export function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center animate-in fade-in duration-200">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      <button
+        type="button"
+        tabIndex={-1}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-default w-full h-full border-none block"
         onClick={() => !isPending && onClose()}
       />
 
       {/* Dialog */}
       <div className="relative z-10 w-full max-w-md scale-100 bg-zinc-950 border border-zinc-800 p-6 rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 mx-4">
         <button
+          type="button"
           onClick={() => !isPending && onClose()}
           className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-300 transition-colors"
         >

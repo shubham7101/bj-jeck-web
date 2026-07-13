@@ -1,28 +1,27 @@
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
+import type { CustomerSearchPayload } from "@/routes/customers";
+import type { CreateCustomerPayload } from "@/routes/customers/new";
+import type { UpdateCustomerPayload } from "@/routes/customers/update.$customerId";
 import {
   type Customer,
   type CustomerInventory,
   type CustomerRate,
-  type CustomerSearchReq,
   customerInventorySchema,
   customerRateSchema,
   customerSchema,
   customerSearchResSchema,
   type UpdateCustomerRates,
 } from "@/schemas/customerSchema";
-import type { CreateCustomerPayload } from "@/routes/customers/new";
-import type { UpdateCustomerPayload } from "@/routes/customers/update.$customerId";
 
 export const customerService = {
-  search: async (payload: CustomerSearchReq) => {
+  search: async (payload: CustomerSearchPayload) => {
     const params = new URLSearchParams({
       page: (payload.page ?? 1).toString(),
       per_page: (payload.per_page ?? 10).toString(),
     });
 
     if (payload.name) params.append("name", payload.name);
-    if (payload.address) params.append("address", payload.address);
     if (payload.mobile_no) params.append("mobile_no", payload.mobile_no);
 
     const data = await apiClient(`/api/customers?${params.toString()}`);

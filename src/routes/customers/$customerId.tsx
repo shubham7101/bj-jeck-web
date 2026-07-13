@@ -1,8 +1,8 @@
 import {
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
-  useQueries,
 } from "@tanstack/react-query";
 import {
   createRoute,
@@ -10,12 +10,15 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
 import {
   AlertCircle,
+  Archive,
   ArrowLeft,
+  ArrowRight,
   ClipboardList,
+  Coins,
   Edit,
+  Filter,
   Fingerprint,
   Loader2,
   MapPin,
@@ -23,22 +26,15 @@ import {
   Trash,
   User,
   UserX,
-  Filter,
   Wallet,
-  Archive,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { InventorySection } from "@/components/InventorySection";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { Customer } from "@/schemas/customerSchema";
-import { customerService } from "@/services/customerService";
-import { formatDate, getInitials } from "@/utils";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { siteService } from "@/services/siteService";
-import { InventorySection } from "@/components/InventorySection";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -47,6 +43,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Route as rootRoute } from "@/routes/__root";
+import type { Customer } from "@/schemas/customerSchema";
+import { customerService } from "@/services/customerService";
+import { siteService } from "@/services/siteService";
+import { formatDate, getInitials } from "@/utils";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -81,7 +83,14 @@ function CustomerDetailsPage() {
         </div>
       </div>
 
-      <CustomerSitesSection customerId={customer.id} />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 min-w-0">
+          <CustomerSitesSection customerId={customer.id} />
+        </div>
+        <div className="min-w-0">
+          <QuickLinks id={customer.id} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -180,10 +189,10 @@ function CustomerHeader({ customer }: { customer: Customer }) {
         <div className="grid grid-cols-2 lg:flex gap-2 w-full lg:w-auto">
           <Link to="/sites/new" search={{ customer_id: customer.id }}>
             <Button className="w-full lg:w-auto bg-white text-zinc-950 hover:bg-zinc-200 font-semibold shadow-lg shadow-zinc-950/20 transition-all cursor-pointer">
-              <MapPin className="mr-2 h-4 w-4" /> Add New Site
+              <MapPin className="mr-2 h-4 w-4" /> Site
             </Button>
           </Link>
-          <Link to="/ledger/new">
+          <Link to="/ledger/new" search={{ customer_id: customer.id }}>
             <Button
               variant="outline"
               className="w-full lg:w-auto border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 hover:border-emerald-500/50 transition-all cursor-pointer"
@@ -216,8 +225,8 @@ function CustomerHeader({ customer }: { customer: Customer }) {
         {/* Edit & Delete Group */}
         <div className="flex items-center justify-end gap-1 sm:pl-1 mt-2 sm:mt-0">
           <Link
-            to="/customers/$customerId/update"
-            params={{ customerId: customer.id.toString() }}
+            to="/customers/$customer_id/update"
+            params={{ customer_id: customer.id.toString() }}
           >
             <Button
               variant="ghost"
@@ -341,6 +350,55 @@ function CustomerContactCard({ customer }: { customer: Customer }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function QuickLinks({ id }: { id: number }) {
+  const LINKS = [
+    {
+      to: "/ledger" as const,
+      search: { customer_id: id },
+      params: undefined,
+      icon: Coins,
+      title: "Payment Ledger",
+      subtitle: "View payment history",
+      colorClass: "text-emerald-400",
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold text-zinc-100 px-1">
+        History & Logs
+      </h3>
+      <div className="flex flex-col gap-3">
+        {LINKS.map((link, idx) => (
+          <Link
+            key={idx}
+            to={link.to}
+            search={link.search as any}
+            params={link.params as any}
+          >
+            <div className="group flex items-center justify-between p-4 rounded-xl border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-sm hover:bg-zinc-800/60 hover:border-zinc-700 transition-all cursor-pointer shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-zinc-950/80 border border-zinc-800 group-hover:border-zinc-700 shadow-inner">
+                  <div className={`h-5 w-5 ${link.colorClass}`}>
+                    <link.icon className="w-full h-full" />
+                  </div>
+                </div>
+                <div>
+                  <div className="font-medium text-zinc-200">{link.title}</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">
+                    {link.subtitle}
+                  </div>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-300 transition-transform group-hover:translate-x-1" />
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -492,10 +550,11 @@ function CustomerInventoryContainer({ id }: { id: number }) {
       if (q.data) {
         q.data.forEach((item: any) => {
           const key = `${item.part}-${item.size}`;
-          if (!map.has(key)) {
-            map.set(key, { ...item });
+          const existing = map.get(key);
+          if (existing) {
+            existing.item_amount += item.item_amount;
           } else {
-            map.get(key)!.item_amount += item.item_amount;
+            map.set(key, { ...item });
           }
         });
       }

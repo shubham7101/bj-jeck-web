@@ -28,7 +28,14 @@
       "recommended": true,
       "suspicious": {
         "noExplicitAny": "off",
-        "noArrayIndexKey": "off"
+        "noArrayIndexKey": "off",
+        "noDocumentCookie": "off"
+      },
+      "correctness": {
+        "noChildrenProp": "off"
+      },
+      "a11y": {
+        "noLabelWithoutControl": "off"
       }
     }
   },

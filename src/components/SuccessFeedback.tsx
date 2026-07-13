@@ -99,7 +99,11 @@ export function SuccessFeedback({
               asChild
               className="bg-emerald-600 hover:bg-emerald-500 text-white border-none shadow-lg shadow-emerald-900/20"
             >
-              <Link to={primaryAction.to} params={primaryAction.params} search={primaryAction.search}>
+              <Link
+                to={primaryAction.to}
+                params={primaryAction.params}
+                search={primaryAction.search}
+              >
                 <primaryAction.icon className="mr-2 h-4 w-4" />
                 {primaryAction.label}
               </Link>
@@ -120,7 +124,11 @@ export function SuccessFeedback({
               variant="outline"
               className="border-emerald-500/20 text-emerald-400 hover:bg-emerald-950/50 hover:text-emerald-300 bg-transparent"
             >
-              <Link to={secondaryAction.to} params={secondaryAction.params} search={secondaryAction.search}>
+              <Link
+                to={secondaryAction.to}
+                params={secondaryAction.params}
+                search={secondaryAction.search}
+              >
                 <secondaryAction.icon className="mr-2 h-4 w-4" />
                 {secondaryAction.label}
               </Link>
@@ -136,7 +144,7 @@ export function SuccessFeedback({
             </Button>
           )}
 
-          {extraActions?.map((action, idx) => (
+          {extraActions?.map((action, idx) =>
             action.to ? (
               <Button
                 key={idx}
@@ -144,7 +152,11 @@ export function SuccessFeedback({
                 variant="outline"
                 className="border-emerald-500/20 text-emerald-400 hover:bg-emerald-950/50 hover:text-emerald-300 bg-transparent"
               >
-                <Link to={action.to} params={action.params} search={action.search}>
+                <Link
+                  to={action.to}
+                  params={action.params}
+                  search={action.search}
+                >
                   <action.icon className="mr-2 h-4 w-4" />
                   {action.label}
                 </Link>
@@ -159,8 +171,8 @@ export function SuccessFeedback({
                 <action.icon className="mr-2 h-4 w-4" />
                 {action.label}
               </Button>
-            )
-          ))}
+            ),
+          )}
         </CardFooter>
       </Card>
     </div>

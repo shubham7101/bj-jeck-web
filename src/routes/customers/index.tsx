@@ -1,25 +1,33 @@
-import type z from "zod";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import z from "zod";
 import { CustomerDataGrid } from "@/components/CustomerDataGrid";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/use-debounce";
+import { Route as rootRoute } from "@/routes/__root";
 import { customerService } from "@/services/customerService";
-import { customerSearchReqSchema } from "@/schemas/customerSchema";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/customers/",
   component: CustomersPage,
-  validateSearch: (search) => customerSearchReqSchema.parse(search),
+  validateSearch: (search) => customerSearchPayload.parse(search),
 });
 
-type CustomersFiltersState = Pick<
-  z.infer<typeof customerSearchReqSchema>,
+export const customerSearchPayload = z.object({
+  page: z.number().min(1).optional().catch(1),
+  per_page: z.number().min(1).max(100).optional().catch(10),
+  name: z.string().optional().catch(""),
+  mobile_no: z.string().optional().catch(""),
+});
+export type CustomerSearchPayload = z.infer<typeof customerSearchPayload>;
+
+export type CustomersFiltersState = Pick<
+  CustomerSearchPayload,
   "name" | "mobile_no"
 >;
 
@@ -122,14 +130,37 @@ function CustomersPage() {
             Manage master customer profiles and their core details.
           </p>
         </div>
-        <Button
-          asChild
-          className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_-5px_rgba(99,102,241,0.3)] transition-all font-medium"
-        >
-          <Link to="/customers/new">
-            <Plus className="mr-2 h-4 w-4" /> Add Master Customer
-          </Link>
-        </Button>
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const id = formData.get("customer_id");
+              if (id) {
+                navigate({ to: `/customers/${id}` });
+              }
+            }}
+            className="relative flex items-center w-full sm:w-auto"
+          >
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-zinc-500" />
+            </div>
+            <Input
+              type="number"
+              name="customer_id"
+              placeholder="Find Customer ID..."
+              className="pl-9 bg-zinc-950 border-zinc-800 text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-indigo-500/30 focus-visible:border-indigo-500/50 w-full sm:w-48 h-10 shadow-sm shadow-black/20 font-mono text-sm"
+            />
+          </form>
+          <Button
+            asChild
+            className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_-5px_rgba(99,102,241,0.3)] transition-all font-medium shrink-0 h-10 w-full sm:w-auto"
+          >
+            <Link to="/customers/new">
+              <Plus className="mr-2 h-4 w-4" /> Add Master Customer
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="h-px w-full bg-linear-to-r from-zinc-800 to-transparent" />

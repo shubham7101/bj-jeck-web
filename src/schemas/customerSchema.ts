@@ -2,10 +2,10 @@ import z from "zod";
 import { inventorySchema, paginationSchema } from "@/schemas/common";
 
 export {
+  getSizesForPart,
   PART_OPTIONS,
   SIZE_OPTIONS,
   STANDARD_RATES_SETUP,
-  getSizesForPart,
 } from "./common";
 
 export const customerSchema = z.object({
@@ -44,30 +44,10 @@ export const customerRateSchema = z.object({
 });
 export type CustomerRate = z.infer<typeof customerRateSchema>;
 
-export const customerSearchReqSchema = z.object({
-  page: z.number().min(1).optional().catch(1),
-  per_page: z.number().min(1).max(100).optional().catch(10),
-  name: z.string().optional().catch(""),
-  address: z.string().optional().catch(""),
-  mobile_no: z.string().optional().catch(""),
-});
-export type CustomerSearchReq = z.infer<typeof customerSearchReqSchema>;
-
 export const customerSearchResSchema = z.object({
   pagination: paginationSchema,
   data: z.array(customerSchema),
 });
-export type CustomerSearchRes = z.infer<typeof customerSearchResSchema>;
-
-export const updateCustomerSchema = customerSchema.pick({
-  name: true,
-  mobile_no: true,
-  mobile_no_2: true,
-  aadhar_card_no: true,
-  reference_name: true,
-  active: true,
-});
-export type UpdateCustomer = z.infer<typeof updateCustomerSchema>;
 
 export const updateCustomerRatesSchema = z.object({
   rates: z.array(customerRateSchema).min(5),
@@ -82,4 +62,3 @@ export const customerInventorySchema = z.array(
   }),
 );
 export type CustomerInventory = z.infer<typeof customerInventorySchema>;
-

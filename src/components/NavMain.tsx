@@ -25,7 +25,7 @@ export function NavMain({
     title: string;
     url: string;
     icon?: LucideIcon;
-    isActive?: boolean;
+    isOpen?: boolean;
     items?: {
       title: string;
       url: string;
@@ -47,7 +47,7 @@ export function NavMain({
           const isChildActive = item.items?.some((sub) =>
             isRouteActive(sub.url),
           );
-          const isOpen = item.isActive || isChildActive;
+          const isOpen = item.isOpen || isChildActive;
           const isMainActive = !item.items && isRouteActive(item.url, true);
 
           return (

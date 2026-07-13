@@ -37,13 +37,13 @@ const data = {
       title: "Dashboard",
       url: "/",
       icon: LayoutDashboard,
-      isActive: true,
+      isOpen: true,
     },
     {
       title: "Customers",
       url: "/customers",
-      icon: User, // Corresponds to /customers endpoints
-      isActive: true,
+      icon: User,
+      isOpen: true,
       items: [
         {
           title: "All Customers",
@@ -59,10 +59,15 @@ const data = {
       title: "Sites",
       url: "/sites",
       icon: MapPin,
+      isOpen: true,
       items: [
         {
           title: "All Sites",
           url: "/sites",
+        },
+        {
+          title: "New Site",
+          url: "/sites/new",
         },
         {
           title: "Unbilled Sites",
@@ -74,6 +79,7 @@ const data = {
       title: "Records",
       url: "/records",
       icon: FileText, // Corresponds to /records endpoints
+      isOpen: true,
       items: [
         {
           title: "All Records",
@@ -89,6 +95,7 @@ const data = {
       title: "Bills",
       url: "/bills",
       icon: Receipt, // Corresponds to /bills endpoints
+      isOpen: true,
       items: [
         {
           title: "All Bills",
@@ -104,6 +111,7 @@ const data = {
       title: "Ledger",
       url: "/ledger",
       icon: BookOpen, // Corresponds to /ledger endpoints
+      isOpen: true,
       items: [
         {
           title: "All Transactions",
@@ -119,6 +127,7 @@ const data = {
       title: "Inventory",
       url: "/inventory",
       icon: Package, // Corresponds to /inventory endpoints
+      isOpen: true,
       items: [
         {
           title: "Stock Overview",

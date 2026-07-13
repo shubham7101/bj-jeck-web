@@ -5,39 +5,55 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
-import { History, IndianRupee, Plus, Wallet } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-
-// Components
+import z from "zod";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { LedgerDataGrid } from "@/components/LedgerDataGrid";
-import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
-
-// Hooks & Services
 import { useDebounce } from "@/hooks/use-debounce";
-import {
-  type LedgerSearchReq,
-  ledgerSearchReqSchema,
-} from "@/schemas/ledgerSchema";
-import { siteService } from "@/services/siteService";
+import { Route as rootRoute } from "@/routes/__root";
+import { customerService } from "@/services/customerService";
 import { ledgerService } from "@/services/ledgerService";
-import { formatCurrency } from "@/utils";
+import { siteService } from "@/services/siteService";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/ledger/",
   component: LedgerPage,
-  validateSearch: (search) => ledgerSearchReqSchema.parse(search),
+  validateSearch: (search) => ledgerSearchPayload.parse(search),
 });
 
-// Explicitly define the local filter state shape (all strings for inputs)
-type LedgerLocalFilters = {
+export const ledgerSearchPayload = z.object({
+  page: z.number().optional(),
+  per_page: z.number().optional(),
+  site_id: z.number().optional(),
+  customer_id: z.number().optional(),
+  date: z
+    .string()
+    .regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY")
+    .optional(),
+  from_date: z
+    .string()
+    .regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY")
+    .optional(),
+  to_date: z
+    .string()
+    .regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY")
+    .optional(),
+});
+export type LedgerSearchPayload = z.infer<typeof ledgerSearchPayload>;
+
+export type LedgerFiltersState = Omit<
+  Pick<
+    LedgerSearchPayload,
+    "from_date" | "to_date" | "date" | "site_id" | "customer_id"
+  >,
+  "site_id" | "customer_id"
+> & {
   site_id: string;
-  date: string;
-  from_date: string;
-  to_date: string;
+  customer_id: string;
 };
 
 function LedgerPage() {
@@ -51,8 +67,9 @@ function LedgerPage() {
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
 
   // Initialize local filters from URL search params
-  const [localFilters, setLocalFilters] = useState<LedgerLocalFilters>({
+  const [localFilters, setLocalFilters] = useState<LedgerFiltersState>({
     site_id: search.site_id ? search.site_id.toString() : "",
+    customer_id: search.customer_id ? search.customer_id.toString() : "",
     date: search.date || "",
     from_date: search.from_date || "",
     to_date: search.to_date || "",
@@ -67,15 +84,19 @@ function LedgerPage() {
         const siteId = debouncedFilters.site_id
           ? parseInt(debouncedFilters.site_id, 10)
           : undefined;
+        const customerId = debouncedFilters.customer_id
+          ? parseInt(debouncedFilters.customer_id, 10)
+          : undefined;
 
-        // Ensure we don't pass NaN for IDs
-        const cleanSiteId = Number.isNaN(siteId || NaN)
+        const cleanSiteId = Number.isNaN(siteId || NaN) ? undefined : siteId;
+        const cleanCustomerId = Number.isNaN(customerId || NaN)
           ? undefined
-          : siteId;
+          : customerId;
 
         return {
           ...prev,
           site_id: cleanSiteId,
+          customer_id: cleanCustomerId,
           date: debouncedFilters.date || undefined,
           from_date: debouncedFilters.from_date || undefined,
           to_date: debouncedFilters.to_date || undefined,
@@ -100,10 +121,17 @@ function LedgerPage() {
 
   const { data: sitesData } = useQuery({
     queryKey: ["sites", "list-all-ledger"],
-    queryFn: () => siteService.search({ page: 1, per_page: 1000 }),
+    queryFn: () => siteService.search({ page: 1, per_page: 100 }),
   });
 
   const siteMap = new Map(sitesData?.data.map((c) => [c.id, c]) || []);
+
+  const { data: customersData } = useQuery({
+    queryKey: ["customers", "list-all-ledger"],
+    queryFn: () => customerService.search({ page: 1, per_page: 100 }),
+  });
+
+  const customerMap = new Map(customersData?.data.map((c) => [c.id, c]) || []);
 
   const { data, isLoading, isError, error, isPlaceholderData } = useQuery({
     queryKey: ["ledger", { ...search, page, per_page }],
@@ -112,6 +140,7 @@ function LedgerPage() {
         page,
         per_page,
         site_id: search.site_id,
+        customer_id: search.customer_id,
         date: search.date || undefined,
         from_date: search.from_date || undefined,
         to_date: search.to_date || undefined,
@@ -153,18 +182,18 @@ function LedgerPage() {
 
   // --- Handlers ---
 
-  const handleFilterChange = (key: keyof LedgerSearchReq, value: string) => {
-    // Only update if the key exists in our local state map
-    // We cast key to ensure TS knows it matches LedgerLocalFilters keys
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setLocalFilters((prev) => ({
       ...prev,
-      [key]: value,
+      [name]: value,
     }));
   };
 
   const handleReset = () => {
     setLocalFilters({
       site_id: "",
+      customer_id: "",
       date: "",
       from_date: "",
       to_date: "",
@@ -174,6 +203,7 @@ function LedgerPage() {
       search: (prev) => ({
         ...prev,
         site_id: undefined,
+        customer_id: undefined,
         date: undefined,
         from_date: undefined,
         to_date: undefined,
@@ -193,12 +223,10 @@ function LedgerPage() {
     });
   };
 
+  const [entryToDelete, setEntryToDelete] = useState<any | null>(null);
+
   const handleDelete = (entry: any) => {
-    if (
-      confirm(`Are you sure you want to delete payment entry #${entry.id}?`)
-    ) {
-      deleteMutation.mutate(entry.id);
-    }
+    setEntryToDelete(entry);
   };
 
   return (
@@ -264,6 +292,7 @@ function LedgerPage() {
         navigate={navigate}
         processingIds={processingIds}
         siteMap={siteMap}
+        customerMap={customerMap}
         filterProps={{
           filters: localFilters,
           onChange: handleFilterChange,
@@ -278,6 +307,21 @@ function LedgerPage() {
           onPerPageChange: handlePerPageChange,
         }}
         onDelete={handleDelete}
+      />
+
+      <ConfirmDialog
+        isOpen={!!entryToDelete}
+        onClose={() => setEntryToDelete(null)}
+        onConfirm={() => {
+          if (entryToDelete) {
+            deleteMutation.mutate(entryToDelete.id);
+            setEntryToDelete(null);
+          }
+        }}
+        title="Delete Payment"
+        description={`Are you sure you want to permanently delete payment entry #${entryToDelete?.id}? This action cannot be undone.`}
+        confirmText="Delete"
+        isPending={deleteMutation.isPending}
       />
     </div>
   );

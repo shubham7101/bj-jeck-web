@@ -1,27 +1,38 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
-import { FileText, IndianRupee, Plus, Receipt, TrendingUp, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import z from "zod";
 import { BillDataGrid } from "@/components/BillDataGrid";
-// Components
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-// Hooks & Services
 import { useDebounce } from "@/hooks/use-debounce";
-import { type BillSearchReq, billSearchReqSchema } from "@/schemas/billSchema";
+import { Route as rootRoute } from "@/routes/__root";
 import { billService } from "@/services/billService";
-import { formatCurrency } from "@/utils";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/bills/",
   component: BillsPage,
-  validateSearch: (search) => billSearchReqSchema.parse(search),
+  validateSearch: (search) => billSearchPayload.parse(search),
 });
+
+export const billSearchPayload = z.object({
+  page: z.number().optional(),
+  per_page: z.number().optional(),
+  site_id: z.number().optional(),
+  khata_no: z.string().optional(),
+  date: z.string().optional(),
+});
+export type BillSearchPayload = z.infer<typeof billSearchPayload>;
+
+export type BillFiltersState = Omit<
+  Pick<BillSearchPayload, "date" | "site_id" | "khata_no">,
+  "site_id"
+> & {
+  site_id: string;
+};
 
 function BillsPage() {
   const search = Route.useSearch();
@@ -31,9 +42,7 @@ function BillsPage() {
   const per_page = search.per_page ?? 25;
 
   // Local state for filters to allow typing before debouncing
-  const [localFilters, setLocalFilters] = useState<{
-    [K in keyof BillSearchReq]: string;
-  }>({
+  const [localFilters, setLocalFilters] = useState<BillFiltersState>({
     date: search.date || "",
     site_id: search.site_id ? search.site_id.toString() : "",
     khata_no: search.khata_no || "",
@@ -51,9 +60,14 @@ function BillsPage() {
           : undefined;
 
         // Ensure we don't pass NaN
-        const cleanSiteId = Number.isNaN(siteId || NaN)
-          ? undefined
-          : siteId;
+        const cleanSiteId = Number.isNaN(siteId || NaN) ? undefined : siteId;
+
+        const filtersChanged =
+          prev.date !== (debouncedFilters.date || undefined) ||
+          prev.site_id !== cleanSiteId ||
+          prev.khata_no !== (debouncedFilters.khata_no || undefined);
+
+        if (!filtersChanged) return prev;
 
         return {
           ...prev,
@@ -69,7 +83,6 @@ function BillsPage() {
 
   // --- Queries ---
 
-  // Assuming you have a stats endpoint for bills, otherwise remove or adapt
   // const { data: stats, isLoading: isLoadingStats } = useQuery({
   //   queryKey: ["bills", "stats"],
   //   queryFn: () => billService.stats(),
@@ -94,11 +107,11 @@ function BillsPage() {
   });
 
   // --- Handlers ---
-
-  const handleFilterChange = (key: keyof BillSearchReq, value: string) => {
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setLocalFilters((prev) => ({
       ...prev,
-      [key]: value,
+      [name as keyof BillFiltersState]: value,
     }));
   };
 
@@ -150,7 +163,7 @@ function BillsPage() {
           </p>
         </div>
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <form 
+          <form
             onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
@@ -164,7 +177,7 @@ function BillsPage() {
             <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-zinc-500" />
             </div>
-            <Input 
+            <Input
               type="number"
               name="bill_id"
               placeholder="Find Bill ID..."

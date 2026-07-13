@@ -1,5 +1,4 @@
 import { createRoute, useRouter } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
 import { format, isValid, parse } from "date-fns";
 import {
   ArrowLeft,
@@ -24,15 +23,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { Route as rootRoute } from "@/routes/__root";
 import { billService } from "@/services/billService";
-import { siteService } from "@/services/siteService";
 import { ledgerService } from "@/services/ledgerService";
+import { siteService } from "@/services/siteService";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/sites/statement/$siteId",
+  path: "/sites/$site_id/statement",
   loader: async ({ params }) => {
-    const siteId = Number(params.siteId);
+    const siteId = Number(params.site_id);
     const site = await siteService.get(siteId);
 
     // Fetch all bills and payment ledger entries (large per_page to ensure we load history)

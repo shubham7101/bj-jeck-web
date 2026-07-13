@@ -1,5 +1,5 @@
 import { AlertCircle, Layers, PackageOpen } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -66,7 +66,7 @@ export function InventorySection({
       if (!itemsBySize.has(item.size)) {
         itemsBySize.set(item.size, []);
       }
-      itemsBySize.get(item.size)!.push({ ...item });
+      itemsBySize.get(item.size)?.push({ ...item });
     });
 
     const combined: typeof sortedInventory = [];

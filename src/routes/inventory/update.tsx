@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
 import {
   ArrowLeft,
   ArrowRight,
@@ -13,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,8 +25,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Route as rootRoute } from "@/routes/__root";
 import { inventoryService } from "@/services/inventoryService";
-import { ErrorAlert } from "@/components/ErrorAlert";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,

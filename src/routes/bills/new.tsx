@@ -1,4 +1,4 @@
-import { useStore } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import {
   keepPreviousData,
   useMutation,
@@ -6,7 +6,6 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { createRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
 import {
   format,
   isAfter,
@@ -31,14 +30,12 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
-import { SiteDataGrid } from "@/components/SiteDataGrid";
-import { FilterDatePicker } from "@/components/FilterDatePicker";
-import { FormBase } from "@/components/form/FormBase";
-import { useAppForm } from "@/components/form/hooks";
-import { RecordTable } from "@/components/RecordDataGrid";
-import { SuccessFeedback } from "@/components/SuccessFeedback";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { FilterDatePicker } from "@/components/FilterDatePicker";
+import { RecordTable } from "@/components/RecordDataGrid";
+import { SiteDataGrid } from "@/components/SiteDataGrid";
+import { SuccessFeedback } from "@/components/SuccessFeedback";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,10 +43,11 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
+import { Route as rootRoute } from "@/routes/__root";
 import type { Site } from "@/schemas/siteSchema";
 import { billService } from "@/services/billService";
-import { siteService } from "@/services/siteService";
 import { recordService } from "@/services/recordService";
+import { siteService } from "@/services/siteService";
 import { formatCurrency, getInitials } from "@/utils";
 
 const DATE_FORMAT = "dd-MM-yyyy";
@@ -169,11 +167,7 @@ function Header({
 
 // --- Step 1: Customer Selection ---
 
-function SiteSelectionStep({
-  onSelect,
-}: {
-  onSelect: (c: Site) => void;
-}) {
+function SiteSelectionStep({ onSelect }: { onSelect: (c: Site) => void }) {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [filters, setFilters] = useState({
@@ -310,7 +304,7 @@ function BillEntryForm({ site }: { site: Site }) {
   }, [successBill]);
 
   // Form Setup
-  const form = useAppForm({
+  const form = useForm({
     defaultValues: {
       bill_id: "" as number | "",
       site_id: site.id,
@@ -386,10 +380,7 @@ function BillEntryForm({ site }: { site: Site }) {
           </Avatar>
           <div>
             <h4 className="text-sm font-semibold text-zinc-100 hover:underline">
-              <Link
-                to="/sites/$siteId"
-                params={{ siteId: site.id.toString() }}
-              >
+              <Link to="/sites/$siteId" params={{ siteId: site.id.toString() }}>
                 {site.contractor_name}
               </Link>
             </h4>
@@ -438,46 +429,84 @@ function BillEntryForm({ site }: { site: Site }) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 items-start min-w-0">
               {/* Bill ID */}
               <form.Field name="bill_id">
-                {(field) => (
-                  <FormBase field={field} label="Bill ID">
-                    <div className="relative">
-                      <Hash className="absolute left-2.5 top-3 h-4 w-4 text-zinc-500" />
-                      <Input
-                        id={field.name}
-                        type="number"
-                        placeholder="e.g. 101"
-                        className="pl-9 bg-zinc-950/50 border-zinc-700 font-bold text-lg focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors"
-                        value={field.state.value || ""}
-                        onBlur={field.handleBlur}
-                        onChange={(e) =>
-                          field.handleChange(
-                            e.target.value ? Number(e.target.value) : "",
-                          )
-                        }
-                        autoFocus
-                        disabled={!!successBill}
-                      />
+                {(field) => {
+                  const hasError = field.state.meta.errors.length > 0;
+                  return (
+                    <div className="flex flex-col gap-1.5 group mb-5">
+                      <label className="text-sm font-semibold text-zinc-300">
+                        Bill ID
+                      </label>
+                      <div className="relative">
+                        <Hash
+                          className={cn(
+                            "absolute left-2.5 top-3 h-4 w-4 transition-colors",
+                            hasError
+                              ? "text-rose-500"
+                              : "text-zinc-500 group-focus-within:text-emerald-500",
+                          )}
+                        />
+                        <Input
+                          id={field.name}
+                          type="number"
+                          placeholder="e.g. 101"
+                          className={cn(
+                            "pl-9 bg-zinc-950/50 border-zinc-700 font-bold text-lg transition-colors",
+                            hasError
+                              ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/50"
+                              : "focus:ring-emerald-500/50 focus:border-emerald-500/50",
+                          )}
+                          value={field.state.value || ""}
+                          onBlur={field.handleBlur}
+                          onChange={(e) =>
+                            field.handleChange(
+                              e.target.value ? Number(e.target.value) : "",
+                            )
+                          }
+                          autoFocus
+                          disabled={!!successBill}
+                        />
+                      </div>
+                      {hasError && (
+                        <span className="text-xs font-medium text-rose-500 animate-in slide-in-from-top-1">
+                          {field.state.meta.errors
+                            .map((e: any) => e.message || e)
+                            .join(", ")}
+                        </span>
+                      )}
                     </div>
-                  </FormBase>
-                )}
+                  );
+                }}
               </form.Field>
 
               {/* From Date (Read Only) */}
               <form.Field name="from_date">
-                {(field) => (
-                  <FormBase field={field} label="From Date (Fixed)">
-                    <div className="relative">
-                      <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
-                      <div className="h-10 pl-9 py-2 rounded-md border border-zinc-800 bg-zinc-950/30 text-zinc-400 text-sm flex items-center cursor-not-allowed shadow-inner backdrop-blur-sm">
-                        {billParamsMutation.isPending ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          field.state.value || "Loading..."
-                        )}
+                {(field) => {
+                  const hasError = field.state.meta.errors.length > 0;
+                  return (
+                    <div className="flex flex-col gap-1.5 group mb-5">
+                      <label className="text-sm font-semibold text-zinc-300">
+                        From Date (Fixed)
+                      </label>
+                      <div className="relative">
+                        <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
+                        <div className="h-10 pl-9 py-2 rounded-md border border-zinc-800 bg-zinc-950/30 text-zinc-400 text-sm flex items-center cursor-not-allowed shadow-inner backdrop-blur-sm">
+                          {billParamsMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            field.state.value || "Loading..."
+                          )}
+                        </div>
                       </div>
+                      {hasError && (
+                        <span className="text-xs font-medium text-rose-500 animate-in slide-in-from-top-1">
+                          {field.state.meta.errors
+                            .map((e: any) => e.message || e)
+                            .join(", ")}
+                        </span>
+                      )}
                     </div>
-                  </FormBase>
-                )}
+                  );
+                }}
               </form.Field>
 
               {/* To Date (Interactive) */}
@@ -491,55 +520,77 @@ function BillEntryForm({ site }: { site: Site }) {
                     if (parsedFrom && !isAfter(current, parsedFrom)) {
                       return "Must be after From Date";
                     }
-                    // if (maxToDate && isAfter(current, maxToDate)) {
-                    //   return `Max date: ${format(maxToDate, DATE_FORMAT)}`;
-                    // }
                     return undefined;
                   },
                 }}
               >
-                {(field) => (
-                  <FormBase
-                    field={field}
-                    label={
-                      <span className="flex gap-1">
+                {(field) => {
+                  const hasError = field.state.meta.errors.length > 0;
+                  return (
+                    <div className="flex flex-col gap-1.5 group mb-5">
+                      <label className="text-sm font-semibold text-zinc-300 flex items-center gap-1.5">
                         To Date <span className="text-rose-500">*</span>
-                      </span>
-                    }
-                  >
-                    <FilterDatePicker
-                      value={field.state.value}
-                      min={
-                        parsedFrom
-                          ? format(parsedFrom, "yyyy-MM-dd")
-                          : undefined
-                      }
-                      max={format(new Date(), "yyyy-MM-dd")}
-                      onChange={(val) => field.handleChange(val)}
-                      disabled={
-                        !parsedFrom ||
-                        billParamsMutation.isPending ||
-                        !!successBill
-                      }
-                    />
-                  </FormBase>
-                )}
+                      </label>
+                      <FilterDatePicker
+                        value={field.state.value}
+                        min={
+                          parsedFrom
+                            ? format(parsedFrom, "yyyy-MM-dd")
+                            : undefined
+                        }
+                        max={format(new Date(), "yyyy-MM-dd")}
+                        onChange={(val) => field.handleChange(val)}
+                        disabled={
+                          !parsedFrom ||
+                          billParamsMutation.isPending ||
+                          !!successBill
+                        }
+                      />
+                      {hasError && (
+                        <span className="text-xs font-medium text-rose-500 animate-in slide-in-from-top-1">
+                          {field.state.meta.errors
+                            .map((e: any) => e.message || e)
+                            .join(", ")}
+                        </span>
+                      )}
+                    </div>
+                  );
+                }}
               </form.Field>
 
               {/* Khata No */}
               <form.Field name="khata_no">
-                {(field) => (
-                  <FormBase field={field} label="Khata No (Optional)">
-                    <Input
-                      id={field.name}
-                      placeholder="e.g. 3 12"
-                      className="bg-zinc-950/50 border-zinc-700 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors"
-                      value={field.state.value || ""}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      disabled={!!successBill}
-                    />
-                  </FormBase>
-                )}
+                {(field) => {
+                  const hasError = field.state.meta.errors.length > 0;
+                  return (
+                    <div className="flex flex-col gap-1.5 group mb-5">
+                      <label className="text-sm font-semibold text-zinc-300">
+                        Khata No (Optional)
+                      </label>
+                      <Input
+                        id={field.name}
+                        placeholder="e.g. 3 12"
+                        className={cn(
+                          "bg-zinc-950/50 border-zinc-700 transition-colors",
+                          hasError
+                            ? "border-rose-500/50 focus:ring-rose-500/50 focus:border-rose-500/50"
+                            : "focus:ring-emerald-500/50 focus:border-emerald-500/50",
+                        )}
+                        value={field.state.value || ""}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        disabled={!!successBill}
+                      />
+                      {hasError && (
+                        <span className="text-xs font-medium text-rose-500 animate-in slide-in-from-top-1">
+                          {field.state.meta.errors
+                            .map((e: any) => e.message || e)
+                            .join(", ")}
+                        </span>
+                      )}
+                    </div>
+                  );
+                }}
               </form.Field>
             </div>
           </CardContent>
@@ -559,12 +610,7 @@ function BillEntryForm({ site }: { site: Site }) {
           </h3>
 
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm shadow-xl overflow-hidden min-w-0 w-full">
-            <RecordTable
-              data={filteredRecords}
-              isLoading={isRecordsLoading}
-              navigate={navigate}
-              onDelete={undefined}
-            />
+            <RecordTable data={filteredRecords} isLoading={isRecordsLoading} />
 
             {recordsData && recordsData.pagination.total_pages > 1 && (
               <div className="p-2 border-t border-zinc-800 bg-zinc-900/30 flex items-center justify-between">

@@ -1,25 +1,35 @@
-import type z from "zod";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createRoute, Link } from "@tanstack/react-router";
-import { Route as rootRoute } from "@/routes/__root";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
-import { SiteDataGrid } from "@/components/SiteDataGrid";
+import z from "zod";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { SiteDataGrid } from "@/components/SiteDataGrid";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/use-debounce";
+import { Route as rootRoute } from "@/routes/__root";
 import { siteService } from "@/services/siteService";
-import { siteSearchReqSchema } from "@/schemas/siteSchema";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/sites/",
   component: SitesPage,
-  validateSearch: (search) => siteSearchReqSchema.parse(search),
+  validateSearch: (search) => siteSearchPayload.parse(search),
 });
 
-type SitesFiltersState = Pick<
-  z.infer<typeof siteSearchReqSchema>,
+export const siteSearchPayload = z.object({
+  page: z.number().min(1).optional().catch(1),
+  per_page: z.number().min(1).max(100).optional().catch(10),
+  customer_id: z.number().optional(),
+  contractor_name: z.string().optional().catch(""),
+  address: z.string().optional().catch(""),
+  mobile_no: z.string().optional().catch(""),
+});
+export type SiteSearchPayload = z.infer<typeof siteSearchPayload>;
+
+export type SitesFiltersState = Pick<
+  SiteSearchPayload,
   "contractor_name" | "address" | "mobile_no"
 >;
 
@@ -42,6 +52,14 @@ function SitesPage() {
   useEffect(() => {
     navigate({
       search: (prev) => {
+        const filtersChanged =
+          prev.contractor_name !==
+            (debouncedFilters.contractor_name || undefined) ||
+          prev.address !== (debouncedFilters.address || undefined) ||
+          prev.mobile_no !== (debouncedFilters.mobile_no || undefined);
+
+        if (!filtersChanged) return prev;
+
         return {
           ...prev,
           contractor_name: debouncedFilters.contractor_name || undefined,
@@ -126,6 +144,37 @@ function SitesPage() {
             Manage client profiles, contact details, and their active rental
             status.
           </p>
+        </div>
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const id = formData.get("site_id");
+              if (id) {
+                navigate({ to: `/sites/${id}` });
+              }
+            }}
+            className="relative flex items-center w-full sm:w-auto"
+          >
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-zinc-500" />
+            </div>
+            <Input
+              type="number"
+              name="site_id"
+              placeholder="Find Site ID..."
+              className="pl-9 bg-zinc-950 border-zinc-800 text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50 w-full sm:w-48 h-10 shadow-sm shadow-black/20 font-mono text-sm"
+            />
+          </form>
+          <Button
+            asChild
+            className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)] transition-all font-medium shrink-0 h-10 w-full sm:w-auto"
+          >
+            <Link to="/sites/new">
+              <Plus className="mr-2 h-4 w-4" /> Add Site
+            </Link>
+          </Button>
         </div>
       </div>
 

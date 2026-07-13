@@ -1,16 +1,17 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronRight, MapPin, Phone, RotateCcw, Search } from "lucide-react";
-import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import type { Site, siteSearchReqSchema } from "@/schemas/siteSchema";
-import { Badge } from "./ui/badge";
+import type { SitesFiltersState } from "@/routes/sites";
+import type { Site } from "@/schemas/siteSchema";
 import {
   PaginationControls,
   type PaginationControlsProps,
 } from "./PaginationControls";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Badge } from "./ui/badge";
 import { Skeleton } from "./ui/skeleton";
 import {
   Table,
@@ -20,17 +21,11 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 // --- Types ---
 
-type SiteFiltersState = Pick<
-  z.infer<typeof siteSearchReqSchema>,
-  "contractor_name" | "address" | "mobile_no"
->;
-
 type SiteFiltersProps = {
-  filters: SiteFiltersState;
+  filters: SitesFiltersState;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onReset: () => void;
 };
@@ -121,14 +116,6 @@ function SiteFilters({ filters, onChange, onReset }: SiteFiltersProps) {
           />
         </div>
         <div className="flex items-center justify-end gap-3 shrink-0 h-11 w-full md:w-auto">
-          {hasActiveFilters && (
-            <Badge
-              variant="outline"
-              className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] uppercase font-bold tracking-wider py-0.5 px-2 animate-pulse mr-auto md:mr-0"
-            >
-              Filters Active
-            </Badge>
-          )}
           <Button
             variant="ghost"
             size="icon"
