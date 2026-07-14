@@ -22,7 +22,7 @@ import { themeStyles } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import type { Customer } from "@/schemas/customerSchema";
 import type { Site } from "@/schemas/siteSchema";
-import { formatCurrency, getInitials } from "@/utils";
+import { getInitials } from "@/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -619,7 +619,7 @@ function LedgerRow({
       <TableCell className="text-right pr-6">
         <span className="text-base font-bold text-emerald-400 flex items-center justify-end gap-0.5 tabular-nums drop-shadow-[0_0_10px_rgba(52,211,153,0.15)] group-hover:drop-shadow-[0_0_12px_rgba(52,211,153,0.3)] transition-all">
           <IndianRupee className="h-3.5 w-3.5" />
-          {formatCurrency(entry.amount)}
+          {entry.amount.toFixed(2)}
         </span>
       </TableCell>
 

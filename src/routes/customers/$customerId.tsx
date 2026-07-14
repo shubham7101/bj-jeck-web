@@ -108,6 +108,8 @@ function CustomerHeader({ customer }: { customer: Customer }) {
     mutationFn: () => customerService.setActive(customer.id, !customer.active),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["sites"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", customer.id, "sites"] });
       router.invalidate();
     },
   });

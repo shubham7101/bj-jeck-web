@@ -5,7 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { createRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import {
   AlertCircle,
@@ -302,9 +302,10 @@ function FormProgressStepper({ currentStep }: { currentStep: number }) {
 // --- Main Component ---
 
 export default function UpdateRecordPage() {
-  const navigate = useNavigate();
   const { site, record } = Route.useLoaderData();
   const [updatedRecord, setUpdatedRecord] = useState<Record | null>(null);
+  const [currentSite, setCurrentSite] = useState<Site>(site);
+  const [isSelectingSite, setIsSelectingSite] = useState(false);
   const successRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -319,41 +320,36 @@ export default function UpdateRecordPage() {
   }, [updatedRecord]);
 
   const handleSiteSelect = (selected: Site) => {
-    navigate({
-      to: "/records/new",
-      search: { site_id: selected.id },
-    });
+    setCurrentSite(selected);
+    setIsSelectingSite(false);
   };
 
   const handleChangeSite = () => {
-    setUpdatedRecord(null);
-    navigate({
-      to: "/records/new",
-      search: { site_id: undefined },
-    });
+    setIsSelectingSite(true);
   };
 
   return (
     <div className="flex-1 w-full max-w-[100vw] lg:max-w-6xl lg:mx-auto px-2 py-6 sm:p-6 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500 pb-24 overflow-x-hidden min-w-0">
       <Header
-        step={site ? 2 : 1}
-        hasSite={!!site}
+        step={isSelectingSite ? 1 : 2}
+        hasSite={!isSelectingSite}
         onChangeSite={handleChangeSite}
       />
 
-      <FormProgressStepper currentStep={site ? 2 : 1} />
+      <FormProgressStepper currentStep={isSelectingSite ? 1 : 2} />
 
       <div className="pt-4">
-        {!site ? (
+        <div className={isSelectingSite ? "block" : "hidden"}>
           <SiteSelectionStep onSelect={handleSiteSelect} />
-        ) : (
+        </div>
+        <div className={!isSelectingSite ? "block" : "hidden"}>
           <RecordEntryForm
             record={record}
-            site={site}
+            site={currentSite}
             onSuccess={setUpdatedRecord}
             onReset={handleChangeSite}
           />
-        )}
+        </div>
       </div>
 
       {updatedRecord && (
@@ -382,7 +378,7 @@ function Header({
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
       <div className="space-y-1">
         <h2 className="text-3xl font-extrabold tracking-tight bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-          New Record
+          Update Record
         </h2>
         <p className="text-sm text-muted-foreground font-medium">
           {step === 1
@@ -571,6 +567,10 @@ function RecordEntryForm({
 
   const lastCalculatedTotalRef = useRef(0);
   const lastCalculatedLabourRef = useRef(0);
+
+  useEffect(() => {
+    form.setFieldValue("site_id", site.id);
+  }, [site.id, form]);
 
   // Dynamic automatic calculation of Total Items & Labour charges
   useEffect(() => {
