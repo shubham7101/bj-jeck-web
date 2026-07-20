@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { inventorySchema, paginationSchema } from "./common";
+import { recordSchema } from "./recordSchema";
 
 export const billSchema = z.object({
   id: z.number().gt(0),
@@ -13,23 +14,20 @@ export type Bill = z.infer<typeof billSchema>;
 
 export const createBillSchema = billSchema
   .pick({
-    site_id: true,
     khata_no: true,
   })
   .extend({
     id: z.number().gt(0).optional(),
-    from_date: z
-      .string()
-      .regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY"),
     to_date: z.string().regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be DD-MM-YYYY"),
+    token: z.string(),
   });
 export type CreateBill = z.infer<typeof createBillSchema>;
 
 export const billParamsSchema = z.object({
-  site_id: z.number().gt(0),
   from_date: z.string(),
   to_date: z.string(),
-  record_ids: z.array(z.number()),
+  token: z.string(),
+  records: z.array(recordSchema),
 });
 
 export const billLineSchema = z.object({

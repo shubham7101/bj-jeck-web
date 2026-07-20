@@ -46,7 +46,6 @@ import { cn } from "@/lib/utils";
 import { Route as rootRoute } from "@/routes/__root";
 import type { Site } from "@/schemas/siteSchema";
 import { billService } from "@/services/billService";
-import { recordService } from "@/services/recordService";
 import { siteService } from "@/services/siteService";
 import { formatCurrency, getInitials } from "@/utils";
 
@@ -315,10 +314,9 @@ function BillEntryForm({ site }: { site: Site }) {
     onSubmit: async ({ value }) => {
       createBillMutation.mutate({
         id: Number(value.bill_id),
-        site_id: value.site_id,
-        from_date: value.from_date,
         to_date: value.to_date,
         khata_no: value.khata_no,
+        token: billParamsMutation.data?.token || "",
       });
     },
   });
@@ -341,32 +339,27 @@ function BillEntryForm({ site }: { site: Site }) {
 
   const parsedFrom = parseDateSafe(fromDateVal);
   const parsedTo = parseDateSafe(toDateVal);
-  const enableRecordQuery = !!parsedFrom && !!parsedTo && !successBill;
 
-  const { data: recordsData, isLoading: isRecordsLoading } = useQuery({
-    queryKey: [
-      "records",
-      "bill-preview",
-      site.id,
-      fromDateVal,
-      toDateVal,
-      page,
-      perPage,
-    ],
-    queryFn: () =>
-      recordService.search({
-        site_id: site.id,
-        from_date: fromDateVal,
-        to_date: toDateVal,
-        page,
-        per_page: perPage,
-      }),
-    enabled: enableRecordQuery,
+  const allRecords = billParamsMutation.data?.records || [];
+
+  const filteredRecords = allRecords.filter((record) => {
+    if (record.bill_id) return false;
+    const rDate = parseDateSafe(record.date);
+    if (!rDate) return false;
+
+    if (parsedFrom && rDate < parsedFrom) return false;
+    if (parsedTo && rDate > parsedTo) return false;
+
+    return true;
   });
 
-  // Manual Filter
-  const filteredRecords =
-    recordsData?.data.filter((record) => !record.bill_id) || [];
+  const totalPages = Math.ceil(filteredRecords.length / perPage) || 1;
+  const paginatedRecords = filteredRecords.slice(
+    (page - 1) * perPage,
+    page * perPage,
+  );
+
+  const isRecordsLoading = billParamsMutation.isPending;
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-in slide-in-from-right-4 duration-300">
@@ -610,9 +603,9 @@ function BillEntryForm({ site }: { site: Site }) {
           </h3>
 
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm shadow-xl overflow-hidden min-w-0 w-full">
-            <RecordTable data={filteredRecords} isLoading={isRecordsLoading} />
+            <RecordTable data={paginatedRecords} isLoading={isRecordsLoading} />
 
-            {recordsData && recordsData.pagination.total_pages > 1 && (
+            {totalPages > 1 && (
               <div className="p-2 border-t border-zinc-800 bg-zinc-900/30 flex items-center justify-between">
                 <Button
                   variant="ghost"
@@ -625,18 +618,14 @@ function BillEntryForm({ site }: { site: Site }) {
                   <ChevronLeft className="h-4 w-4 mr-1" /> Prev
                 </Button>
                 <span className="text-xs text-zinc-500 font-medium">
-                  Page {page} of {recordsData.pagination.total_pages}
+                  Page {page} of {totalPages}
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
                   type="button"
-                  onClick={() =>
-                    setPage((p) =>
-                      Math.min(recordsData.pagination.total_pages, p + 1),
-                    )
-                  }
-                  disabled={page >= recordsData.pagination.total_pages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
                   className="text-zinc-400 hover:text-white"
                 >
                   Next <ChevronRight className="h-4 w-4 ml-1" />
@@ -644,13 +633,11 @@ function BillEntryForm({ site }: { site: Site }) {
               </div>
             )}
           </div>
-          {filteredRecords.length === 0 &&
-            recordsData &&
-            recordsData.data.length > 0 && (
-              <div className="text-xs text-amber-500 text-center">
-                All records on this page are already billed. Check other pages.
-              </div>
-            )}
+          {filteredRecords.length === 0 && allRecords.length > 0 && (
+            <div className="text-xs text-amber-500 text-center">
+              All unbilled records for this site are filtered out by date.
+            </div>
+          )}
         </div>
 
         {/* Footer / Submit Section */}
